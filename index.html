@@ -410,10 +410,8 @@
 // ────────────────────────────────────────────────
 // 서버 상태 확인
 // ────────────────────────────────────────────────
-const SERVER_BASE = window.location.hostname === 'localhost' ||
-                    window.location.hostname === '127.0.0.1'
-  ? ''   // 같은 서버
-  : null; // 서버 없음 (파일로 직접 열었을 때)
+// file:// 프로토콜로 직접 열었을 때만 비활성화, HTTP 서버(로컬/Vercel 모두)에서는 활성화
+const SERVER_BASE = window.location.protocol === 'file:' ? null : '';
 
 async function checkServer() {
   if (SERVER_BASE === null) {
