@@ -192,7 +192,7 @@ def build_message(stock_name: str, warn: dict, thresholds: dict | None) -> str:
 
         block = '\n'.join([
             f'현재가  {cur:,}원  ({sd(t_d)})',
-            f'지정일  {sd(d_date)}  →  해제가능  {sd(release)}',
+            f'지정일  {sd(d_date)}  →  해제 판단일  {sd(release)}',
             f'경과    {elapsed} / 10 거래일',
             '',
             f'조건      {"기준가":>{pw}}   결과',
@@ -212,7 +212,7 @@ def build_message(stock_name: str, warn: dict, thresholds: dict | None) -> str:
             lines.append(f'→ {unmet}가지 미해당 · {sd(release)} 해제 가능 🟢')
     else:
         block = '\n'.join([
-            f'지정일  {sd(d_date)}  →  해제가능  {sd(release)}',
+            f'지정일  {sd(d_date)}  →  해제 판단일  {sd(release)}',
             f'경과    {elapsed} / 10 거래일',
         ])
         lines.append(f'```\n{block}\n```')
