@@ -378,8 +378,10 @@ def process_update(update: dict):
         tg_send_plain(chat_id, '알 수 없는 명령어입니다.\n/help 로 사용법을 확인하세요.')
         return
 
-    # ── 일반 텍스트 → 종목 검색 ──────────────────────────────
-    do_search(chat_id, text)
+    # ── 일반 텍스트: 개인 채팅만 종목 검색, 그룹은 무시 ─────
+    chat_type = msg['chat'].get('type', 'private')
+    if chat_type == 'private':
+        do_search(chat_id, text)
 
 # ── Vercel Handler ───────────────────────────────────────────
 class handler(BaseHTTPRequestHandler):
