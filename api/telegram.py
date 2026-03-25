@@ -289,9 +289,7 @@ def do_search(chat_id: int, query: str):
         return
 
     if not results:
-        tg_send_plain(chat_id,
-            f'"{query}"에 대한 투자경고/위험 종목을 찾을 수 없습니다.\n'
-            '현재 지정된 종목이 없거나 종목명을 확인해주세요.')
+        tg_send_plain(chat_id, f'"{query}" — 현재 투자경고가 아님.')
         return
 
     for warn in results[:3]:
