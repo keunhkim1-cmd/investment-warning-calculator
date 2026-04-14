@@ -1,40 +1,29 @@
-"""기간(연간/분기) 파생 유틸 — 누적값을 단일 분기로 변환"""
+"""기간(연간/분기) 파생 유틸"""
 
-# DART 분기보고서별 누적 기간
-# 11012(1Q): 1~3월 누적 = 1Q 단독
-# 11014(반기): 1~6월 누적 → 단일 2Q = 반기 - 1Q
-# 11013(3Q): 1~9월 누적 → 단일 3Q = 3Q누적 - 반기
-# 11011(사업): 1~12월 누적 → 단일 4Q = 사업 - 3Q누적
+# DART reprt_code → 분기 매핑 (DART Open API 표준)
+# 11013: 1분기보고서, 11012: 반기보고서, 11014: 3분기보고서, 11011: 사업보고서
+# fnlttSinglAcntAll의 thstrm_amount:
+#  - 11013/11012/11014 (분기): 당분기(3개월) 단일 값
+#  - 11011 (사업): 당기(12개월) 누계값
+#  → Q4 = 사업 - (Q1+Q2+Q3), BS는 시점값이라 각 보고서의 시점값 그대로 사용
 REPRT_QUARTER = {
-    '11012': '1Q',
-    '11014': '2Q',
-    '11013': '3Q',
-    '11011': '4Q',
+    '11013': '1Q',
+    '11012': '2Q',
+    '11014': '3Q',
+    '11011': 'FY',  # 사업보고서는 연간 합계
 }
 
 QUARTER_REPRT = {v: k for k, v in REPRT_QUARTER.items()}
 
 
-def derive_single_quarters(cumulative: dict) -> dict:
-    """누적 분기 dict {'1Q': v, '2Q': v, '3Q': v, '4Q': v} → 단일 분기 dict.
-    값이 None이면 해당 분기는 None 반환.
-    """
-    q1 = cumulative.get('1Q')
-    h1 = cumulative.get('2Q')  # 1~6월 누적
-    q3c = cumulative.get('3Q')  # 1~9월 누적
-    fy = cumulative.get('4Q')  # 1~12월 누적
-
-    def _sub(a, b):
-        if a is None or b is None:
-            return None
-        return a - b
-
-    return {
-        '1Q': q1,
-        '2Q': _sub(h1, q1),
-        '3Q': _sub(q3c, h1),
-        '4Q': _sub(fy, q3c),
-    }
+def derive_q4_from_annual(q1, q2, q3, fy):
+    """단일 분기 IS/CF 값들에서 Q4 도출. Q4 = FY - (Q1+Q2+Q3)."""
+    if fy is None:
+        return None
+    parts = [q1, q2, q3]
+    if any(p is None for p in parts):
+        return None
+    return fy - (q1 + q2 + q3)
 
 
 def yoy(cur, prev):

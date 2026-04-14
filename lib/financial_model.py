@@ -9,7 +9,7 @@ import json, os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from lib.dart_full import fetch_all
-from lib.period import derive_single_quarters, yoy, safe_div, QUARTER_REPRT
+from lib.period import derive_q4_from_annual, yoy, safe_div, REPRT_QUARTER
 
 _MAPPING_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                               'data', 'account-mapping.json')
@@ -28,21 +28,19 @@ def _to_num(s):
 
 
 def _index_accounts(api_response: dict, fs_div: str) -> dict:
-    """DART API 응답 → {account_id: amount} 인덱스. 같은 sj_div(BS/IS/CIS/CF) 내에서.
-    분기 보고서의 경우 thstrm_amount는 누적금액(IS/CF), BS는 시점값.
+    """DART API 응답 → {sj_div::key: amount} 인덱스.
+    fnlttSinglAcntAll은 호출 파라미터로 fs_div를 이미 필터링하므로 응답 item에는
+    fs_div 필드가 없음. sj_div(BS/IS/CIS/CF/SCE)로만 구분.
     """
     if api_response.get('status') != '000':
         return {}
     out = {}
     for item in api_response.get('list', []):
-        if item.get('fs_div') != fs_div:
-            continue
         aid = item.get('account_id', '')
         anm = item.get('account_nm', '')
         amt = _to_num(item.get('thstrm_amount'))
         if amt is None:
             continue
-        # account_id 우선, 동일 키는 sj_div로 구분(BS/IS/CIS/CF)
         sj = item.get('sj_div', '')
         out[f'{sj}::{aid}'] = amt
         out[f'{sj}::name::{anm}'] = amt
@@ -85,23 +83,34 @@ def _fetch_period_safe(corp_code: str, year: str, reprt: str, fs_div: str):
         return {'status': 'ERR', 'message': str(e)}
 
 
-def _annual_to_quarterly(annual_periods: dict) -> dict:
-    """{quarter: period_dict} 누적 → 단일 분기로 변환 (IS/CF만, BS는 시점값 그대로 유지)"""
+def _periods_to_quarterly(by_period: dict) -> dict:
+    """{period_label: extracted_dict} → 단일 분기 1Q/2Q/3Q/4Q dict.
+    period_label: '1Q','2Q','3Q','FY'.
+    IS/CF: 보고서 thstrm은 단일 분기값. Q4는 FY - (Q1+Q2+Q3)으로 도출.
+    BS: 시점값. 4Q는 사업보고서의 12/31 시점값 사용.
+    """
     flow_keys = list(MAPPING['is'].keys()) + list(MAPPING['cf'].keys())
     stock_keys = list(MAPPING['bs'].keys())
-    quarters = ['1Q', '2Q', '3Q', '4Q']
 
-    result = {q: {} for q in quarters}
-    # Flow: 누적 → 단일 분기
+    result = {q: {} for q in ['1Q', '2Q', '3Q', '4Q']}
+
+    # Flow: 분기 보고서값 그대로, Q4는 FY - 합
     for key in flow_keys:
-        cumulative = {q: annual_periods.get(q, {}).get(key) for q in quarters}
-        derived = derive_single_quarters(cumulative)
-        for q in quarters:
-            result[q][key] = derived[q]
-    # Stock: 시점값 그대로
+        q1 = by_period.get('1Q', {}).get(key)
+        q2 = by_period.get('2Q', {}).get(key)
+        q3 = by_period.get('3Q', {}).get(key)
+        fy = by_period.get('FY', {}).get(key)
+        result['1Q'][key] = q1
+        result['2Q'][key] = q2
+        result['3Q'][key] = q3
+        result['4Q'][key] = derive_q4_from_annual(q1, q2, q3, fy)
+
+    # Stock: 각 보고서 시점값. Q4 = 사업보고서 시점값(12/31)
     for key in stock_keys:
-        for q in quarters:
-            result[q][key] = annual_periods.get(q, {}).get(key)
+        result['1Q'][key] = by_period.get('1Q', {}).get(key)
+        result['2Q'][key] = by_period.get('2Q', {}).get(key)
+        result['3Q'][key] = by_period.get('3Q', {}).get(key)
+        result['4Q'][key] = by_period.get('FY', {}).get(key)
     return result
 
 
@@ -154,23 +163,23 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     year_list = [str(y) for y in range(start_year, end_year + 1)]
 
     annual = {}
-    # 분기 누적 데이터를 연도별로 보관 → 단일 분기로 파생
-    quarterly_cumulative = {}  # {year: {quarter: period_dict}}
+    # 연도별 보고서 데이터 보관 → 단일 분기로 파생
+    by_year_period = {}  # {year: {'1Q'|'2Q'|'3Q'|'FY': period_dict}}
 
     # 병렬 페치: 각 연도 × 4 reprt
     tasks = []
     with ThreadPoolExecutor(max_workers=8) as ex:
         for y in year_list:
-            for reprt in ['11012', '11014', '11013', '11011']:
+            for reprt in REPRT_QUARTER:
                 tasks.append((y, reprt, ex.submit(_fetch_period_safe, corp_code, y, reprt, fs_div)))
 
         for y, reprt, fut in tasks:
             resp = fut.result()
             period = _extract_period(resp, fs_div) if resp.get('status') == '000' else {}
-            quarter_label = {'11012': '1Q', '11014': '2Q', '11013': '3Q', '11011': '4Q'}[reprt]
-            quarterly_cumulative.setdefault(y, {})[quarter_label] = period
+            label = REPRT_QUARTER[reprt]
+            by_year_period.setdefault(y, {})[label] = period
 
-            # 사업보고서(11011)는 연간값으로 사용
+            # 사업보고서(11011) = 연간값
             if reprt == '11011' and period:
                 annual[y] = _enrich_derived(dict(period))
 
@@ -187,7 +196,7 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     # 분기 단일값 + YoY 산출
     quarterly = {}
     for y in year_list:
-        single = _annual_to_quarterly(quarterly_cumulative.get(y, {}))
+        single = _periods_to_quarterly(by_year_period.get(y, {}))
         for q in ['1Q', '2Q', '3Q', '4Q']:
             label = f'{q}{y[2:]}'  # 1Q23
             quarterly[label] = _enrich_derived(dict(single[q]))
