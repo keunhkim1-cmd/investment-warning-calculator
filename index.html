@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KRX 투자 도구</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <!-- SF Pro: system font on macOS/iOS, fallbacks for other platforms -->
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -26,9 +24,9 @@
       --up: #ff3b30;
       --down: #007aff;
       --negative: #ff453a;
-      --font-display: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif;
-      --font-text: 'Inter', 'SF Pro Text', -apple-system, system-ui, sans-serif;
-      --mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+      --font-display: 'SF Pro Display', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+      --font-text: 'SF Pro Text', 'SF Pro Icons', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+      --mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
     }
 
     body {
@@ -37,24 +35,74 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 0;
       font-size: 17px;
       line-height: 1.47;
       letter-spacing: -0.374px;
     }
 
-    .container { width: 100%; max-width: 980px; padding: 0 24px 48px; }
+    /* Full-width alternating sections */
+    .section-dark {
+      background: var(--bg); color: var(--text);
+      padding: 48px 0;
+    }
+    .section-light {
+      background: var(--bg-alt); color: var(--text-dark);
+      padding: 48px 0;
+    }
+    .section-inner {
+      max-width: 980px; margin: 0 auto; padding: 0 24px;
+    }
+
+    /* Light section — CSS variable overrides */
+    .section-light {
+      --text-muted: rgba(0,0,0,0.48);
+      --text-secondary: rgba(0,0,0,0.8);
+      --surface2: #f0f0f2;
+      --border: rgba(0,0,0,0.1);
+    }
+
+    /* Light section overrides */
+    .section-light .card {
+      background: #ffffff;
+    }
+    .section-light .card h2 { color: var(--text-dark); }
+    .section-light label { color: rgba(0,0,0,0.8); }
+    .section-light input[type="text"],
+    .section-light input[type="date"],
+    .section-light select {
+      background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
+      color: var(--text-dark);
+    }
+    .section-light select option { background: #ffffff; }
+    .section-light .search-results { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); }
+    .section-light .search-results-header { color: rgba(0,0,0,0.48); border-bottom: 1px solid rgba(0,0,0,0.08); }
+    .section-light .result-item { border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .section-light .result-item:hover { background: rgba(0,0,0,0.03); }
+    .section-light .result-stock-name { color: var(--text-dark); }
+    .section-light .result-date { color: var(--text-dark); }
+    .section-light .search-loading { color: rgba(0,0,0,0.48); }
+    .section-light .result-empty { color: rgba(0,0,0,0.48); }
+    .section-light .auto-filled-tag { background: rgba(0,113,227,0.08); color: #0066cc; }
+
+    /* Light info card */
+    .section-light .info-card { background: #ffffff; }
+    .section-light .info-card h3 { color: var(--text-dark); }
+    .section-light .stage-text { color: rgba(0,0,0,0.8); }
+    .section-light .stage-text strong { color: var(--text-dark); }
+    .section-light .footnote { color: rgba(0,0,0,0.48); }
 
     /* Nav — Apple glass bar */
     .nav-bar {
-      display: flex; gap: 0; align-items: center; justify-content: center;
+      width: 100%;
       background: rgba(0,0,0,0.8);
       backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
-      padding: 0; margin: 0 -24px 48px; height: 48px;
+      height: 48px;
       position: sticky; top: 0; z-index: 100;
+    }
+    .nav-inner {
+      max-width: 980px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: center;
+      height: 100%;
     }
     .nav-item {
       flex: none; text-align: center; padding: 0 20px; height: 48px;
@@ -64,7 +112,7 @@
       display: flex; align-items: center;
       letter-spacing: -0.12px;
     }
-    .nav-item:hover { color: #ffffff; }
+    .nav-item:hover { color: #ffffff; text-decoration: underline; text-underline-offset: 4px; }
     .nav-item.active { color: #ffffff; }
     .page-section { display: none; }
     .page-section.active { display: block; }
@@ -74,9 +122,9 @@
     .header h1 {
       font-family: var(--font-display);
       font-size: 40px; font-weight: 600; color: var(--text);
-      margin-bottom: 8px; letter-spacing: normal; line-height: 1.10;
+      margin-bottom: 8px; letter-spacing: -0.2px; line-height: 1.10;
     }
-    .header p { font-size: 17px; color: var(--text-secondary); font-weight: 400; letter-spacing: -0.374px; }
+    .header p { font-size: 17px; color: var(--text-secondary); font-weight: 400; letter-spacing: -0.374px; text-align: left; }
     .badge {
       display: inline-block;
       background: transparent; color: var(--blue-bright);
@@ -114,7 +162,7 @@
       letter-spacing: -0.374px;
     }
     input[type="text"]:focus, input[type="date"]:focus, select:focus {
-      box-shadow: 0 0 0 2px var(--blue);
+      outline: 2px solid var(--blue); outline-offset: -2px;
     }
     input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
     select option { background: var(--surface2); }
@@ -130,8 +178,8 @@
       white-space: nowrap; transition: opacity 0.2s;
       letter-spacing: -0.224px;
     }
-    .search-btn:hover { opacity: 0.85; }
-    .search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .search-btn:hover { background: #0077ED; }
+    .search-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--blue); }
 
     /* 검색 결과 드롭다운 */
     .search-results {
@@ -203,7 +251,7 @@
       transition: opacity 0.2s; margin-top: 10px;
       letter-spacing: -0.374px;
     }
-    .btn:hover { opacity: 0.85; }
+    .btn:hover { background: #0077ED; }
     .btn:active { background: #ededf2; color: var(--text-dark); }
 
     /* Result */
@@ -220,7 +268,7 @@
     }
     .stock-name-display {
       font-family: var(--font-display);
-      font-size: 28px; font-weight: 600; color: var(--text);
+      font-size: 28px; font-weight: 400; color: var(--text);
       margin-bottom: 20px; letter-spacing: 0.196px; line-height: 1.14;
     }
 
@@ -456,7 +504,7 @@
       font-size: 14px; font-weight: 400; transition: opacity 0.15s;
       letter-spacing: -0.224px;
     }
-    .dart-pagination button:hover { opacity: 0.8; }
+    .dart-pagination button:hover { background: rgba(255,255,255,0.12); }
     .dart-pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
     .dart-pagination span { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
     .dart-empty {
@@ -464,242 +512,283 @@
       font-size: 14px; color: var(--text-muted);
     }
 
+    /* Light section — DART specific overrides */
+    .section-light .dart-item { border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .section-light .dart-item:hover { opacity: 0.7; }
+    .section-light .dart-corp { color: var(--text-dark); }
+    .section-light .dart-date { color: rgba(0,0,0,0.48); }
+    .section-light .dart-title { color: rgba(0,0,0,0.8); }
+    .section-light .dart-pagination button { background: #ffffff; color: rgba(0,0,0,0.8); }
+    .section-light .dart-pagination span { color: rgba(0,0,0,0.48); }
+    .section-light .dart-empty { color: rgba(0,0,0,0.48); }
+
+    /* Light section — financial overrides */
+    .section-light .overview-grid .ov-item { background: var(--bg-alt); }
+    .section-light .ov-label { color: rgba(0,0,0,0.48); }
+    .section-light .ov-value { color: var(--text-dark); }
+    .section-light .fin-table th { color: rgba(0,0,0,0.48); border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .section-light .fin-table td { color: var(--text-dark); border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .section-light .fin-ratio-bar { background: var(--bg-alt); }
+    .section-light .fin-ratio-label { color: rgba(0,0,0,0.48); }
+    .section-light .fin-ratio-value { color: var(--text-dark); }
+
     @media (max-width: 480px) {
       .date-grid { grid-template-columns: 1fr; }
       .header h1 { font-size: 28px; }
       .dart-filters { grid-template-columns: 1fr; }
       .nav-item { padding: 0 12px; font-size: 11px; }
-      .container { padding: 0 16px 32px; }
-      .nav-bar { margin: 0 -16px 32px; }
+      .section-inner { padding: 0 16px; }
+      .section-dark, .section-light { padding: 32px 0; }
     }
   </style>
 </head>
 <body>
-<div class="container">
 
-  <!-- Nav Bar -->
-  <nav class="nav-bar">
+<!-- Nav Bar — full-width outside container -->
+<nav class="nav-bar">
+  <div class="nav-inner">
     <button class="nav-item" onclick="switchPage('dashboard', this)">DASHBOARD</button>
     <button class="nav-item active" onclick="switchPage('warning', this)">투자경고 해제일 계산기</button>
     <button class="nav-item" onclick="switchPage('dart', this)">공시 분석기</button>
-  </nav>
-
-  <!-- ═══════════════ DASHBOARD ═══════════════ -->
-  <div id="page-dashboard" class="page-section">
-
-    <div class="header">
-      <div class="badge">종목 정보</div>
-      <h1>DASHBOARD</h1>
-      <p>종목 검색으로 기업 개요와 재무 현황을 한눈에 확인합니다</p>
-    </div>
-
-    <div class="card">
-      <h2>종목 검색</h2>
-      <div class="form-group">
-        <label>기업명</label>
-        <div class="search-row">
-          <input type="text" id="dashCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dashCorpSearch()" />
-          <button class="search-btn" id="dashCorpSearchBtn" onclick="dashCorpSearch()">검색</button>
-        </div>
-        <div class="search-results" id="dashCorpResults"></div>
-        <div id="dashSelectedCorp" style="display:none;margin-top:8px;"></div>
-      </div>
-    </div>
-
-    <!-- 기업 개요 -->
-    <div class="card" id="overviewCard" style="display:none;">
-      <h2>기업 개요</h2>
-      <div id="overviewContent"></div>
-    </div>
-
-    <!-- 재무제표 핵심 지표 -->
-    <div class="card" id="financialCard" style="display:none;">
-      <h2>재무제표 핵심 지표</h2>
-      <div id="financialMeta" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;font-family:var(--mono);letter-spacing:-0.12px;"></div>
-      <div id="financialContent"></div>
-    </div>
-
-    <div class="footnote">
-      데이터 출처: <strong>네이버 금융</strong> · <strong>금융감독원 DART</strong>
-    </div>
-
-  </div><!-- /page-dashboard -->
-
-  <!-- ═══════════════ 투자경고 해제일 계산기 ═══════════════ -->
-  <div id="page-warning" class="page-section active">
-
-  <div class="header">
-    <div class="badge">KRX 시장경보제도</div>
-    <h1>투자경고 해제일 계산기</h1>
-    <p>한국거래소 기준 투자경고/위험 종목 해제일을 자동 계산합니다</p>
   </div>
+</nav>
 
-  <!-- 서버 필요 안내 -->
-  <div class="server-notice" id="serverNotice">
-    <strong>자동검색 기능</strong>을 사용하려면 로컬 서버가 필요합니다.<br/>
-    터미널에서 <code style="background:var(--surface2);padding:3px 8px;border-radius:6px;color:var(--blue-bright);font-family:var(--mono);font-size:14px;">python3 serve.py</code> 실행 후 새로고침하세요.
-    KRX KIND에서 실시간으로 투자경고 지정일을 조회합니다.
-  </div>
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div id="page-dashboard" class="page-section">
 
-  <div class="card">
-    <h2>종목 자동검색 <span style="font-size:12px;color:var(--text-muted);font-weight:400;letter-spacing:-0.12px;">KRX KIND</span></h2>
-
-    <div class="form-group">
-      <label>종목명으로 검색</label>
-      <div class="search-row">
-        <input
-          type="text" id="searchInput"
-          placeholder="종목명 입력 후 검색 (예: 에코프로, 셀트리온)"
-          onkeydown="if(event.key==='Enter') doSearch()"
-        />
-        <button class="search-btn" id="searchBtn" onclick="doSearch()">KRX 조회</button>
-      </div>
-      <div class="search-results" id="searchResults"></div>
-    </div>
-  </div>
-
-  <!-- hidden inputs — selectResult()가 채워주고 calculate()가 읽음 -->
-  <input type="hidden" id="stockName" />
-  <input type="hidden" id="designationDate" />
-  <input type="hidden" id="warningType" value="warning_normal" />
-  <input type="hidden" id="tradingStop" value="no" />
-  <input type="hidden" id="resumeDate" />
-
-  <!-- Result -->
-  <div class="result-card" id="resultCard">
-    <div class="result-header">
-      <h2>계산 결과</h2>
-    </div>
-    <div class="stock-name-display" id="stockNameDisplay"></div>
-
-    <!-- 핵심 가격 요약 -->
-    <div class="price-summary" id="priceSummary" style="display:none">
-      <div class="ps-loading" id="psSkeleton">주가 데이터 불러오는 중...</div>
-    </div>
-
-    <div class="date-grid">
-      <div class="date-item">
-        <div class="label">지정일</div>
-        <div class="value" id="resultDesignationDate"></div>
-      </div>
-      <div class="date-item">
-        <div class="label">기산 시작일</div>
-        <div class="value" id="resultStartDate"></div>
-      </div>
-      <div class="date-item highlight">
-        <div class="label">해제 가능 최초일 (10 거래일 경과 후)</div>
-        <div class="value" id="resultReleaseDate"></div>
-      </div>
-      <div class="date-item">
-        <div class="label">경과 거래일 (오늘 기준)</div>
-        <div class="value" id="resultElapsed"></div>
-      </div>
-    </div>
-    <div id="ddayBadge"></div>
-  </div>
-
-  <!-- 기준가 현황 -->
-  <div class="price-card" id="priceCard">
-    <h2>기준가 현황 <span style="font-size:12px;color:var(--text-muted);font-weight:400;letter-spacing:-0.12px;">NAVER</span></h2>
-    <div class="price-meta" id="priceMeta"></div>
-    <div id="priceContent"></div>
-  </div>
-
-  <!-- 해제 요건 (시장경보 단계 안내 바로 위) -->
-  <div class="card" id="conditionCard" style="margin-bottom:16px; display:none;">
-    <h2>투자경고 해제 요건</h2>
-    <div class="conditions-title" style="margin-bottom:12px;">아래 3가지가 <em>모두</em> 충족될 때 경고 <strong>유지</strong> — 1가지라도 미충족이면 다음 거래일 <strong>해제</strong></div>
-    <div id="conditionList"></div>
-    <div class="warning-box">
-      3가지 조건은 <strong>AND 조건</strong>입니다. 3가지가 동시에 모두 충족되면 경고가 유지되고,
-      <strong>1가지라도 충족되지 않는 날의 다음 거래일</strong>에 해제됩니다.
-      (단, 지정 후 최소 10 거래일이 경과해야 해제 심사 대상이 됩니다.)
-    </div>
-  </div>
-
-  <!-- Info -->
-  <div class="info-card">
-    <h3>시장경보 단계 안내</h3>
-    <div class="stage-list">
-      <div class="stage-item">
-        <div class="stage-dot dot-attention"></div>
-        <div class="stage-text"><strong>투자주의</strong> — 단기 급등 초기 단계, 15일 내 5일 이상 지정 시 경고로 격상 가능</div>
-      </div>
-      <div class="stage-item">
-        <div class="stage-dot dot-warning"></div>
-        <div class="stage-text"><strong>투자경고</strong> — 신용융자 금지, 위탁증거금 100% 현금, 지정 후 10 거래일 이후 해제 심사</div>
-      </div>
-      <div class="stage-item">
-        <div class="stage-dot dot-risk"></div>
-        <div class="stage-text"><strong>투자위험</strong> — 가장 높은 단계, 지정 당일 거래 정지, 해제 후 투자경고로 하향</div>
+  <div class="section-dark">
+    <div class="section-inner">
+      <div class="header">
+        <div class="badge">종목 정보</div>
+        <h1>DASHBOARD</h1>
+        <p>종목 검색으로 기업 개요와 재무 현황을 한눈에 확인합니다</p>
       </div>
     </div>
   </div>
 
-  <div class="footnote">
-    본 계산기는 참고용이며, 실제 해제일은 KRX 시장감시위원회 판단에 따릅니다.<br />
-    공식 현황: <strong>KIND (kind.krx.co.kr)</strong> · <strong>DART (dart.fss.or.kr)</strong> · <strong>KRX 시장감시위원회 (moc.krx.co.kr)</strong>
-  </div>
-
-  </div><!-- /page-warning -->
-
-  <!-- ═══════════════ 공시 분석기 ═══════════════ -->
-  <div id="page-dart" class="page-section">
-
-    <div class="header">
-      <div class="badge">DART Open API</div>
-      <h1>공시 분석기</h1>
-      <p>금융감독원 전자공시시스템(DART) 공시를 검색하고 분석합니다</p>
-    </div>
-
-    <div class="card">
-      <h2>공시 검색</h2>
-
-      <div class="dart-filters">
-        <div class="form-group full">
+  <div class="section-light">
+    <div class="section-inner">
+      <div class="card">
+        <h2>종목 검색</h2>
+        <div class="form-group">
           <label>기업명</label>
           <div class="search-row">
-            <input type="text" id="dartCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dartCorpSearch()" />
-            <button class="search-btn" id="dartCorpSearchBtn" onclick="dartCorpSearch()">기업 검색</button>
+            <input type="text" id="dashCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dashCorpSearch()" />
+            <button class="search-btn" id="dashCorpSearchBtn" onclick="dashCorpSearch()">검색</button>
           </div>
-          <div class="search-results" id="dartCorpResults"></div>
-          <div id="dartSelectedCorp" style="display:none;margin-top:8px;"></div>
-        </div>
-        <div class="form-group">
-          <label>시작일</label>
-          <input type="date" id="dartBgnDe" />
-        </div>
-        <div class="form-group">
-          <label>종료일</label>
-          <input type="date" id="dartEndDe" />
-        </div>
-        <div class="form-group full">
-          <label>공시 유형</label>
-          <select id="dartPblntfTy">
-            <option value="">전체</option>
-            <option value="A">정기공시</option>
-            <option value="B">주요사항보고</option>
-            <option value="C">발행공시</option>
-            <option value="D">지분공시</option>
-            <option value="E">기타공시</option>
-            <option value="F">외부감사관련</option>
-            <option value="I">거래소공시</option>
-          </select>
+          <div class="search-results" id="dashCorpResults"></div>
+          <div id="dashSelectedCorp" style="display:none;margin-top:8px;"></div>
         </div>
       </div>
-      <button class="btn" id="dartSearchBtn" onclick="dartSearch()">공시 검색</button>
+
+      <!-- 기업 개요 -->
+      <div class="card" id="overviewCard" style="display:none;">
+        <h2>기업 개요</h2>
+        <div id="overviewContent"></div>
+      </div>
+
+      <!-- 재무제표 핵심 지표 -->
+      <div class="card" id="financialCard" style="display:none;">
+        <h2>재무제표 핵심 지표</h2>
+        <div id="financialMeta" style="font-size:12px;color:rgba(0,0,0,0.48);margin-bottom:14px;font-family:var(--mono);letter-spacing:-0.12px;"></div>
+        <div id="financialContent"></div>
+      </div>
+
+      <div class="footnote">
+        데이터 출처: <strong>네이버 금융</strong> · <strong>금융감독원 DART</strong>
+      </div>
     </div>
+  </div>
 
-    <div id="dartResultArea"></div>
+</div><!-- /page-dashboard -->
 
-    <div class="footnote" style="margin-top:20px;">
-      데이터 출처: <strong>금융감독원 DART (dart.fss.or.kr)</strong><br/>
-      공시 원문은 DART 전자공시시스템에서 확인하세요.
+<!-- ═══════════════ 투자경고 해제일 계산기 ═══════════════ -->
+<div id="page-warning" class="page-section active">
+
+  <div class="section-dark">
+    <div class="section-inner">
+      <div class="header">
+        <div class="badge">KRX 시장경보제도</div>
+        <h1>투자경고 해제일 계산기</h1>
+        <p>한국거래소 기준 투자경고/위험 종목 해제일을 자동 계산합니다</p>
+      </div>
+
+      <!-- 서버 필요 안내 -->
+      <div class="server-notice" id="serverNotice">
+        <strong>자동검색 기능</strong>을 사용하려면 로컬 서버가 필요합니다.<br/>
+        터미널에서 <code style="background:var(--surface2);padding:3px 8px;border-radius:6px;color:var(--blue-bright);font-family:var(--mono);font-size:14px;">python3 serve.py</code> 실행 후 새로고침하세요.
+        KRX KIND에서 실시간으로 투자경고 지정일을 조회합니다.
+      </div>
+
+      <div class="card">
+        <h2>종목 자동검색 <span style="font-size:12px;color:var(--text-muted);font-weight:400;letter-spacing:-0.12px;">KRX KIND</span></h2>
+        <div class="form-group">
+          <label>종목명으로 검색</label>
+          <div class="search-row">
+            <input
+              type="text" id="searchInput"
+              placeholder="종목명 입력 후 검색 (예: 에코프로, 셀트리온)"
+              onkeydown="if(event.key==='Enter') doSearch()"
+            />
+            <button class="search-btn" id="searchBtn" onclick="doSearch()">KRX 조회</button>
+          </div>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+      </div>
+
+      <!-- hidden inputs -->
+      <input type="hidden" id="stockName" />
+      <input type="hidden" id="designationDate" />
+      <input type="hidden" id="warningType" value="warning_normal" />
+      <input type="hidden" id="tradingStop" value="no" />
+      <input type="hidden" id="resumeDate" />
+
+      <!-- Result -->
+      <div class="result-card" id="resultCard">
+        <div class="result-header">
+          <h2>계산 결과</h2>
+        </div>
+        <div class="stock-name-display" id="stockNameDisplay"></div>
+
+        <!-- 핵심 가격 요약 -->
+        <div class="price-summary" id="priceSummary" style="display:none">
+          <div class="ps-loading" id="psSkeleton">주가 데이터 불러오는 중...</div>
+        </div>
+
+        <div class="date-grid">
+          <div class="date-item">
+            <div class="label">지정일</div>
+            <div class="value" id="resultDesignationDate"></div>
+          </div>
+          <div class="date-item">
+            <div class="label">기산 시작일</div>
+            <div class="value" id="resultStartDate"></div>
+          </div>
+          <div class="date-item highlight">
+            <div class="label">해제 가능 최초일 (10 거래일 경과 후)</div>
+            <div class="value" id="resultReleaseDate"></div>
+          </div>
+          <div class="date-item">
+            <div class="label">경과 거래일 (오늘 기준)</div>
+            <div class="value" id="resultElapsed"></div>
+          </div>
+        </div>
+        <div id="ddayBadge"></div>
+      </div>
+
+      <!-- 기준가 현황 -->
+      <div class="price-card" id="priceCard">
+        <h2>기준가 현황 <span style="font-size:12px;color:var(--text-muted);font-weight:400;letter-spacing:-0.12px;">NAVER</span></h2>
+        <div class="price-meta" id="priceMeta"></div>
+        <div id="priceContent"></div>
+      </div>
+
+      <!-- 해제 요건 -->
+      <div class="card" id="conditionCard" style="margin-bottom:16px; display:none;">
+        <h2>투자경고 해제 요건</h2>
+        <div class="conditions-title" style="margin-bottom:12px;">아래 3가지가 <em>모두</em> 충족될 때 경고 <strong>유지</strong> — 1가지라도 미충족이면 다음 거래일 <strong>해제</strong></div>
+        <div id="conditionList"></div>
+        <div class="warning-box">
+          3가지 조건은 <strong>AND 조건</strong>입니다. 3가지가 동시에 모두 충족되면 경고가 유지되고,
+          <strong>1가지라도 충족되지 않는 날의 다음 거래일</strong>에 해제됩니다.
+          (단, 지정 후 최소 10 거래일이 경과해야 해제 심사 대상이 됩니다.)
+        </div>
+      </div>
     </div>
+  </div>
 
-  </div><!-- /page-dart -->
+  <!-- Info — light section for informational content -->
+  <div class="section-light">
+    <div class="section-inner">
+      <div class="info-card">
+        <h3>시장경보 단계 안내</h3>
+        <div class="stage-list">
+          <div class="stage-item">
+            <div class="stage-dot dot-attention"></div>
+            <div class="stage-text"><strong>투자주의</strong> — 단기 급등 초기 단계, 15일 내 5일 이상 지정 시 경고로 격상 가능</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-dot dot-warning"></div>
+            <div class="stage-text"><strong>투자경고</strong> — 신용융자 금지, 위탁증거금 100% 현금, 지정 후 10 거래일 이후 해제 심사</div>
+          </div>
+          <div class="stage-item">
+            <div class="stage-dot dot-risk"></div>
+            <div class="stage-text"><strong>투자위험</strong> — 가장 높은 단계, 지정 당일 거래 정지, 해제 후 투자경고로 하향</div>
+          </div>
+        </div>
+      </div>
 
-</div>
+      <div class="footnote">
+        본 계산기는 참고용이며, 실제 해제일은 KRX 시장감시위원회 판단에 따릅니다.<br />
+        공식 현황: <strong>KIND (kind.krx.co.kr)</strong> · <strong>DART (dart.fss.or.kr)</strong> · <strong>KRX 시장감시위원회 (moc.krx.co.kr)</strong>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-warning -->
+
+<!-- ═══════════════ 공시 분석기 ═══════════════ -->
+<div id="page-dart" class="page-section">
+
+  <div class="section-dark">
+    <div class="section-inner">
+      <div class="header">
+        <div class="badge">DART Open API</div>
+        <h1>공시 분석기</h1>
+        <p>금융감독원 전자공시시스템(DART) 공시를 검색하고 분석합니다</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-light">
+    <div class="section-inner">
+      <div class="card">
+        <h2>공시 검색</h2>
+        <div class="dart-filters">
+          <div class="form-group full">
+            <label>기업명</label>
+            <div class="search-row">
+              <input type="text" id="dartCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dartCorpSearch()" />
+              <button class="search-btn" id="dartCorpSearchBtn" onclick="dartCorpSearch()">기업 검색</button>
+            </div>
+            <div class="search-results" id="dartCorpResults"></div>
+            <div id="dartSelectedCorp" style="display:none;margin-top:8px;"></div>
+          </div>
+          <div class="form-group">
+            <label>시작일</label>
+            <input type="date" id="dartBgnDe" />
+          </div>
+          <div class="form-group">
+            <label>종료일</label>
+            <input type="date" id="dartEndDe" />
+          </div>
+          <div class="form-group full">
+            <label>공시 유형</label>
+            <select id="dartPblntfTy">
+              <option value="">전체</option>
+              <option value="A">정기공시</option>
+              <option value="B">주요사항보고</option>
+              <option value="C">발행공시</option>
+              <option value="D">지분공시</option>
+              <option value="E">기타공시</option>
+              <option value="F">외부감사관련</option>
+              <option value="I">거래소공시</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" id="dartSearchBtn" onclick="dartSearch()">공시 검색</button>
+      </div>
+
+      <div id="dartResultArea"></div>
+
+      <div class="footnote" style="margin-top:20px;">
+        데이터 출처: <strong>금융감독원 DART (dart.fss.or.kr)</strong><br/>
+        공시 원문은 DART 전자공시시스템에서 확인하세요.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-dart -->
 
 <script>
 // ────────────────────────────────────────────────
