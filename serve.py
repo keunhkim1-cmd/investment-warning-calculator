@@ -12,6 +12,7 @@ import urllib.parse
 
 from lib.krx import search_kind
 from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds
+from lib.dart import search_disclosure, fetch_financial
 
 PORT = 5173
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +68,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 prices = fetch_prices(code, count=20)
                 thresholds = calc_thresholds(prices)
                 self.send_json({'prices': prices[:16], 'thresholds': thresholds})
+            except Exception as e:
+                self.send_json({'error': str(e)}, 500)
+            return
+
+        if parsed.path == '/api/dart-search':
+            try:
+                data = search_disclosure(
+                    corp_code=qs.get('corp_code', [''])[0],
+                    bgn_de=qs.get('bgn_de', [''])[0].strip(),
+                    end_de=qs.get('end_de', [''])[0].strip(),
+                    page_no=int(qs.get('page_no', ['1'])[0]),
+                    page_count=int(qs.get('page_count', ['20'])[0]),
+                    pblntf_ty=qs.get('pblntf_ty', [''])[0].strip(),
+                )
+                self.send_json(data)
+            except Exception as e:
+                self.send_json({'error': str(e)}, 500)
+            return
+
+        if parsed.path == '/api/dart-financial':
+            try:
+                data = fetch_financial(
+                    corp_code=qs.get('corp_code', [''])[0].strip(),
+                    bsns_year=qs.get('bsns_year', [''])[0].strip(),
+                    reprt_code=qs.get('reprt_code', ['11011'])[0].strip(),
+                )
+                self.send_json(data)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return

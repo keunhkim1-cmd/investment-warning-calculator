@@ -58,4 +58,11 @@ def search_kind(stock_name: str) -> list:
         except Exception as e:
             print(f'KIND error menu={idx}: {e}')
     all_results.sort(key=lambda x: x.get('designationDate', ''), reverse=True)
-    return all_results
+    # 종목별 최근 경고만 유지
+    seen = set()
+    deduped = []
+    for r in all_results:
+        if r['stockName'] not in seen:
+            seen.add(r['stockName'])
+            deduped.append(r)
+    return deduped

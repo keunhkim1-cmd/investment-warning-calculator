@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>투자경고 해제일 계산기</title>
+  <title>KRX 투자 도구</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -13,12 +13,31 @@
       color: #e2e8f0;
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      padding: 24px;
+      padding: 0 24px 24px;
     }
 
-    .container { width: 100%; max-width: 660px; }
+    .container { width: 100%; max-width: 660px; padding-top: 16px; }
+
+    /* Nav */
+    .nav-bar {
+      display: flex; gap: 4px;
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 12px; padding: 4px; margin-bottom: 24px;
+    }
+    .nav-item {
+      flex: 1; text-align: center; padding: 10px 12px;
+      font-size: 0.8125rem; font-weight: 600; color: #64748b;
+      border-radius: 8px; cursor: pointer; transition: all 0.15s;
+      border: none; background: none;
+    }
+    .nav-item:hover { color: #94a3b8; }
+    .nav-item.active {
+      background: #2563eb; color: #fff;
+    }
+    .page-section { display: none; }
+    .page-section.active { display: block; }
 
     /* Header */
     .header { text-align: center; margin-bottom: 32px; }
@@ -280,14 +299,90 @@
       text-align: center; font-size: 0.75rem; color: #475569; margin-top: 20px;
     }
 
+    /* 재무제표 */
+    .fin-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    .fin-table th, .fin-table td { padding: 10px 8px; text-align: right; }
+    .fin-table th { color: #64748b; font-weight: 600; border-bottom: 1px solid #334155; }
+    .fin-table td { color: #e2e8f0; border-bottom: 1px solid #1e293b; }
+    .fin-table td:first-child, .fin-table th:first-child { text-align: left; }
+    .fin-table tr:last-child td { border-bottom: none; }
+    .fin-label { color: #94a3b8; font-weight: 600; }
+    .fin-positive { color: #4ade80; }
+    .fin-negative { color: #f87171; }
+    .fin-ratio-bar {
+      display: flex; align-items: center; gap: 8px;
+      background: #0f172a; border: 1px solid #334155;
+      border-radius: 8px; padding: 12px; margin-top: 12px;
+    }
+    .fin-ratio-label { font-size: 0.75rem; color: #64748b; white-space: nowrap; }
+    .fin-ratio-value { font-size: 1rem; font-weight: 700; }
+    .fin-year-select {
+      background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+      border-radius: 6px; padding: 4px 8px; font-size: 0.8125rem; cursor: pointer;
+    }
+
+    /* 공시 분석기 */
+    .dart-filters {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;
+    }
+    .dart-filters .form-group.full { grid-column: 1 / -1; }
+    .dart-results-list { display: flex; flex-direction: column; gap: 8px; }
+    .dart-item {
+      background: #0f172a; border: 1px solid #334155;
+      border-radius: 10px; padding: 14px; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .dart-item:hover { border-color: #2563eb66; }
+    .dart-item-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .dart-corp { font-size: 0.9375rem; font-weight: 700; color: #e2e8f0; }
+    .dart-date { font-size: 0.8125rem; color: #64748b; }
+    .dart-title { font-size: 0.8125rem; color: #94a3b8; line-height: 1.5; }
+    .dart-cls-badge {
+      display: inline-block; font-size: 0.6875rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; margin-left: 6px;
+    }
+    .cls-Y { background: #1e3a5f33; color: #60a5fa; border: 1px solid #2563eb44; }
+    .cls-K { background: #14532d33; color: #4ade80; border: 1px solid #16a34a44; }
+    .cls-N { background: #42300a33; color: #fbbf24; border: 1px solid #d9770644; }
+    .cls-E { background: #1e293b; color: #94a3b8; border: 1px solid #33415544; }
+    .dart-pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; margin-top: 16px;
+    }
+    .dart-pagination button {
+      background: #1e293b; border: 1px solid #334155; color: #94a3b8;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      font-size: 0.8125rem; font-weight: 600; transition: background 0.15s;
+    }
+    .dart-pagination button:hover { background: #334155; }
+    .dart-pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .dart-pagination span { font-size: 0.8125rem; color: #64748b; }
+    .dart-empty {
+      text-align: center; padding: 40px 20px;
+      font-size: 0.875rem; color: #475569;
+    }
+
     @media (max-width: 480px) {
       .date-grid { grid-template-columns: 1fr; }
       .header h1 { font-size: 1.375rem; }
+      .dart-filters { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 <div class="container">
+
+  <!-- Nav Bar -->
+  <nav class="nav-bar">
+    <button class="nav-item active" onclick="switchPage('warning')">투자경고 해제일 계산기</button>
+    <button class="nav-item" onclick="switchPage('dart')">공시 분석기</button>
+  </nav>
+
+  <!-- ═══════════════ 투자경고 해제일 계산기 ═══════════════ -->
+  <div id="page-warning" class="page-section active">
 
   <div class="header">
     <div class="badge">KRX 시장경보제도</div>
@@ -402,9 +497,84 @@
     공식 현황: <strong>KIND (kind.krx.co.kr)</strong> · <strong>DART (dart.fss.or.kr)</strong> · <strong>KRX 시장감시위원회 (moc.krx.co.kr)</strong>
   </div>
 
+  </div><!-- /page-warning -->
+
+  <!-- ═══════════════ 공시 분석기 ═══════════════ -->
+  <div id="page-dart" class="page-section">
+
+    <div class="header">
+      <div class="badge">DART Open API</div>
+      <h1>공시 분석기</h1>
+      <p>금융감독원 전자공시시스템(DART) 공시를 검색하고 분석합니다</p>
+    </div>
+
+    <div class="card">
+      <h2>🔍 공시 검색</h2>
+
+      <div class="dart-filters">
+        <div class="form-group full">
+          <label>기업명</label>
+          <div class="search-row">
+            <input type="text" id="dartCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dartCorpSearch()" />
+            <button class="search-btn" id="dartCorpSearchBtn" onclick="dartCorpSearch()">기업 검색</button>
+          </div>
+          <div class="search-results" id="dartCorpResults"></div>
+          <div id="dartSelectedCorp" style="display:none;margin-top:8px;"></div>
+        </div>
+        <div class="form-group">
+          <label>시작일</label>
+          <input type="date" id="dartBgnDe" />
+        </div>
+        <div class="form-group">
+          <label>종료일</label>
+          <input type="date" id="dartEndDe" />
+        </div>
+        <div class="form-group full">
+          <label>공시 유형</label>
+          <select id="dartPblntfTy">
+            <option value="">전체</option>
+            <option value="A">정기공시</option>
+            <option value="B">주요사항보고</option>
+            <option value="C">발행공시</option>
+            <option value="D">지분공시</option>
+            <option value="E">기타공시</option>
+            <option value="F">외부감사관련</option>
+            <option value="I">거래소공시</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" id="dartSearchBtn" onclick="dartSearch()">공시 검색</button>
+    </div>
+
+    <!-- 재무제표 핵심 지표 -->
+    <div class="card" id="financialCard" style="display:none;">
+      <h2>📊 재무제표 핵심 지표</h2>
+      <div id="financialMeta" style="font-size:0.8rem;color:#64748b;margin-bottom:16px;"></div>
+      <div id="financialContent"></div>
+    </div>
+
+    <div id="dartResultArea"></div>
+
+    <div class="footnote" style="margin-top:20px;">
+      데이터 출처: <strong>금융감독원 DART (dart.fss.or.kr)</strong><br/>
+      공시 원문은 DART 전자공시시스템에서 확인하세요.
+    </div>
+
+  </div><!-- /page-dart -->
+
 </div>
 
 <script>
+// ────────────────────────────────────────────────
+// 페이지 전환
+// ────────────────────────────────────────────────
+function switchPage(page) {
+  document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  event.target.classList.add('active');
+}
+
 // ────────────────────────────────────────────────
 // 서버 상태 확인
 // ────────────────────────────────────────────────
@@ -463,6 +633,12 @@ async function doSearch() {
       return;
     }
 
+    if (results.length === 1) {
+      resultsEl.classList.remove('show');
+      selectResult(results[0]);
+      return;
+    }
+
     renderSearchResults(results);
   } catch (e) {
     resultsEl.innerHTML = `<div class="result-empty">⚠️ 서버 연결 오류: ${e.message}</div>`;
@@ -503,6 +679,9 @@ function selectResult(r) {
 
   // 기준가 조회 (종목명으로 코드 검색 후 가격 fetch)
   fetchPriceThresholds(r.stockName);
+
+  // 공시 분석기에 동일 종목 자동 연동
+  syncDartCorp(r.stockName);
 }
 
 // ────────────────────────────────────────────────
@@ -823,6 +1002,322 @@ function getConditions(type) {
     '이후 위 3가지 요건을 모두 충족하지 않는 날의 다음날 최종 해제',
   ];
   return base;
+}
+
+// ────────────────────────────────────────────────
+// 공시 분석기 (DART)
+// ────────────────────────────────────────────────
+// 기본 날짜: 최근 7일
+(function initDartDates() {
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  document.getElementById('dartEndDe').value = today.toISOString().slice(0, 10);
+  document.getElementById('dartBgnDe').value = weekAgo.toISOString().slice(0, 10);
+})();
+
+let dartCurrentPage = 1;
+let dartSelectedCorpCode = '';
+let dartSelectedCorpName = '';
+let dartCorps = []; // 기업코드 캐시
+
+async function loadDartCorps() {
+  if (dartCorps.length) return;
+  const resp = await fetch('/data/dart-corps.json');
+  dartCorps = await resp.json();
+}
+
+function dartCorpSearch() {
+  const name = document.getElementById('dartCorpName').value.trim();
+  if (!name) { alert('기업명을 입력하세요.'); return; }
+
+  const btn = document.getElementById('dartCorpSearchBtn');
+  const resultsEl = document.getElementById('dartCorpResults');
+
+  btn.disabled = true;
+  btn.textContent = '검색 중...';
+  resultsEl.innerHTML = '<div class="search-loading">기업을 검색하는 중...</div>';
+  resultsEl.classList.add('show');
+
+  loadDartCorps().then(() => {
+    const items = dartCorps.filter(c => c.n.includes(name))
+      .sort((a, b) => a.n.length - b.n.length)
+      .slice(0, 20);
+
+    if (items.length === 0) {
+      resultsEl.innerHTML = '<div class="result-empty">일치하는 기업이 없습니다.</div>';
+      btn.disabled = false;
+      btn.textContent = '기업 검색';
+      return;
+    }
+
+    const header = `<div class="search-results-header">${items.length}개 기업 — 클릭하여 선택</div>`;
+    const rows = items.map(c => `
+      <div class="result-item" onclick="selectDartCorp('${c.c}', '${c.n.replace(/'/g,"\\'")}')">
+        <span class="result-stock-name">${c.n} <span class="dart-cls-badge cls-Y">${c.s}</span></span>
+      </div>`).join('');
+    resultsEl.innerHTML = header + rows;
+    btn.disabled = false;
+    btn.textContent = '기업 검색';
+  }).catch(e => {
+    resultsEl.innerHTML = `<div class="result-empty">${e.message}</div>`;
+    btn.disabled = false;
+    btn.textContent = '기업 검색';
+  });
+}
+
+async function syncDartCorp(stockName) {
+  await loadDartCorps();
+  const match = dartCorps.find(c => c.n === stockName);
+  if (match) {
+    selectDartCorp(match.c, match.n);
+    document.getElementById('dartCorpName').value = match.n;
+  }
+}
+
+function selectDartCorp(corpCode, corpName) {
+  dartSelectedCorpCode = corpCode;
+  dartSelectedCorpName = corpName;
+  document.getElementById('dartCorpResults').classList.remove('show');
+  document.getElementById('dartSelectedCorp').style.display = 'block';
+  document.getElementById('dartSelectedCorp').innerHTML =
+    `<span class="auto-filled-tag">선택: <strong>${corpName}</strong> (${corpCode})</span>`;
+  fetchFinancial(corpCode);
+}
+
+async function dartSearch(page) {
+  page = page || 1;
+  dartCurrentPage = page;
+
+  const bgnDe = document.getElementById('dartBgnDe').value.replace(/-/g, '');
+  const endDe = document.getElementById('dartEndDe').value.replace(/-/g, '');
+  const pblntfTy = document.getElementById('dartPblntfTy').value;
+
+  const btn = document.getElementById('dartSearchBtn');
+  const area = document.getElementById('dartResultArea');
+
+  btn.disabled = true;
+  btn.textContent = '검색 중...';
+  area.innerHTML = '<div class="card"><div class="search-loading">DART에서 공시 데이터를 가져오는 중...</div></div>';
+
+  try {
+    const params = new URLSearchParams({
+      corp_code: dartSelectedCorpCode,
+      bgn_de: bgnDe,
+      end_de: endDe,
+      pblntf_ty: pblntfTy,
+      page_no: page,
+      page_count: 15,
+    });
+    const resp = await fetch(`/api/dart-search?${params}`);
+    const data = await resp.json();
+
+    if (data.error) {
+      area.innerHTML = `<div class="card"><div class="dart-empty">${data.error}</div></div>`;
+      return;
+    }
+    if (data.status !== '000') {
+      const msg = data.status === '013' ? '검색 결과가 없습니다.' : (data.message || '조회 실패');
+      area.innerHTML = `<div class="card"><div class="dart-empty">${msg}</div></div>`;
+      return;
+    }
+
+    renderDartResults(data);
+  } catch (e) {
+    area.innerHTML = `<div class="card"><div class="dart-empty">${e.message}</div></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '공시 검색';
+  }
+}
+
+// ────────────────────────────────────────────────
+// 재무제표 핵심 지표
+// ────────────────────────────────────────────────
+async function fetchFinancial(corpCode, year) {
+  if (!year) {
+    year = String(new Date().getFullYear() - 1);
+  }
+  const card = document.getElementById('financialCard');
+  const meta = document.getElementById('financialMeta');
+  const content = document.getElementById('financialContent');
+
+  card.style.display = 'block';
+  content.innerHTML = '<div class="search-loading">재무제표를 불러오는 중...</div>';
+  meta.textContent = '';
+
+  try {
+    const resp = await fetch(`/api/dart-financial?corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011`);
+    const data = await resp.json();
+
+    if (data.status === '013') {
+      // 해당 연도 데이터 없으면 전년도 시도
+      const prevYear = String(Number(year) - 1);
+      const resp2 = await fetch(`/api/dart-financial?corp_code=${corpCode}&bsns_year=${prevYear}&reprt_code=11011`);
+      const data2 = await resp2.json();
+      if (data2.status !== '000') {
+        content.innerHTML = `<div class="dart-empty">재무제표 데이터가 없습니다.</div>`;
+        return;
+      }
+      renderFinancial(data2, corpCode);
+      return;
+    }
+    if (data.status !== '000') {
+      content.innerHTML = `<div class="dart-empty">${data.message || '조회 실패'}</div>`;
+      return;
+    }
+    renderFinancial(data, corpCode);
+  } catch (e) {
+    content.innerHTML = `<div class="dart-empty">${e.message}</div>`;
+  }
+}
+
+function renderFinancial(data, corpCode) {
+  const meta = document.getElementById('financialMeta');
+  const content = document.getElementById('financialContent');
+  const list = data.list || [];
+
+  // 연결재무제표(CFS) 우선, 없으면 별도재무제표(OFS)
+  const fsDiv = list.some(i => i.fs_div === 'CFS') ? 'CFS' : 'OFS';
+  const items = list.filter(i => i.fs_div === fsDiv);
+
+  const targets = ['매출액','영업이익','당기순이익','자산총계','부채총계','자본총계'];
+  const found = {};
+  for (const item of items) {
+    if (targets.includes(item.account_nm)) {
+      found[item.account_nm] = item;
+    }
+  }
+
+  if (Object.keys(found).length === 0) {
+    content.innerHTML = '<div class="dart-empty">주요 계정 데이터가 없습니다.</div>';
+    return;
+  }
+
+  const sample = Object.values(found)[0];
+  const fsLabel = fsDiv === 'CFS' ? '연결재무제표' : '별도재무제표';
+  meta.innerHTML = `${fsLabel} · ${sample.thstrm_nm} (${sample.thstrm_dt})`;
+
+  function parseAmt(s) {
+    if (!s || s === '') return null;
+    return Number(s.replace(/,/g, ''));
+  }
+
+  function fmtAmt(n) {
+    if (n === null) return '-';
+    const absN = Math.abs(n);
+    if (absN >= 1e12) return (n / 1e12).toFixed(1) + '조';
+    if (absN >= 1e8) return (n / 1e8).toFixed(0) + '억';
+    if (absN >= 1e4) return (n / 1e4).toFixed(0) + '만';
+    return n.toLocaleString();
+  }
+
+  function growthRate(cur, prev) {
+    if (cur === null || prev === null || prev === 0) return null;
+    return ((cur - prev) / Math.abs(prev) * 100).toFixed(1);
+  }
+
+  function growthBadge(rate) {
+    if (rate === null) return '';
+    const cls = Number(rate) >= 0 ? 'fin-positive' : 'fin-negative';
+    const sign = Number(rate) >= 0 ? '+' : '';
+    return `<span class="${cls}">${sign}${rate}%</span>`;
+  }
+
+  let rows = '';
+  for (const name of targets) {
+    const item = found[name];
+    if (!item) continue;
+    const cur = parseAmt(item.thstrm_amount);
+    const prev = parseAmt(item.frmtrm_amount);
+    const prev2 = parseAmt(item.bfefrmtrm_amount);
+    const rate = growthRate(cur, prev);
+    rows += `<tr>
+      <td class="fin-label">${name}</td>
+      <td>${fmtAmt(prev2)}</td>
+      <td>${fmtAmt(prev)}</td>
+      <td><strong>${fmtAmt(cur)}</strong></td>
+      <td>${growthBadge(rate)}</td>
+    </tr>`;
+  }
+
+  // 부채비율 계산
+  const debt = parseAmt(found['부채총계']?.thstrm_amount);
+  const equity = parseAmt(found['자본총계']?.thstrm_amount);
+  let ratioHtml = '';
+  if (debt !== null && equity !== null && equity !== 0) {
+    const debtRatio = (debt / equity * 100).toFixed(1);
+    const cls = Number(debtRatio) > 200 ? 'fin-negative' : (Number(debtRatio) > 100 ? 'color:#fbbf24' : 'fin-positive');
+    ratioHtml = `
+      <div class="fin-ratio-bar">
+        <span class="fin-ratio-label">부채비율</span>
+        <span class="fin-ratio-value" style="color:${Number(debtRatio) > 200 ? '#f87171' : Number(debtRatio) > 100 ? '#fbbf24' : '#4ade80'}">${debtRatio}%</span>
+        <span class="fin-ratio-label" style="margin-left:auto;">영업이익률</span>
+        <span class="fin-ratio-value" style="color:${(() => {
+          const rev = parseAmt(found['매출액']?.thstrm_amount);
+          const op = parseAmt(found['영업이익']?.thstrm_amount);
+          if (!rev || !op) return '#94a3b8';
+          return op >= 0 ? '#4ade80' : '#f87171';
+        })()}">${(() => {
+          const rev = parseAmt(found['매출액']?.thstrm_amount);
+          const op = parseAmt(found['영업이익']?.thstrm_amount);
+          if (!rev || rev === 0) return '-';
+          return (op / rev * 100).toFixed(1) + '%';
+        })()}</span>
+      </div>`;
+  }
+
+  const thPrev2 = found[targets[0]]?.bfefrmtrm_nm || '전전기';
+  const thPrev = found[targets[0]]?.frmtrm_nm || '전기';
+  const thCur = found[targets[0]]?.thstrm_nm || '당기';
+
+  content.innerHTML = `
+    <table class="fin-table">
+      <thead><tr>
+        <th></th><th>${thPrev2}</th><th>${thPrev}</th><th>${thCur}</th><th>YoY</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${ratioHtml}`;
+}
+
+const CLS_NAMES = { Y: '유가', K: '코스닥', N: '코넥스', E: '기타' };
+
+function renderDartResults(data) {
+  const area = document.getElementById('dartResultArea');
+  const list = data.list || [];
+  const totalPage = data.total_page || 1;
+  const totalCount = data.total_count || 0;
+
+  const header = `<div style="font-size:0.8rem;color:#64748b;margin-bottom:12px;">총 ${totalCount.toLocaleString()}건 (${dartCurrentPage} / ${totalPage} 페이지)</div>`;
+
+  const items = list.map(item => {
+    const cls = item.corp_cls || 'E';
+    const clsName = CLS_NAMES[cls] || '기타';
+    const dartUrl = `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${item.rcept_no}`;
+    return `
+      <a href="${dartUrl}" target="_blank" rel="noopener" class="dart-item" style="text-decoration:none;">
+        <div class="dart-item-header">
+          <div>
+            <span class="dart-corp">${item.corp_name}</span>
+            <span class="dart-cls-badge cls-${cls}">${clsName}</span>
+          </div>
+          <span class="dart-date">${item.rcept_dt.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')}</span>
+        </div>
+        <div class="dart-title">${item.report_nm}</div>
+      </a>`;
+  }).join('');
+
+  const prevDisabled = dartCurrentPage <= 1 ? 'disabled' : '';
+  const nextDisabled = dartCurrentPage >= totalPage ? 'disabled' : '';
+  const pagination = `
+    <div class="dart-pagination">
+      <button ${prevDisabled} onclick="dartSearch(${dartCurrentPage - 1})">이전</button>
+      <span>${dartCurrentPage} / ${totalPage}</span>
+      <button ${nextDisabled} onclick="dartSearch(${dartCurrentPage + 1})">다음</button>
+    </div>`;
+
+  area.innerHTML = header + '<div class="dart-results-list">' + items + '</div>' + pagination;
 }
 </script>
 </body>
