@@ -12,7 +12,7 @@ import re
 import urllib.parse
 
 from lib.krx import search_kind
-from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds
+from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview
 from lib.dart import search_disclosure, fetch_financial
 
 PORT = 5173
@@ -69,6 +69,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 prices = fetch_prices(code, count=20)
                 thresholds = calc_thresholds(prices)
                 self.send_json({'prices': prices[:16], 'thresholds': thresholds})
+            except Exception as e:
+                self.send_json({'error': str(e)}, 500)
+            return
+
+        if parsed.path == '/api/stock-overview':
+            code = qs.get('code', [''])[0].strip()
+            if not re.match(r'^\d{6}$', code):
+                self.send_json({'error': '잘못된 종목코드 형식'}, 400); return
+            try:
+                data = fetch_stock_overview(code)
+                self.send_json(data)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return

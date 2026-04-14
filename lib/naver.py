@@ -61,6 +61,42 @@ def fetch_prices(code: str, count: int = 20) -> list:
     return _price_cache.get_or_set(f'price:{code}:{count}', _fetch)
 
 
+_overview_cache = TTLCache(ttl=120)
+
+
+def fetch_stock_overview(code: str) -> dict:
+    """종목코드 → 시가총액·PER·PBR·52주 고저 등 기업 개요"""
+    def _fetch():
+        url = f'https://m.stock.naver.com/api/stock/{code}/integration'
+
+        def _call():
+            req = urllib.request.Request(url, headers={'User-Agent': HEADERS['User-Agent']})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = json.loads(r.read().decode('utf-8'))
+            infos = {it['code']: it['value'] for it in (data.get('totalInfos') or [])}
+            deals = data.get('dealTrendInfos') or []
+            close_price = deals[0].get('closePrice', '-') if deals else '-'
+            return {
+                'stockName': data.get('stockName', ''),
+                'closePrice': close_price,                             # 현재가(당일종가)
+                'marketCap': infos.get('marketValue', '-'),            # 시가총액
+                'per': infos.get('per', '-'),
+                'pbr': infos.get('pbr', '-'),
+                'eps': infos.get('eps', '-'),
+                'bps': infos.get('bps', '-'),
+                'dividendYield': infos.get('dividendYieldRatio', '-'), # 배당수익률
+                'high52w': infos.get('highPriceOf52Weeks', '-'),       # 52주 최고
+                'low52w': infos.get('lowPriceOf52Weeks', '-'),         # 52주 최저
+                'foreignRate': infos.get('foreignRate', '-'),          # 외인소진율
+                'volume': infos.get('accumulatedTradingVolume', '-'),  # 거래량
+                'tradingValue': infos.get('accumulatedTradingValue', '-'),  # 거래대금
+            }
+
+        return retry(_call)
+
+    return _overview_cache.get_or_set(f'overview:{code}', _fetch)
+
+
 def calc_thresholds(prices: list) -> dict:
     """시간순(오래된→최신) 가격 리스트 → 3가지 기준가 + 충족 여부
     prices[-1]=최신(오늘), prices[-6]=5거래일 전, prices[-16]=15거래일 전"""

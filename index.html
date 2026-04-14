@@ -325,6 +325,23 @@
       border-radius: 6px; padding: 4px 8px; font-size: 0.8125rem; cursor: pointer;
     }
 
+    /* 기업 개요 */
+    .overview-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    }
+    .ov-item {
+      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      padding: 12px; text-align: center;
+    }
+    .ov-label { font-size: 0.6875rem; color: #64748b; margin-bottom: 4px; }
+    .ov-value { font-size: 0.9375rem; font-weight: 700; color: #e2e8f0; }
+    .ov-value.primary { color: #60a5fa; }
+    .ov-value.green { color: #4ade80; }
+    .ov-value.red { color: #f87171; }
+    @media (max-width: 480px) {
+      .overview-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
     /* 공시 분석기 */
     .dart-filters {
       display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;
@@ -381,9 +398,51 @@
 
   <!-- Nav Bar -->
   <nav class="nav-bar">
+    <button class="nav-item" onclick="switchPage('dashboard', this)">DASHBOARD</button>
     <button class="nav-item active" onclick="switchPage('warning', this)">투자경고 해제일 계산기</button>
     <button class="nav-item" onclick="switchPage('dart', this)">공시 분석기</button>
   </nav>
+
+  <!-- ═══════════════ DASHBOARD ═══════════════ -->
+  <div id="page-dashboard" class="page-section">
+
+    <div class="header">
+      <div class="badge">종목 정보</div>
+      <h1>DASHBOARD</h1>
+      <p>종목 검색으로 기업 개요와 재무 현황을 한눈에 확인합니다</p>
+    </div>
+
+    <div class="card">
+      <h2>🔍 종목 검색</h2>
+      <div class="form-group">
+        <label>기업명</label>
+        <div class="search-row">
+          <input type="text" id="dashCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dashCorpSearch()" />
+          <button class="search-btn" id="dashCorpSearchBtn" onclick="dashCorpSearch()">검색</button>
+        </div>
+        <div class="search-results" id="dashCorpResults"></div>
+        <div id="dashSelectedCorp" style="display:none;margin-top:8px;"></div>
+      </div>
+    </div>
+
+    <!-- 기업 개요 -->
+    <div class="card" id="overviewCard" style="display:none;">
+      <h2>🏢 기업 개요</h2>
+      <div id="overviewContent"></div>
+    </div>
+
+    <!-- 재무제표 핵심 지표 -->
+    <div class="card" id="financialCard" style="display:none;">
+      <h2>📊 재무제표 핵심 지표</h2>
+      <div id="financialMeta" style="font-size:0.8rem;color:#64748b;margin-bottom:16px;"></div>
+      <div id="financialContent"></div>
+    </div>
+
+    <div class="footnote">
+      데이터 출처: <strong>네이버 금융</strong> · <strong>금융감독원 DART</strong>
+    </div>
+
+  </div><!-- /page-dashboard -->
 
   <!-- ═══════════════ 투자경고 해제일 계산기 ═══════════════ -->
   <div id="page-warning" class="page-section active">
@@ -548,13 +607,6 @@
         </div>
       </div>
       <button class="btn" id="dartSearchBtn" onclick="dartSearch()">공시 검색</button>
-    </div>
-
-    <!-- 재무제표 핵심 지표 -->
-    <div class="card" id="financialCard" style="display:none;">
-      <h2>📊 재무제표 핵심 지표</h2>
-      <div id="financialMeta" style="font-size:0.8rem;color:#64748b;margin-bottom:16px;"></div>
-      <div id="financialContent"></div>
     </div>
 
     <div id="dartResultArea"></div>
@@ -1144,6 +1196,7 @@ function dartCorpSearch() {
   });
 }
 
+// 투자경고 페이지에서 종목 선택 시 → DART 공시 검색에 기업 연동
 async function syncDartCorp(stockName) {
   await loadDartCorps();
   const match = dartCorps.find(c => c.n === stockName);
@@ -1160,7 +1213,6 @@ function selectDartCorp(corpCode, corpName) {
   document.getElementById('dartSelectedCorp').style.display = 'block';
   document.getElementById('dartSelectedCorp').innerHTML =
     `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(corpCode)})</span>`;
-  fetchFinancial(corpCode);
 }
 
 document.getElementById('dartCorpResults').addEventListener('click', (e) => {
@@ -1170,6 +1222,70 @@ document.getElementById('dartCorpResults').addEventListener('click', (e) => {
     selectDartCorp(c.c, c.n);
   }
 });
+
+// ────────────────────────────────────────────────
+// DASHBOARD — 종목 검색 / 기업 개요 / 재무제표
+// ────────────────────────────────────────────────
+let dashSelectedStockCode = '';
+
+function dashCorpSearch() {
+  const name = document.getElementById('dashCorpName').value.trim();
+  if (!name) { alert('기업명을 입력하세요.'); return; }
+
+  const btn = document.getElementById('dashCorpSearchBtn');
+  const resultsEl = document.getElementById('dashCorpResults');
+
+  btn.disabled = true;
+  btn.textContent = '검색 중...';
+  resultsEl.innerHTML = '<div class="search-loading">기업을 검색하는 중...</div>';
+  resultsEl.classList.add('show');
+
+  loadDartCorps().then(() => {
+    const items = dartCorps.filter(c => c.n.includes(name))
+      .sort((a, b) => a.n.length - b.n.length)
+      .slice(0, 20);
+
+    if (items.length === 0) {
+      resultsEl.innerHTML = '<div class="result-empty">일치하는 기업이 없습니다.</div>';
+      btn.disabled = false;
+      btn.textContent = '검색';
+      return;
+    }
+
+    const header = `<div class="search-results-header">${items.length}개 기업 — 클릭하여 선택</div>`;
+    const rows = items.map((c, idx) => `
+      <div class="result-item" data-dash-idx="${idx}">
+        <span class="result-stock-name">${escHtml(c.n)} <span class="dart-cls-badge cls-Y">${escHtml(c.s)}</span></span>
+      </div>`).join('');
+    window._dashCorpItems = items;
+    resultsEl.innerHTML = header + rows;
+    btn.disabled = false;
+    btn.textContent = '검색';
+  }).catch(e => {
+    resultsEl.innerHTML = `<div class="result-empty">${escHtml(e.message)}</div>`;
+    btn.disabled = false;
+    btn.textContent = '검색';
+  });
+}
+
+document.getElementById('dashCorpResults').addEventListener('click', (e) => {
+  const item = e.target.closest('.result-item');
+  if (item && item.dataset.dashIdx != null && window._dashCorpItems) {
+    const c = window._dashCorpItems[item.dataset.dashIdx];
+    selectDashCorp(c.c, c.n, c.s);
+  }
+});
+
+function selectDashCorp(corpCode, corpName, stockCode) {
+  dashSelectedStockCode = stockCode || '';
+  document.getElementById('dashCorpResults').classList.remove('show');
+  document.getElementById('dashSelectedCorp').style.display = 'block';
+  document.getElementById('dashSelectedCorp').innerHTML =
+    `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(stockCode || corpCode)})</span>`;
+  // 기업 개요 + 재무제표 병렬 조회
+  fetchFinancial(corpCode);
+  if (stockCode) fetchOverview(stockCode);
+}
 
 async function dartSearch(page) {
   page = page || 1;
@@ -1214,6 +1330,43 @@ async function dartSearch(page) {
   } finally {
     btn.disabled = false;
     btn.textContent = '공시 검색';
+  }
+}
+
+// ────────────────────────────────────────────────
+// 기업 개요
+// ────────────────────────────────────────────────
+async function fetchOverview(stockCode) {
+  const card = document.getElementById('overviewCard');
+  const content = document.getElementById('overviewContent');
+  card.style.display = 'block';
+  content.innerHTML = '<div class="search-loading">기업 개요를 불러오는 중...</div>';
+
+  try {
+    const resp = await fetch(`/api/stock-overview?code=${stockCode}`);
+    const d = await resp.json();
+    if (d.error) { content.innerHTML = `<div class="dart-empty">${escHtml(d.error)}</div>`; return; }
+
+    function item(label, value, cls) {
+      return `<div class="ov-item"><div class="ov-label">${label}</div><div class="ov-value${cls ? ' ' + cls : ''}">${value}</div></div>`;
+    }
+
+    content.innerHTML = `<div class="overview-grid">
+      ${item('시가총액', d.marketCap, 'primary')}
+      ${item('현재가', d.closePrice)}
+      ${item('PER', d.per)}
+      ${item('PBR', d.pbr)}
+      ${item('EPS', d.eps)}
+      ${item('BPS', d.bps)}
+      ${item('52주 최고', d.high52w, 'red')}
+      ${item('52주 최저', d.low52w, 'green')}
+      ${item('외인소진율', d.foreignRate)}
+      ${item('배당수익률', d.dividendYield)}
+      ${item('거래량', d.volume)}
+      ${item('거래대금', d.tradingValue)}
+    </div>`;
+  } catch (e) {
+    content.innerHTML = `<div class="dart-empty">${escHtml(e.message)}</div>`;
   }
 }
 
