@@ -8,6 +8,7 @@ import http.server
 import socketserver
 import os
 import json
+import re
 import urllib.parse
 
 from lib.krx import search_kind
@@ -62,8 +63,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         if parsed.path == '/api/stock-price':
             code = qs.get('code', [''])[0].strip()
-            if not code:
-                self.send_json({'error': '종목코드를 입력하세요.'}, 400); return
+            if not re.match(r'^\d{6}$', code):
+                self.send_json({'error': '잘못된 종목코드 형식'}, 400); return
             try:
                 prices = fetch_prices(code, count=20)
                 thresholds = calc_thresholds(prices)
@@ -79,7 +80,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     bgn_de=qs.get('bgn_de', [''])[0].strip(),
                     end_de=qs.get('end_de', [''])[0].strip(),
                     page_no=int(qs.get('page_no', ['1'])[0]),
-                    page_count=int(qs.get('page_count', ['20'])[0]),
+                    page_count=min(int(qs.get('page_count', ['20'])[0]), 100),
                     pblntf_ty=qs.get('pblntf_ty', [''])[0].strip(),
                 )
                 self.send_json(data)
@@ -101,9 +102,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         super().do_GET()
 
+    def end_headers(self):
+        # 정적 JSON 데이터에 캐시 헤더 추가
+        path = urllib.parse.urlparse(self.path).path
+        if path.startswith('/data/') and path.endswith('.json'):
+            self.send_header('Cache-Control', 'public, max-age=3600')
+        super().end_headers()
+
+
+class ThreadedServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+
 
 if __name__ == '__main__':
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(('', PORT), Handler) as httpd:
+    with ThreadedServer(('', PORT), Handler) as httpd:
         print(f'✅ 서버 실행: http://localhost:{PORT}')
         httpd.serve_forever()

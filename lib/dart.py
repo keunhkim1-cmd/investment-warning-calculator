@@ -1,31 +1,45 @@
 """DART Open API — 공시 검색 & 재무제표 조회"""
 import urllib.request, urllib.parse, json, os
 
-DART_API_KEY = os.environ.get('DART_API_KEY', '')
+from lib.retry import retry
+
 DART_BASE = 'https://opendart.fss.or.kr/api'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
 
 
+def _get_api_key() -> str:
+    key = os.environ.get('DART_API_KEY', '')
+    if not key:
+        raise ValueError('DART_API_KEY 환경변수가 설정되지 않았습니다.')
+    return key
+
+
 def fetch_financial(corp_code: str, bsns_year: str, reprt_code: str = '11011') -> dict:
     """재무제표 주요계정 조회. reprt_code: 11011=사업보고서, 11014=반기, 11012=1분기, 11013=3분기"""
+    api_key = _get_api_key()
     params = urllib.parse.urlencode({
-        'crtfc_key': DART_API_KEY,
+        'crtfc_key': api_key,
         'corp_code': corp_code,
         'bsns_year': bsns_year,
         'reprt_code': reprt_code,
     })
     url = f'{DART_BASE}/fnlttSinglAcnt.json?{params}'
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=10) as r:
-        return json.loads(r.read().decode('utf-8'))
+
+    def _call():
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read().decode('utf-8'))
+
+    return retry(_call)
 
 
 def search_disclosure(corp_code: str = '', bgn_de: str = '', end_de: str = '',
                       page_no: int = 1, page_count: int = 20,
                       pblntf_ty: str = '') -> dict:
     """공시 목록 검색 (corp_code 기반)"""
+    api_key = _get_api_key()
     params = {
-        'crtfc_key': DART_API_KEY,
+        'crtfc_key': api_key,
         'page_no': str(page_no),
         'page_count': str(page_count),
     }
@@ -39,6 +53,10 @@ def search_disclosure(corp_code: str = '', bgn_de: str = '', end_de: str = '',
         params['pblntf_ty'] = pblntf_ty
 
     url = f'{DART_BASE}/list.json?{urllib.parse.urlencode(params)}'
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=10) as r:
-        return json.loads(r.read().decode('utf-8'))
+
+    def _call():
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read().decode('utf-8'))
+
+    return retry(_call)

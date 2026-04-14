@@ -1,8 +1,10 @@
 from http.server import BaseHTTPRequestHandler
-import urllib.parse, json, sys, os
+import urllib.parse, json, sys, os, traceback
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib.dart import search_disclosure
+
+ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', 'https://investment-warning-calculator.vercel.app')
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -20,15 +22,16 @@ class handler(BaseHTTPRequestHandler):
                 bgn_de=bgn_de,
                 end_de=end_de,
                 page_no=int(page_no),
-                page_count=int(page_count),
+                page_count=min(int(page_count), 100),
                 pblntf_ty=pblntf_ty,
             )
             body = json.dumps(data, ensure_ascii=False).encode()
             self.send_response(200)
         except Exception as e:
-            body = json.dumps({'error': str(e)}, ensure_ascii=False).encode()
+            print(f'Error: {traceback.format_exc()}')
+            body = json.dumps({'error': '서버 오류가 발생했습니다.'}, ensure_ascii=False).encode()
             self.send_response(500)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Origin', ALLOWED_ORIGIN)
         self.end_headers()
         self.wfile.write(body)

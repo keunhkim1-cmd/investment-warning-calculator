@@ -3,7 +3,8 @@
 종목명을 보내면 투자경고/위험 지정일, 해제 예상일, 기준가를 알려줍니다.
 """
 from http.server import BaseHTTPRequestHandler
-import json, os, urllib.request, re, sys
+import json, os, urllib.request, re, sys, unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,6 +14,7 @@ from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresho
 
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TG_API    = f'https://api.telegram.org/bot{BOT_TOKEN}'
+WEBHOOK_SECRET = os.environ.get('TELEGRAM_WEBHOOK_SECRET', '')
 
 # ── 메시지 포맷 ──────────────────────────────────────────────
 def sd(d: date) -> str:
@@ -20,20 +22,11 @@ def sd(d: date) -> str:
     return f'{d.month}/{d.day}'
 
 def vlen(s: str) -> int:
-    """모바일 모노스페이스 시각 너비 (한글·원문자·이모지=2, ASCII=1)"""
+    """모바일 모노스페이스 시각 너비 (전각=2, 반각=1)"""
     w = 0
     for c in s:
-        cp = ord(c)
-        if (0xAC00 <= cp <= 0xD7AF or
-            0x1100 <= cp <= 0x11FF or
-            0x3000 <= cp <= 0x9FFF or
-            0xF900 <= cp <= 0xFAFF or
-            0x2460 <= cp <= 0x24FF or
-            0x2700 <= cp <= 0x27BF or
-            cp >= 0x1F000):
-            w += 2
-        else:
-            w += 1
+        eaw = unicodedata.east_asian_width(c)
+        w += 2 if eaw in ('W', 'F') else 1
     return w
 
 def vpad_l(s: str, width: int) -> str:
@@ -133,8 +126,8 @@ def do_search(chat_id: int, query: str):
 
     try:
         tg_send_plain(chat_id, f'🔍 "{query}" 검색 중...')
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'검색 중 메시지 전송 실패: {e}')
 
     try:
         results = search_kind(query)
@@ -146,22 +139,27 @@ def do_search(chat_id: int, query: str):
         tg_send_plain(chat_id, f'"{query}" — 현재 투자경고가 아님.')
         return
 
-    for warn in results[:3]:
-        stock_name = warn['stockName']
-        thresholds = None
+    # 주가 조회를 병렬 실행하여 응답 속도 개선
+    def _fetch_thresholds(warn):
         try:
-            codes = naver_stock_code(stock_name)
+            codes = naver_stock_code(warn['stockName'])
             if codes:
                 prices = fetch_prices(codes[0]['code'], count=20)
-                thresholds = calc_thresholds(prices)
+                return calc_thresholds(prices)
         except Exception as e:
             print(f'주가 조회 실패: {e}')
+        return None
 
+    targets = results[:3]
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        threshold_list = list(pool.map(_fetch_thresholds, targets))
+
+    for warn, thresholds in zip(targets, threshold_list):
         try:
-            tg_send(chat_id, build_message(stock_name, warn, thresholds))
+            tg_send(chat_id, build_message(warn['stockName'], warn, thresholds))
         except Exception:
             try:
-                tg_send_plain(chat_id, build_message(stock_name, warn, thresholds))
+                tg_send_plain(chat_id, build_message(warn['stockName'], warn, thresholds))
             except Exception as e:
                 tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {e}')
 
@@ -224,6 +222,12 @@ def process_update(update: dict):
 # ── Vercel Handler ───────────────────────────────────────────
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if WEBHOOK_SECRET:
+            token = self.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+            if token != WEBHOOK_SECRET:
+                self.send_response(403)
+                self.end_headers()
+                return
         length = int(self.headers.get('Content-Length', 0))
         body   = self.rfile.read(length)
         try:

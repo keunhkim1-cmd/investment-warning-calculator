@@ -8,7 +8,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
       background: #0f172a;
       color: #e2e8f0;
       min-height: 100vh;
@@ -55,6 +56,7 @@
     .card {
       background: #1e293b; border: 1px solid #334155;
       border-radius: 16px; padding: 28px; margin-bottom: 16px;
+      contain: content;
     }
     .card h2 {
       font-size: 1rem; font-weight: 600; color: #cbd5e1;
@@ -124,6 +126,7 @@
       padding: 16px; text-align: center;
       font-size: 0.875rem; color: #64748b;
       animation: pulse 1.2s ease-in-out infinite;
+      will-change: opacity;
     }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
@@ -254,6 +257,7 @@
     .price-loading {
       text-align: center; padding: 24px; font-size: 0.875rem; color: #64748b;
       animation: pulse 1.2s ease-in-out infinite;
+      will-change: opacity;
     }
     .price-error { text-align: center; padding: 20px; font-size: 0.875rem; color: #f87171; }
 
@@ -278,7 +282,7 @@
     .ps-status.keep    { background: #450a0a33; border: 1px solid #ef444444; color: #f87171; }
     .ps-status.release { background: #14532d33; border: 1px solid #16a34a44; color: #4ade80; }
     .ps-loading { grid-column: 1/-1; text-align: center; font-size: 0.8rem; color: #475569;
-      animation: pulse 1.2s ease-in-out infinite; padding: 4px 0; }
+      animation: pulse 1.2s ease-in-out infinite; will-change: opacity; padding: 4px 0; }
 
     /* Info */
     .info-card {
@@ -377,8 +381,8 @@
 
   <!-- Nav Bar -->
   <nav class="nav-bar">
-    <button class="nav-item active" onclick="switchPage('warning')">투자경고 해제일 계산기</button>
-    <button class="nav-item" onclick="switchPage('dart')">공시 분석기</button>
+    <button class="nav-item active" onclick="switchPage('warning', this)">투자경고 해제일 계산기</button>
+    <button class="nav-item" onclick="switchPage('dart', this)">공시 분석기</button>
   </nav>
 
   <!-- ═══════════════ 투자경고 해제일 계산기 ═══════════════ -->
@@ -566,13 +570,22 @@
 
 <script>
 // ────────────────────────────────────────────────
+// XSS 방어 유틸
+// ────────────────────────────────────────────────
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ────────────────────────────────────────────────
 // 페이지 전환
 // ────────────────────────────────────────────────
-function switchPage(page) {
-  document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+function switchPage(page, el) {
+  document.querySelectorAll('.page-section').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  event.target.classList.add('active');
+  el.classList.add('active');
 }
 
 // ────────────────────────────────────────────────
@@ -619,7 +632,7 @@ async function doSearch() {
     const data = await resp.json();
 
     if (data.error) {
-      resultsEl.innerHTML = `<div class="result-empty">⚠️ ${data.error}</div>`;
+      resultsEl.innerHTML = `<div class="result-empty">⚠️ ${escHtml(data.error)}</div>`;
       return;
     }
 
@@ -627,7 +640,7 @@ async function doSearch() {
     if (results.length === 0) {
       resultsEl.innerHTML = `
         <div class="result-empty">
-          "${query}" 종목의 투자경고/위험 지정 이력이 없습니다.<br/>
+          "${escHtml(query)}" 종목의 투자경고/위험 지정 이력이 없습니다.<br/>
           <small style="color:#334155">최근 1년 이내 지정 이력이 없거나 종목명을 확인해주세요.</small>
         </div>`;
       return;
@@ -641,33 +654,43 @@ async function doSearch() {
 
     renderSearchResults(results);
   } catch (e) {
-    resultsEl.innerHTML = `<div class="result-empty">⚠️ 서버 연결 오류: ${e.message}</div>`;
+    resultsEl.innerHTML = `<div class="result-empty">⚠️ 서버 연결 오류: ${escHtml(e.message)}</div>`;
   } finally {
     btn.disabled = false;
     btn.textContent = 'KRX 조회';
   }
 }
 
+let _searchResults = [];
+
 function renderSearchResults(results) {
+  _searchResults = results;
   const resultsEl = document.getElementById('searchResults');
   const levelClass = { '투자경고': 'level-warning', '투자위험': 'level-risk', '투자주의': 'level-attention' };
 
   const header = `<div class="search-results-header">${results.length}건의 지정 이력 — 항목을 클릭하면 자동 입력됩니다</div>`;
 
-  const items = results.map(r => {
+  const items = results.map((r, idx) => {
     const lc = levelClass[r.level] || 'level-warning';
     return `
-      <div class="result-item" onclick="selectResult(${JSON.stringify(r).replace(/"/g, '&quot;')})">
+      <div class="result-item" data-idx="${idx}">
         <div class="result-item-left">
-          <span class="result-stock-name">${r.stockName || '—'}</span>
-          <span class="result-level-badge ${lc}">${r.level}</span>
+          <span class="result-stock-name">${escHtml(r.stockName || '—')}</span>
+          <span class="result-level-badge ${lc}">${escHtml(r.level)}</span>
         </div>
-        <div class="result-date">${r.designationDate}</div>
+        <div class="result-date">${escHtml(r.designationDate)}</div>
       </div>`;
   }).join('');
 
   resultsEl.innerHTML = header + items;
 }
+
+document.getElementById('searchResults').addEventListener('click', (e) => {
+  const item = e.target.closest('.result-item');
+  if (item && item.dataset.idx != null) {
+    selectResult(_searchResults[item.dataset.idx]);
+  }
+});
 
 function selectResult(r) {
   document.getElementById('stockName').value = r.stockName || document.getElementById('searchInput').value;
@@ -677,10 +700,8 @@ function selectResult(r) {
 
   calculate();
 
-  // 기준가 조회 (종목명으로 코드 검색 후 가격 fetch)
+  // 기준가 조회와 공시 연동을 병렬 실행
   fetchPriceThresholds(r.stockName);
-
-  // 공시 분석기에 동일 종목 자동 연동
   syncDartCorp(r.stockName);
 }
 
@@ -708,7 +729,7 @@ async function fetchPriceThresholds(stockName) {
     const codeResp = await fetch(`/api/stock-code?name=${encodeURIComponent(stockName)}`);
     const codeData = await codeResp.json();
     if (codeData.error || !codeData.items || codeData.items.length === 0) {
-      content.innerHTML = `<div class="price-error">종목코드를 찾을 수 없습니다: ${stockName}</div>`;
+      content.innerHTML = `<div class="price-error">종목코드를 찾을 수 없습니다: ${escHtml(stockName)}</div>`;
       return;
     }
     const item = codeData.items[0];
@@ -718,13 +739,13 @@ async function fetchPriceThresholds(stockName) {
     const priceResp = await fetch(`/api/stock-price?code=${code}`);
     const priceData = await priceResp.json();
     if (priceData.error) {
-      content.innerHTML = `<div class="price-error">⚠️ ${priceData.error}</div>`;
+      content.innerHTML = `<div class="price-error">⚠️ ${escHtml(priceData.error)}</div>`;
       return;
     }
 
     const t = priceData.thresholds;
     if (t.error) {
-      content.innerHTML = `<div class="price-error">⚠️ ${t.error}</div>`;
+      content.innerHTML = `<div class="price-error">⚠️ ${escHtml(t.error)}</div>`;
       return;
     }
 
@@ -732,7 +753,7 @@ async function fetchPriceThresholds(stockName) {
     renderThresholds(t);
 
   } catch (e) {
-    content.innerHTML = `<div class="price-error">⚠️ 가격 조회 오류: ${e.message}</div>`;
+    content.innerHTML = `<div class="price-error">⚠️ 가격 조회 오류: ${escHtml(e.message)}</div>`;
   }
 }
 
@@ -847,43 +868,22 @@ function renderThresholds(t) {
 }
 
 // ────────────────────────────────────────────────
-// 공휴일 (2023~2027)
+// 공휴일 (data/holidays.json 단일 소스)
 // ────────────────────────────────────────────────
-const HOLIDAYS = new Set([
-  // 2023
-  '2023-01-01','2023-01-21','2023-01-22','2023-01-23','2023-01-24',
-  '2023-03-01','2023-05-05','2023-05-27','2023-06-06','2023-08-15',
-  '2023-09-28','2023-09-29','2023-09-30','2023-10-02','2023-10-03','2023-10-09',
-  '2023-12-25',
-  // 2024
-  '2024-01-01','2024-02-09','2024-02-10','2024-02-11','2024-02-12',
-  '2024-03-01','2024-04-10',
-  '2024-05-01','2024-05-05','2024-05-06','2024-05-15',
-  '2024-06-06','2024-08-15',
-  '2024-09-16','2024-09-17','2024-09-18',
-  '2024-10-03','2024-10-09','2024-12-25',
-  // 2025
-  '2025-01-01','2025-01-28','2025-01-29','2025-01-30',
-  '2025-03-01','2025-03-03',
-  '2025-05-01','2025-05-05','2025-05-06',
-  '2025-06-03','2025-06-06','2025-08-15',
-  '2025-10-03','2025-10-05','2025-10-06','2025-10-07','2025-10-08','2025-10-09',
-  '2025-12-25',
-  // 2026
-  '2026-01-01','2026-02-16','2026-02-17','2026-02-18','2026-02-19',
-  '2026-03-01','2026-03-02',
-  '2026-05-01','2026-05-05','2026-05-25',
-  '2026-06-06','2026-08-17',
-  '2026-09-24','2026-09-25',
-  '2026-10-03','2026-10-05','2026-10-09','2026-12-25',
-  // 2027
-  '2027-01-01','2027-02-06','2027-02-07','2027-02-08','2027-02-09',
-  '2027-03-01',
-  '2027-05-05','2027-05-13','2027-06-06','2027-08-16',
-  '2027-10-03','2027-10-04','2027-10-05','2027-10-09','2027-12-25',
-]);
+let HOLIDAYS = new Set();
+const MAX_HOLIDAY_YEAR = 2029;
 
-function toDateStr(d) { return d.toISOString().slice(0, 10); }
+const holidaysReady = fetch('/data/holidays.json')
+  .then(r => r.json())
+  .then(arr => { HOLIDAYS = new Set(arr); })
+  .catch(e => console.warn('공휴일 데이터 로드 실패, 주말만 판정합니다:', e));
+
+function toDateStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 function isHoliday(d) { return HOLIDAYS.has(toDateStr(d)); }
 function isWeekend(d) { const day = d.getDay(); return day === 0 || day === 6; }
 function isTradingDay(d) { return !isWeekend(d) && !isHoliday(d); }
@@ -913,7 +913,7 @@ function formatDate(d) {
 // ────────────────────────────────────────────────
 // 이벤트
 // ────────────────────────────────────────────────
-document.getElementById('designationDate').value = new Date().toISOString().slice(0, 10);
+document.getElementById('designationDate').value = toDateStr(new Date());
 
 // 외부 클릭 시 검색 결과 닫기
 document.addEventListener('click', (e) => {
@@ -925,7 +925,8 @@ document.addEventListener('click', (e) => {
 // ────────────────────────────────────────────────
 // 계산
 // ────────────────────────────────────────────────
-function calculate() {
+async function calculate() {
+  await holidaysReady;
   const stockName        = document.getElementById('stockName').value.trim();
   const designationDateStr = document.getElementById('designationDate').value;
   const warningType      = document.getElementById('warningType').value;
@@ -1021,10 +1022,14 @@ let dartSelectedCorpCode = '';
 let dartSelectedCorpName = '';
 let dartCorps = []; // 기업코드 캐시
 
+// 페이지 로드 시 프리로드 시작 (검색 시 대기 없도록)
+const dartCorpsReady = fetch('/data/dart-corps.json')
+  .then(r => r.json())
+  .then(data => { dartCorps = data; })
+  .catch(e => console.warn('기업코드 로드 실패:', e));
+
 async function loadDartCorps() {
-  if (dartCorps.length) return;
-  const resp = await fetch('/data/dart-corps.json');
-  dartCorps = await resp.json();
+  await dartCorpsReady;
 }
 
 function dartCorpSearch() {
@@ -1052,15 +1057,16 @@ function dartCorpSearch() {
     }
 
     const header = `<div class="search-results-header">${items.length}개 기업 — 클릭하여 선택</div>`;
-    const rows = items.map(c => `
-      <div class="result-item" onclick="selectDartCorp('${c.c}', '${c.n.replace(/'/g,"\\'")}')">
-        <span class="result-stock-name">${c.n} <span class="dart-cls-badge cls-Y">${c.s}</span></span>
+    const rows = items.map((c, idx) => `
+      <div class="result-item" data-dart-idx="${idx}">
+        <span class="result-stock-name">${escHtml(c.n)} <span class="dart-cls-badge cls-Y">${escHtml(c.s)}</span></span>
       </div>`).join('');
+    window._dartCorpItems = items;
     resultsEl.innerHTML = header + rows;
     btn.disabled = false;
     btn.textContent = '기업 검색';
   }).catch(e => {
-    resultsEl.innerHTML = `<div class="result-empty">${e.message}</div>`;
+    resultsEl.innerHTML = `<div class="result-empty">${escHtml(e.message)}</div>`;
     btn.disabled = false;
     btn.textContent = '기업 검색';
   });
@@ -1081,9 +1087,17 @@ function selectDartCorp(corpCode, corpName) {
   document.getElementById('dartCorpResults').classList.remove('show');
   document.getElementById('dartSelectedCorp').style.display = 'block';
   document.getElementById('dartSelectedCorp').innerHTML =
-    `<span class="auto-filled-tag">선택: <strong>${corpName}</strong> (${corpCode})</span>`;
+    `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(corpCode)})</span>`;
   fetchFinancial(corpCode);
 }
+
+document.getElementById('dartCorpResults').addEventListener('click', (e) => {
+  const item = e.target.closest('.result-item');
+  if (item && item.dataset.dartIdx != null && window._dartCorpItems) {
+    const c = window._dartCorpItems[item.dataset.dartIdx];
+    selectDartCorp(c.c, c.n);
+  }
+});
 
 async function dartSearch(page) {
   page = page || 1;
@@ -1113,18 +1127,18 @@ async function dartSearch(page) {
     const data = await resp.json();
 
     if (data.error) {
-      area.innerHTML = `<div class="card"><div class="dart-empty">${data.error}</div></div>`;
+      area.innerHTML = `<div class="card"><div class="dart-empty">${escHtml(data.error)}</div></div>`;
       return;
     }
     if (data.status !== '000') {
       const msg = data.status === '013' ? '검색 결과가 없습니다.' : (data.message || '조회 실패');
-      area.innerHTML = `<div class="card"><div class="dart-empty">${msg}</div></div>`;
+      area.innerHTML = `<div class="card"><div class="dart-empty">${escHtml(msg)}</div></div>`;
       return;
     }
 
     renderDartResults(data);
   } catch (e) {
-    area.innerHTML = `<div class="card"><div class="dart-empty">${e.message}</div></div>`;
+    area.innerHTML = `<div class="card"><div class="dart-empty">${escHtml(e.message)}</div></div>`;
   } finally {
     btn.disabled = false;
     btn.textContent = '공시 검색';
@@ -1147,13 +1161,19 @@ async function fetchFinancial(corpCode, year) {
   meta.textContent = '';
 
   try {
-    const resp = await fetch(`/api/dart-financial?corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011`);
+    // 당해/전년 두 해를 병렬 요청하여 대기 시간 단축
+    const prevYear = String(Number(year) - 1);
+    const [resp, resp2] = await Promise.all([
+      fetch(`/api/dart-financial?corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011`),
+      fetch(`/api/dart-financial?corp_code=${corpCode}&bsns_year=${prevYear}&reprt_code=11011`),
+    ]);
     const data = await resp.json();
 
+    if (data.status === '000') {
+      renderFinancial(data, corpCode);
+      return;
+    }
     if (data.status === '013') {
-      // 해당 연도 데이터 없으면 전년도 시도
-      const prevYear = String(Number(year) - 1);
-      const resp2 = await fetch(`/api/dart-financial?corp_code=${corpCode}&bsns_year=${prevYear}&reprt_code=11011`);
       const data2 = await resp2.json();
       if (data2.status !== '000') {
         content.innerHTML = `<div class="dart-empty">재무제표 데이터가 없습니다.</div>`;
@@ -1162,13 +1182,9 @@ async function fetchFinancial(corpCode, year) {
       renderFinancial(data2, corpCode);
       return;
     }
-    if (data.status !== '000') {
-      content.innerHTML = `<div class="dart-empty">${data.message || '조회 실패'}</div>`;
-      return;
-    }
-    renderFinancial(data, corpCode);
+    content.innerHTML = `<div class="dart-empty">${escHtml(data.message || '조회 실패')}</div>`;
   } catch (e) {
-    content.innerHTML = `<div class="dart-empty">${e.message}</div>`;
+    content.innerHTML = `<div class="dart-empty">${escHtml(e.message)}</div>`;
   }
 }
 
@@ -1299,12 +1315,12 @@ function renderDartResults(data) {
       <a href="${dartUrl}" target="_blank" rel="noopener" class="dart-item" style="text-decoration:none;">
         <div class="dart-item-header">
           <div>
-            <span class="dart-corp">${item.corp_name}</span>
-            <span class="dart-cls-badge cls-${cls}">${clsName}</span>
+            <span class="dart-corp">${escHtml(item.corp_name)}</span>
+            <span class="dart-cls-badge cls-${escHtml(cls)}">${escHtml(clsName)}</span>
           </div>
-          <span class="dart-date">${item.rcept_dt.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')}</span>
+          <span class="dart-date">${escHtml(item.rcept_dt.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'))}</span>
         </div>
-        <div class="dart-title">${item.report_nm}</div>
+        <div class="dart-title">${escHtml(item.report_nm)}</div>
       </a>`;
   }).join('');
 

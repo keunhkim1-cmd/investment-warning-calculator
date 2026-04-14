@@ -2,6 +2,32 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
+  "headers": [
+    {
+      "source": "/data/(.*).json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400" }
+      ]
+    },
+    {
+      "source": "/api/stock-code",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=300" }
+      ]
+    },
+    {
+      "source": "/api/stock-price",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=120, stale-while-revalidate=60" }
+      ]
+    },
+    {
+      "source": "/api/warn-search",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=300" }
+      ]
+    }
+  ],
   "functions": {
     "api/telegram.py": { "maxDuration": 60 },
     "api/warn-search.py": { "maxDuration": 30 },

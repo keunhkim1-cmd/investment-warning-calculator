@@ -1,11 +1,17 @@
 """
 진단용 엔드포인트 — 배포 후 /api/debug 를 브라우저에서 열어 확인
+DEBUG_ENABLED=true 환경변수가 설정된 경우에만 동작
 """
 from http.server import BaseHTTPRequestHandler
 import json, os, urllib.request
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if os.environ.get('DEBUG_ENABLED', '') != 'true':
+            self.send_response(404)
+            self.end_headers()
+            return
+
         token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
         result = {
             'token_set': bool(token),
