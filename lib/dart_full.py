@@ -1,0 +1,47 @@
+"""DART 전체 재무제표 (fnlttSinglAcntAll) 어댑터"""
+import urllib.request, urllib.parse, json, os
+
+from lib.retry import retry
+from lib.cache import TTLCache
+
+DART_BASE = 'https://opendart.fss.or.kr/api'
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+
+# 6시간 캐시 — 사업보고서는 자주 바뀌지 않음
+_cache = TTLCache(ttl=6 * 3600)
+
+
+def _api_key() -> str:
+    key = os.environ.get('DART_API_KEY', '')
+    if not key:
+        raise ValueError('DART_API_KEY 환경변수가 설정되지 않았습니다.')
+    return key
+
+
+def fetch_all(corp_code: str, bsns_year: str, reprt_code: str, fs_div: str = 'CFS') -> dict:
+    """전체 재무제표 조회.
+    reprt_code: 11011=사업보고서, 11014=반기, 11012=1Q, 11013=3Q
+    fs_div: CFS=연결, OFS=별도
+    """
+    key = f'all:{corp_code}:{bsns_year}:{reprt_code}:{fs_div}'
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
+
+    params = urllib.parse.urlencode({
+        'crtfc_key': _api_key(),
+        'corp_code': corp_code,
+        'bsns_year': bsns_year,
+        'reprt_code': reprt_code,
+        'fs_div': fs_div,
+    })
+    url = f'{DART_BASE}/fnlttSinglAcntAll.json?{params}'
+
+    def _call():
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return json.loads(r.read().decode('utf-8'))
+
+    data = retry(_call)
+    _cache.set(key, data)
+    return data

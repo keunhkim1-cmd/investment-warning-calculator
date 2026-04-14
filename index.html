@@ -594,6 +594,21 @@
         <div id="financialContent"></div>
       </div>
 
+      <!-- 재무 모델 (Model 시트) -->
+      <div class="card" id="modelCard" style="display:none;">
+        <h2>재무 모델 <span style="font-size:12px;color:rgba(0,0,0,0.48);font-weight:400;letter-spacing:-0.12px;">DART 사업·분기보고서</span></h2>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+          <label style="font-size:13px;color:rgba(0,0,0,0.6);">회계 구분</label>
+          <select id="modelFsDiv" onchange="fetchModel()" style="padding:6px 10px;border-radius:8px;">
+            <option value="CFS">연결</option>
+            <option value="OFS">별도</option>
+          </select>
+          <span id="modelMeta" style="font-size:12px;color:rgba(0,0,0,0.48);font-family:var(--mono);"></span>
+        </div>
+        <div id="modelContent" style="overflow-x:auto;"></div>
+        <div id="modelFootnote" style="font-size:11px;color:rgba(0,0,0,0.48);margin-top:10px;line-height:1.6;"></div>
+      </div>
+
       <div class="footnote">
         데이터 출처: <strong>네이버 금융</strong> · <strong>금융감독원 DART</strong>
       </div>
@@ -1452,9 +1467,139 @@ function selectDashCorp(corpCode, corpName, stockCode) {
   document.getElementById('dashSelectedCorp').style.display = 'block';
   document.getElementById('dashSelectedCorp').innerHTML =
     `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(stockCode || corpCode)})</span>`;
-  // 기업 개요 + 재무제표 병렬 조회
+  // 기업 개요 + 재무제표 + 재무 모델 병렬 조회
   fetchFinancial(corpCode);
+  fetchModel(corpCode);
   if (stockCode) fetchOverview(stockCode);
+}
+
+let _modelCorpCode = '';
+
+async function fetchModel(corpCode) {
+  if (corpCode) _modelCorpCode = corpCode;
+  if (!_modelCorpCode) return;
+  const fsDiv = document.getElementById('modelFsDiv').value;
+  const card = document.getElementById('modelCard');
+  const content = document.getElementById('modelContent');
+  const meta = document.getElementById('modelMeta');
+  card.style.display = 'block';
+  content.innerHTML = '<div class="search-loading">재무 모델을 구성하는 중... (DART 다년·분기 데이터 수집)</div>';
+  meta.textContent = '';
+  try {
+    const resp = await fetch(`/api/financial-model?corp_code=${_modelCorpCode}&fs_div=${fsDiv}&years=5`);
+    const data = await resp.json();
+    if (data.error) { content.innerHTML = `<div class="dart-empty">${escHtml(data.error)}</div>`; return; }
+    renderModel(data);
+  } catch (e) {
+    content.innerHTML = `<div class="dart-empty">${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderModel(data) {
+  const meta = document.getElementById('modelMeta');
+  const content = document.getElementById('modelContent');
+  const foot = document.getElementById('modelFootnote');
+
+  const years = data.meta.years; // ['2020',...]
+  const quarters = [];
+  // 최근 2년치 분기만 표시 (1Q23~4Q24 형식)
+  const lastTwo = years.slice(-2);
+  for (const y of lastTwo) for (const q of ['1Q','2Q','3Q','4Q']) quarters.push(`${q}${y.slice(2)}`);
+
+  meta.textContent = `${data.meta.fs_div === 'CFS' ? '연결' : '별도'} · ${years[0]}~${years[years.length-1]} 연간 + 최근 ${lastTwo.length}년 분기`;
+
+  // 십억원 단위 변환 (원 → /1e9)
+  function fmtBn(v) {
+    if (v === null || v === undefined) return '<span style="color:rgba(0,0,0,0.3);">—</span>';
+    const n = v / 1e9;
+    return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+  function fmtPct(v) {
+    if (v === null || v === undefined) return '<span style="color:rgba(0,0,0,0.3);">—</span>';
+    const cls = v < 0 ? 'fin-negative' : '';
+    return `<span class="${cls}">${(v * 100).toFixed(1)}%</span>`;
+  }
+
+  // Model 시트 행 정의: [라벨, 키, 포맷터, 강조여부]
+  const ROWS = [
+    ['__SECTION__', '손익계산서', null],
+    ['매출액', 'revenue', fmtBn, true],
+    ['  YoY (%)', 'revenue_yoy', fmtPct],
+    ['매출원가', 'cogs', fmtBn],
+    ['매출총이익', 'gross_profit', fmtBn],
+    ['  GPM (%)', 'gpm', fmtPct],
+    ['판매비와관리비', 'sga', fmtBn],
+    ['영업이익', 'operating_income', fmtBn, true],
+    ['  OPM (%)', 'opm', fmtPct],
+    ['금융수익', 'finance_income', fmtBn],
+    ['금융비용', 'finance_cost', fmtBn],
+    ['세전이익', 'pretax_income', fmtBn],
+    ['법인세', 'income_tax', fmtBn],
+    ['  Tax Rate (%)', 'tax_rate', fmtPct],
+    ['당기순이익', 'net_income', fmtBn, true],
+    ['지배주주순이익', 'net_income_owner', fmtBn],
+    ['  NPM (%)', 'npm', fmtPct],
+
+    ['__SECTION__', '재무상태표', null],
+    ['순현금', 'net_cash', fmtBn],
+    ['차입금', 'total_borrowings', fmtBn],
+    ['매출채권', 'trade_receivables', fmtBn],
+    ['재고자산', 'inventories', fmtBn],
+    ['매입채무', 'trade_payables', fmtBn],
+    ['유형자산', 'ppe', fmtBn],
+    ['무형자산', 'intangible', fmtBn],
+    ['영업권', 'goodwill', fmtBn],
+    ['자본총계', 'total_equity', fmtBn],
+    ['자본잉여금', 'capital_surplus', fmtBn],
+    ['이익잉여금', 'retained_earnings', fmtBn],
+
+    ['__SECTION__', '현금흐름표', null],
+    ['영업활동현금흐름', 'cfo', fmtBn, true],
+    ['  감가상각비', 'depreciation', fmtBn],
+    ['  무형자산상각비', 'amortization', fmtBn],
+    ['투자활동현금흐름', 'cfi', fmtBn],
+    ['  CAPEX', 'capex', fmtBn],
+    ['재무활동현금흐름', 'cff', fmtBn],
+  ];
+
+  function cellsFor(key, fmt) {
+    const annualCells = years.map(y => `<td>${fmt(data.annual[y]?.[key] ?? null)}</td>`).join('');
+    const qCells = quarters.map(q => `<td>${fmt(data.quarterly[q]?.[key] ?? null)}</td>`).join('');
+    return annualCells + qCells;
+  }
+
+  const colCount = years.length + quarters.length + 1;
+
+  let body = '';
+  for (const row of ROWS) {
+    if (row[0] === '__SECTION__') {
+      body += `<tr><td colspan="${colCount}" style="background:rgba(0,0,0,0.04);font-weight:700;padding:8px 12px;">${escHtml(row[1])}</td></tr>`;
+      continue;
+    }
+    const [label, key, fmt, bold] = row;
+    const labelStyle = bold ? 'font-weight:700;' : '';
+    body += `<tr><td class="fin-label" style="${labelStyle}">${escHtml(label)}</td>${cellsFor(key, fmt)}</tr>`;
+  }
+
+  const headAnnual = `<th colspan="${years.length}" style="text-align:center;background:rgba(0,113,227,0.06);">Annual</th>`;
+  const headQ = `<th colspan="${quarters.length}" style="text-align:center;background:rgba(0,113,227,0.06);">Quarterly</th>`;
+  const subHeadAnnual = years.map(y => `<th>${y}</th>`).join('');
+  const subHeadQ = quarters.map(q => `<th>${q}</th>`).join('');
+
+  content.innerHTML = `
+    <table class="fin-table" style="min-width:1100px;">
+      <thead>
+        <tr><th rowspan="2">(십억원, %)</th>${headAnnual}${headQ}</tr>
+        <tr>${subHeadAnnual}${subHeadQ}</tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
+
+  const unsupported = data.meta.unsupported || [];
+  foot.innerHTML = `
+    <div>* 단위: 십억원 (1 = 10억원). 분기는 누적값에서 차감 산출.</div>
+    <div>* 데이터 출처: <strong>금융감독원 DART</strong> 사업·분기보고서 (fnlttSinglAcntAll).</div>
+    <div>* 미지원 필드(추후 업그레이드 예정): ${unsupported.join(', ')}</div>`;
 }
 
 async function dartSearch(page) {

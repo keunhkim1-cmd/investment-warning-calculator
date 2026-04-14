@@ -14,6 +14,7 @@ import urllib.parse
 from lib.krx import search_kind
 from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview
 from lib.dart import search_disclosure, fetch_financial
+from lib.financial_model import build_model
 
 PORT = 5173
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -107,6 +108,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     reprt_code=qs.get('reprt_code', ['11011'])[0].strip(),
                 )
                 self.send_json(data)
+            except Exception as e:
+                self.send_json({'error': str(e)}, 500)
+            return
+
+        if parsed.path == '/api/financial-model':
+            corp_code = qs.get('corp_code', [''])[0].strip()
+            fs_div = qs.get('fs_div', ['CFS'])[0].strip().upper()
+            try:
+                years = max(2, min(7, int(qs.get('years', ['5'])[0])))
+            except ValueError:
+                years = 5
+            if not re.match(r'^\d{8}$', corp_code) or fs_div not in ('CFS', 'OFS'):
+                self.send_json({'error': '잘못된 파라미터 형식'}, 400); return
+            try:
+                self.send_json(build_model(corp_code, fs_div=fs_div, years=years))
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return
