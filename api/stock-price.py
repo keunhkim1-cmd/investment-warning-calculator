@@ -21,7 +21,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             prices = fetch_prices(code)
             body = json.dumps(
-                {'prices': prices[:16], 'thresholds': calc_thresholds(prices)},
+                {'prices': prices[-16:], 'thresholds': calc_thresholds(prices)},
                 ensure_ascii=False).encode()
             self.send_response(200)
         except Exception as e:
