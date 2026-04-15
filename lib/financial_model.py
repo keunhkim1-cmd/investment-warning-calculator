@@ -4,6 +4,7 @@
 - 본 MVP는 DART Open API(fnlttSinglAcntAll)만 사용 → P&L/BS/CF 메인 계정 약 70% 커버.
 - 미지원 필드(인건비, 광고선전비, 토지/설비 등 세부, 직원수, 환율)는 null 반환.
 - 추후 어댑터 추가 시 build_model() 내부에서 enrich_*()만 호출 추가.
+- Supabase 캐싱: 확정 기간(전년도 이전) 데이터는 DB에서 조회, 미확정만 DART 호출.
 """
 import json, os
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -144,6 +145,35 @@ def _enrich_derived(period: dict) -> dict:
     return period
 
 
+def _load_cache(corp_code: str, fs_div: str) -> dict:
+    """Supabase에서 기존 캐시 데이터를 일괄 로드 → {(period_type, period_key): data}"""
+    try:
+        from lib.supabase_client import get_client
+        rows = (get_client().table('financial_data')
+                .select('period_type, period_key, data')
+                .eq('corp_code', corp_code)
+                .eq('fs_div', fs_div)
+                .execute()).data
+        return {(r['period_type'], r['period_key']): r['data'] for r in rows}
+    except Exception as e:
+        print(f'[cache] Supabase 조회 실패 (fallback to DART): {e}')
+        return {}
+
+
+def _save_cache(corp_code: str, fs_div: str, rows: list):
+    """새 데이터를 Supabase에 upsert. rows: [{'period_type', 'period_key', 'data'}]"""
+    if not rows:
+        return
+    try:
+        from lib.supabase_client import get_client
+        records = [{'corp_code': corp_code, 'fs_div': fs_div, **r} for r in rows]
+        (get_client().table('financial_data')
+         .upsert(records, on_conflict='corp_code,fs_div,period_type,period_key')
+         .execute())
+    except Exception as e:
+        print(f'[cache] Supabase 저장 실패 (무시): {e}')
+
+
 def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     """
     Args:
@@ -162,28 +192,73 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     start_year = end_year - years + 1
     year_list = [str(y) for y in range(start_year, end_year + 1)]
 
+    # ── Supabase 캐시 로드 ──
+    cache = _load_cache(corp_code, fs_div)
+
+    # 확정 기간 판별: 전년도(end_year - 1) 이전은 변하지 않음
+    current_year = str(date.today().year)
+    prev_year = str(end_year)  # 가장 최근 연도 (아직 보고서 업데이트 가능)
+
+    def _is_settled(year: str) -> bool:
+        """전전년도 이전이면 확정 (보고서 수정 가능성 없음)"""
+        return year < prev_year
+
+    def _year_fully_cached(year: str) -> bool:
+        """해당 연도의 연간 + 4분기 모두 캐시에 있으면 True"""
+        if ('annual', year) not in cache:
+            return False
+        for q in ['1Q', '2Q', '3Q', '4Q']:
+            if ('quarterly', f'{q}{year[2:]}') not in cache:
+                return False
+        return True
+
     annual = {}
-    # 연도별 보고서 데이터 보관 → 단일 분기로 파생
-    by_year_period = {}  # {year: {'1Q'|'2Q'|'3Q'|'FY': period_dict}}
+    by_year_period = {}
+    to_save = []  # Supabase에 저장할 새 데이터
 
-    # 병렬 페치: 각 연도 × 4 reprt
-    tasks = []
-    with ThreadPoolExecutor(max_workers=8) as ex:
-        for y in year_list:
-            for reprt in REPRT_QUARTER:
-                tasks.append((y, reprt, ex.submit(_fetch_period_safe, corp_code, y, reprt, fs_div)))
+    # ── 연도별 처리: 캐시 히트 or DART 호출 ──
+    years_to_fetch = []
+    for y in year_list:
+        if _is_settled(y) and _year_fully_cached(y):
+            # 캐시에서 복원
+            annual[y] = cache[('annual', y)]
+            by_year_period[y] = {}
+            for q in ['1Q', '2Q', '3Q', '4Q']:
+                by_year_period[y][q] = cache[('quarterly', f'{q}{y[2:]}')]
+        else:
+            years_to_fetch.append(y)
 
-        for y, reprt, fut in tasks:
-            resp = fut.result()
-            period = _extract_period(resp, fs_div) if resp.get('status') == '000' else {}
-            label = REPRT_QUARTER[reprt]
-            by_year_period.setdefault(y, {})[label] = period
+    # ── 캐시 미스 연도만 DART 병렬 호출 ──
+    if years_to_fetch:
+        tasks = []
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for y in years_to_fetch:
+                for reprt in REPRT_QUARTER:
+                    tasks.append((y, reprt, ex.submit(_fetch_period_safe, corp_code, y, reprt, fs_div)))
 
-            # 사업보고서(11011) = 연간값
-            if reprt == '11011' and period:
-                annual[y] = _enrich_derived(dict(period))
+            for y, reprt, fut in tasks:
+                resp = fut.result()
+                period = _extract_period(resp, fs_div) if resp.get('status') == '000' else {}
+                label = REPRT_QUARTER[reprt]
+                by_year_period.setdefault(y, {})[label] = period
 
-    # 연간 YoY 계산
+                if reprt == '11011' and period:
+                    annual[y] = _enrich_derived(dict(period))
+
+    # ── 분기 단일값 산출 (DART 호출된 연도만) ──
+    quarterly = {}
+    for y in year_list:
+        if y not in years_to_fetch:
+            # 캐시에서 복원된 분기 데이터 (이미 enrich 완료)
+            for q in ['1Q', '2Q', '3Q', '4Q']:
+                quarterly[f'{q}{y[2:]}'] = by_year_period[y][q]
+            continue
+        single = _periods_to_quarterly(by_year_period.get(y, {}))
+        for q in ['1Q', '2Q', '3Q', '4Q']:
+            label = f'{q}{y[2:]}'
+            quarterly[label] = _enrich_derived(dict(single[q]))
+
+    # ── 연간 YoY 계산 ──
     sorted_years = sorted(annual.keys())
     for i, y in enumerate(sorted_years):
         if i == 0:
@@ -193,15 +268,7 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
             annual[y]['revenue_yoy'] = yoy(annual[y].get('revenue'),
                                            annual[prev_y].get('revenue'))
 
-    # 분기 단일값 + YoY 산출
-    quarterly = {}
-    for y in year_list:
-        single = _periods_to_quarterly(by_year_period.get(y, {}))
-        for q in ['1Q', '2Q', '3Q', '4Q']:
-            label = f'{q}{y[2:]}'  # 1Q23
-            quarterly[label] = _enrich_derived(dict(single[q]))
-
-    # 분기 YoY (전년 동분기 대비)
+    # ── 분기 YoY 계산 ──
     for y in year_list:
         prev_y = str(int(y) - 1)
         for q in ['1Q', '2Q', '3Q', '4Q']:
@@ -211,12 +278,24 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
             prev = quarterly.get(prev_label, {})
             cur['revenue_yoy'] = yoy(cur.get('revenue'), prev.get('revenue')) if prev else None
 
+    # ── DART에서 가져온 데이터를 Supabase에 저장 ──
+    for y in years_to_fetch:
+        if y in annual:
+            to_save.append({'period_type': 'annual', 'period_key': y, 'data': annual[y]})
+        for q in ['1Q', '2Q', '3Q', '4Q']:
+            label = f'{q}{y[2:]}'
+            if label in quarterly and any(v is not None for v in quarterly[label].values()):
+                to_save.append({'period_type': 'quarterly', 'period_key': label, 'data': quarterly[label]})
+    _save_cache(corp_code, fs_div, to_save)
+
     return {
         'meta': {
             'corp_code': corp_code,
             'fs_div': fs_div,
             'years': year_list,
             'unsupported': MAPPING['_unsupported_mvp']['fields'],
+            'cached_years': [y for y in year_list if y not in years_to_fetch],
+            'fetched_years': years_to_fetch,
         },
         'annual': annual,
         'quarterly': quarterly,
