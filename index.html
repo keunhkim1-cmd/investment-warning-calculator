@@ -10,12 +10,10 @@
 
     :root {
       --bg: #000000;
-      --bg-alt: #f5f5f7;
       --surface: #272729;
       --surface2: #2a2a2d;
       --border: #38383a;
       --text: #ffffff;
-      --text-dark: #1d1d1f;
       --text-secondary: rgba(255,255,255,0.72);
       --text-muted: rgba(255,255,255,0.48);
       --blue: #0071e3;
@@ -45,51 +43,9 @@
       background: var(--bg); color: var(--text);
       padding: 48px 0;
     }
-    .section-light {
-      background: var(--bg-alt); color: var(--text-dark);
-      padding: 48px 0;
-    }
     .section-inner {
       max-width: 980px; margin: 0 auto; padding: 0 24px;
     }
-
-    /* Light section — CSS variable overrides */
-    .section-light {
-      --text-muted: rgba(0,0,0,0.48);
-      --text-secondary: rgba(0,0,0,0.8);
-      --surface2: #f0f0f2;
-      --border: rgba(0,0,0,0.1);
-    }
-
-    /* Light section overrides */
-    .section-light .card {
-      background: #ffffff;
-    }
-    .section-light .card h2 { color: var(--text-dark); }
-    .section-light label { color: rgba(0,0,0,0.8); }
-    .section-light input[type="text"],
-    .section-light input[type="date"],
-    .section-light select {
-      background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
-      color: var(--text-dark);
-    }
-    .section-light select option { background: #ffffff; }
-    .section-light .search-results { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); }
-    .section-light .search-results-header { color: rgba(0,0,0,0.48); border-bottom: 1px solid rgba(0,0,0,0.08); }
-    .section-light .result-item { border-bottom: 1px solid rgba(0,0,0,0.06); }
-    .section-light .result-item:hover { background: rgba(0,0,0,0.03); }
-    .section-light .result-stock-name { color: var(--text-dark); }
-    .section-light .result-date { color: var(--text-dark); }
-    .section-light .search-loading { color: rgba(0,0,0,0.48); }
-    .section-light .result-empty { color: rgba(0,0,0,0.48); }
-    .section-light .auto-filled-tag { background: rgba(0,113,227,0.08); color: #0066cc; }
-
-    /* Light info card */
-    .section-light .info-card { background: #ffffff; }
-    .section-light .info-card h3 { color: var(--text-dark); }
-    .section-light .stage-text { color: rgba(0,0,0,0.8); }
-    .section-light .stage-text strong { color: var(--text-dark); }
-    .section-light .footnote { color: rgba(0,0,0,0.48); }
 
     /* Nav — Apple glass bar */
     .nav-bar {
@@ -264,7 +220,7 @@
       letter-spacing: -0.374px;
     }
     .btn:hover { background: #0077ED; }
-    .btn:active { background: #ededf2; color: var(--text-dark); }
+    .btn:active { background: var(--surface2); color: var(--text); }
 
     /* Result */
     .result-card {
@@ -450,69 +406,69 @@
     .model-table thead th.mt-group {
       font-family: var(--font-text);
       font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      color: rgba(0,0,0,0.48); text-align: center;
+      color: var(--text-muted); text-align: center;
       padding-bottom: 4px;
     }
     /* 연도/분기 컬럼 라벨 — Micro Bold 12/600/-0.12 */
     .model-table thead th.mt-period {
       font-family: var(--font-text);
       font-size: 12px; font-weight: 600; letter-spacing: -0.12px;
-      color: rgba(0,0,0,0.48);
-      padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.12);
+      color: var(--text-muted);
+      padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.12);
     }
     .model-table thead th.mt-corner {
       font-family: var(--font-text);
       font-size: 12px; font-weight: 400; letter-spacing: -0.12px;
-      color: rgba(0,0,0,0.48);
-      border-bottom: 1px solid rgba(0,0,0,0.12);
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
     }
     /* 섹션 구분 행 — Body Emphasis 17/600/-0.374 */
     .model-table tr.mt-section td {
       font-family: var(--font-text);
       font-size: 17px; font-weight: 600; letter-spacing: -0.374px;
-      color: var(--text-dark);
+      color: var(--text);
       padding-top: 28px; padding-bottom: 10px;
-      border-bottom: 1px solid rgba(0,0,0,0.12);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
     }
     /* 일반 행 — Caption 14/400/-0.224 */
     .model-table tbody td {
       font-family: var(--mono);
       font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      color: rgba(0,0,0,0.8);
-      border-bottom: 1px solid rgba(0,0,0,0.06);
+      color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
     .model-table tbody td.mt-label {
       font-family: var(--font-text);
       font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      color: rgba(0,0,0,0.8);
+      color: var(--text-secondary);
     }
     /* 강조(합계) 행 — Caption Bold 14/600 + 상단 hairline */
     .model-table tr.mt-total td {
       font-weight: 600;
-      border-top: 1px solid rgba(0,0,0,0.12);
-      background: rgba(0,0,0,0.015);
+      border-top: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
     }
-    .model-table tr.mt-total td.mt-label { color: var(--text-dark); }
+    .model-table tr.mt-total td.mt-label { color: var(--text); }
     /* 하위 비율 행 — Caption 14/400 + 들여쓰기 + 흐린 색 */
     .model-table tr.mt-sub td {
       font-size: 13px;
-      color: rgba(0,0,0,0.48);
+      color: var(--text-muted);
     }
     .model-table tr.mt-sub td.mt-label {
       padding-left: 24px;
-      color: rgba(0,0,0,0.48);
+      color: var(--text-muted);
     }
     /* Annual / Quarterly 구분선 */
-    .model-table .mt-q-first { border-left: 2px solid rgba(0,0,0,0.18); }
+    .model-table .mt-q-first { border-left: 2px solid rgba(255,255,255,0.18); }
     /* 음수 / 빈값 */
-    .model-table .mt-neg { color: var(--text-dark); }
-    .model-table .mt-empty { color: rgba(0,0,0,0.24); }
+    .model-table .mt-neg { color: var(--negative); }
+    .model-table .mt-empty { color: rgba(255,255,255,0.24); }
 
     /* 푸트노트 — Micro 12/400/-0.12 */
     .model-foot {
       font-family: var(--font-text);
       font-size: 12px; font-weight: 400; letter-spacing: -0.12px;
-      color: rgba(0,0,0,0.48);
+      color: var(--text-muted);
       line-height: 1.7; margin-top: 16px;
     }
     /* 컨트롤 (회계 구분 select) */
@@ -522,7 +478,7 @@
     .model-controls label {
       font-family: var(--font-text);
       font-size: 12px; font-weight: 600; letter-spacing: -0.12px;
-      color: rgba(0,0,0,0.48);
+      color: var(--text-muted);
     }
     .model-controls select {
       font-family: var(--font-text);
@@ -532,7 +488,7 @@
     .model-meta {
       font-family: var(--font-text);
       font-size: 12px; font-weight: 400; letter-spacing: -0.12px;
-      color: rgba(0,0,0,0.48);
+      color: var(--text-muted);
     }
 
     /* 기업 개요 */
@@ -598,21 +554,6 @@
       font-size: 14px; color: var(--text-muted);
     }
 
-    /* Light section — DART specific overrides */
-    .section-light .dart-item { border-bottom: 1px solid rgba(0,0,0,0.06); }
-    .section-light .dart-item:hover { opacity: 0.7; }
-    .section-light .dart-corp { color: var(--text-dark); }
-    .section-light .dart-date { color: rgba(0,0,0,0.48); }
-    .section-light .dart-title { color: rgba(0,0,0,0.8); }
-    .section-light .dart-pagination button { background: #ffffff; color: rgba(0,0,0,0.8); }
-    .section-light .dart-pagination span { color: rgba(0,0,0,0.48); }
-    .section-light .dart-empty { color: rgba(0,0,0,0.48); }
-
-    /* Light section — financial overrides */
-    .section-light .overview-grid .ov-item { background: var(--bg-alt); }
-    .section-light .ov-label { color: rgba(0,0,0,0.48); }
-    .section-light .ov-value { color: var(--text-dark); }
-
     /* Ticker tape */
     .ticker-wrap {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
@@ -644,7 +585,7 @@
       .dart-filters { grid-template-columns: 1fr; }
       .nav-item { padding: 0 12px; font-size: 11px; }
       .section-inner { padding: 0 16px; }
-      .section-dark, .section-light { padding: 32px 0; }
+      .section-dark { padding: 32px 0; }
     }
   </style>
 </head>
@@ -671,7 +612,7 @@
       </div>
     </div>
   </div>
-  <div class="section-light">
+  <div class="section-dark">
     <div class="section-inner">
       <div class="card" style="max-width:640px; margin:0 auto; padding:32px;">
         <h2 style="font-size:22px; margin-bottom:16px;">Disclaimer</h2>
@@ -699,7 +640,7 @@
     </div>
   </div>
 
-  <div class="section-light">
+  <div class="section-dark">
     <div class="section-inner">
       <div class="card">
         <h2>종목 검색</h2>
@@ -845,7 +786,7 @@
   </div>
 
   <!-- Info — light section for informational content -->
-  <div class="section-light">
+  <div class="section-dark">
     <div class="section-inner">
       <div class="info-card">
         <h3>시장경보 단계 안내</h3>
@@ -887,7 +828,7 @@
     </div>
   </div>
 
-  <div class="section-light">
+  <div class="section-dark">
     <div class="section-inner">
       <div class="card">
         <h2>공시 검색</h2>
