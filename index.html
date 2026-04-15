@@ -718,6 +718,12 @@
         <div id="overviewContent"></div>
       </div>
 
+      <!-- TradingView 차트 -->
+      <div class="card" id="tvChartCard" style="display:none;">
+        <h2>차트</h2>
+        <div id="tvChartContainer" style="height:500px;"></div>
+      </div>
+
       <!-- 재무 모델 (Model 시트) -->
       <div class="card" id="modelCard" style="display:none;">
         <h2>재무 모델 <span class="model-meta" style="margin-left:8px;">DART 사업·분기보고서</span></h2>
@@ -929,6 +935,7 @@
 
 </div><!-- /page-dart -->
 
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script>
 // ────────────────────────────────────────────────
 // XSS 방어 유틸
@@ -1592,9 +1599,10 @@ function selectDashCorp(corpCode, corpName, stockCode) {
   document.getElementById('dashSelectedCorp').style.display = 'block';
   document.getElementById('dashSelectedCorp').innerHTML =
     `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(stockCode || corpCode)})</span>`;
-  // 기업 개요 + 재무 모델 병렬 조회
+  // 기업 개요 + 차트 + 재무 모델 병렬 조회
   fetchModel(corpCode);
-  if (stockCode) fetchOverview(stockCode);
+  if (stockCode) { fetchOverview(stockCode); loadTvChart(stockCode); }
+  else { document.getElementById('tvChartCard').style.display = 'none'; }
 }
 
 let _modelCorpCode = '';
@@ -1804,6 +1812,30 @@ async function fetchOverview(stockCode) {
   } catch (e) {
     content.innerHTML = `<div class="dart-empty">${escHtml(e.message)}</div>`;
   }
+}
+
+// ────────────────────────────────────────────────
+// TradingView 차트
+// ────────────────────────────────────────────────
+function loadTvChart(stockCode) {
+  const card = document.getElementById('tvChartCard');
+  const container = document.getElementById('tvChartContainer');
+  if (!stockCode) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  container.innerHTML = '';
+  new TradingView.widget({
+    container_id: 'tvChartContainer',
+    symbol: 'KRX:' + stockCode,
+    autosize: true,
+    theme: 'dark',
+    style: '1',
+    locale: 'kr',
+    toolbar_bg: '#1a1a2e',
+    hide_side_toolbar: false,
+    allow_symbol_change: false,
+    studies: ['MASimple@tv-basicstudies'],
+    show_popup_button: true,
+  });
 }
 
 const CLS_NAMES = { Y: '유가', K: '코스닥', N: '코넥스', E: '기타' };
