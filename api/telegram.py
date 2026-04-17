@@ -211,6 +211,12 @@ def process_update(update: dict):
         do_search(chat_id, query)
         return
 
+    if text.startswith('/web'):
+        tg_send(chat_id,
+            '🌐 *투자경고 계산기 웹버전*\n'
+            'https://shamanism-research.vercel.app/')
+        return
+
     if text.startswith('/'):
         tg_send_plain(chat_id, '알 수 없는 명령어입니다.\n/help 로 사용법을 확인하세요.')
         return
