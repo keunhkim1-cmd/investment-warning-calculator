@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib.holidays import add_trading_days, count_trading_days
 from lib.krx import search_kind
 from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds
+from lib.dart_report import summarize_business_report
 
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TG_API    = f'https://api.telegram.org/bot{BOT_TOKEN}'
@@ -169,6 +170,65 @@ def do_search(chat_id: int, query: str):
             '더 정확한 종목명으로 다시 검색해주세요.')
 
 
+def do_info(chat_id: int, query: str):
+    if not query:
+        tg_send_plain(chat_id, '종목명을 입력해주세요.\n예: /info 삼성전자')
+        return
+
+    try:
+        tg_send_plain(chat_id, f'📑 "{query}" 사업보고서 조회 중...')
+    except Exception as e:
+        print(f'/info 안내 메시지 전송 실패: {e}')
+
+    try:
+        codes = naver_stock_code(query)
+    except Exception as e:
+        tg_send_plain(chat_id, f'❌ 종목 조회 오류: {e}')
+        return
+
+    if not codes:
+        tg_send_plain(chat_id, f'"{query}" — 종목을 찾을 수 없습니다.')
+        return
+
+    target = codes[0]
+    stock_code = target['code']
+    stock_name = target['name']
+
+    try:
+        result = summarize_business_report(stock_code, stock_name)
+    except Exception as e:
+        tg_send_plain(chat_id, f'❌ 사업보고서 요약 실패: {e}')
+        return
+
+    if 'error' in result:
+        tg_send_plain(chat_id, f'❌ {result["error"]}')
+        return
+
+    rcept_dt = result.get('rcept_dt', '')
+    date_str = f'{rcept_dt[:4]}.{rcept_dt[4:6]}.{rcept_dt[6:8]}' if len(rcept_dt) == 8 else rcept_dt
+    rcept_no = result.get('rcept_no', '')
+    viewer_url = f'https://dart.fss.or.kr/dsaf001/main.do?rcpNo={rcept_no}' if rcept_no else ''
+
+    body = (
+        f'📑 *{stock_name} 사업보고서 요약*\n\n'
+        f'{result["summary"]}\n\n'
+        f'_공시일: {date_str}_'
+    )
+    if viewer_url:
+        body += f'\n[원문 보기]({viewer_url})'
+
+    try:
+        tg_send(chat_id, body)
+    except Exception:
+        try:
+            plain = f'📑 {stock_name} 사업보고서 요약\n\n{result["summary"]}\n\n공시일: {date_str}'
+            if viewer_url:
+                plain += f'\n원문: {viewer_url}'
+            tg_send_plain(chat_id, plain)
+        except Exception as e:
+            tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {e}')
+
+
 def process_update(update: dict):
     msg = update.get('message') or update.get('edited_message')
     if not msg:
@@ -187,6 +247,7 @@ def process_update(update: dict):
             '투자경고/위험 종목의 해제 예상일과 기준가를 알려드립니다.\n\n'
             '*명령어*\n'
             '/warning `종목명` — 종목 투자경고 조회\n'
+            '/info `종목명` — 사업보고서 요약\n'
             '/help — 사용법 안내\n\n'
             '또는 종목명을 바로 입력해도 됩니다.\n'
             '예: `코셈`, `레이저쎌`')
@@ -198,6 +259,9 @@ def process_update(update: dict):
             '*1. 종목 검색*\n'
             '`/warning 종목명` 또는 종목명을 직접 입력\n'
             '예: `/warning 코셈` 또는 `코셈`\n\n'
+            '*2. 사업보고서 요약*\n'
+            '`/info 종목명` — 가장 최근 사업보고서를 10줄로 요약\n'
+            '예: `/info 삼성전자`\n\n'
             '*해제 조건 안내*\n'
             '아래 3가지 중 하나라도 미해당 시 다음 거래일 해제:\n'
             '① 현재가 ≥ T\\-5 종가의 145%\n'
@@ -209,6 +273,11 @@ def process_update(update: dict):
     if text.startswith('/warning'):
         query = re.sub(r'^/\S+\s*', '', text).strip()
         do_search(chat_id, query)
+        return
+
+    if text.startswith('/info'):
+        query = re.sub(r'^/\S+\s*', '', text).strip()
+        do_info(chat_id, query)
         return
 
     if text.startswith('/web'):
