@@ -17,7 +17,7 @@ _doc_cache = TTLCache(ttl=24 * 3600)
 
 
 def _api_key() -> str:
-    key = os.environ.get('DART_API_KEY', '')
+    key = os.environ.get('DART_API_KEY', '').strip()
     if not key:
         raise ValueError('DART_API_KEY 환경변수가 설정되지 않았습니다.')
     return key
