@@ -104,6 +104,43 @@ def _strip_tags(s: str) -> str:
     return s.strip()
 
 
+def _extract_business_overview(full_text: str, max_chars: int = 4000) -> str:
+    """'1. 사업의 개요' 섹션만 추출 (다음 하위 항목 '2. 주요 제품 및 서비스' 직전까지).
+    DART 원문 XML 구조: <TITLE>1. 사업의 개요</TITLE> ... <TITLE>2. 주요 제품 및 서비스</TITLE>."""
+    start_patterns = [
+        r'1\.\s*사업의\s*개요',
+        r'가\.\s*사업의\s*개요',
+    ]
+    # 다음 하위 항목들 — 여러 표기 변형 허용
+    end_patterns = [
+        r'2\.\s*주요\s*제품',
+        r'나\.\s*주요\s*제품',
+        r'2\.\s*주요\s*서비스',
+    ]
+
+    start_m = None
+    for p in start_patterns:
+        m = re.search(p, full_text)
+        if m:
+            start_m = m
+            break
+    if not start_m:
+        return ''
+
+    rest = full_text[start_m.end():]
+    end_pos = len(rest)
+    for p in end_patterns:
+        m = re.search(p, rest)
+        if m and m.start() < end_pos:
+            end_pos = m.start()
+
+    section = full_text[start_m.start():start_m.end() + end_pos]
+    cleaned = _strip_tags(section)
+    if len(cleaned) > max_chars:
+        cleaned = cleaned[:max_chars] + ' …(이하 생략)'
+    return cleaned
+
+
 def _extract_section(full_text: str, header_patterns: list, max_chars: int = 8000) -> str:
     """본문에서 헤더 패턴부터 다음 대제목 전까지 추출.
     DART 사업보고서는 'I. 회사의 개요', 'II. 사업의 내용' 등 로마숫자 대제목 구조."""
@@ -149,36 +186,25 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     if not full_text:
         return {'error': '사업보고서 본문을 가져올 수 없습니다.'}
 
-    # 1. 사업의 내용 (4개 하위 항목 통합 추출)
-    biz_content = _extract_section(full_text, [
-        r'II\.\s*사업의\s*내용',
-        r'2\.\s*사업의\s*내용',
-    ], max_chars=6000)
+    # '사업의 개요'만 추출 — 사업보고서 '사업의 내용' 하위 1번 항목.
+    # 다음 하위 항목 '2. 주요 제품 및 서비스' 전까지가 범위.
+    biz_overview = _extract_business_overview(full_text, max_chars=4000)
 
-    # 2. 이사의 경영진단 및 분석의견
-    mgmt_analysis = _extract_section(full_text, [
-        r'이사의\s*경영진단\s*및\s*분석\s*의견',
-        r'경영진단\s*및\s*분석\s*의견',
-    ], max_chars=4000)
+    if not biz_overview:
+        return {'error': '사업보고서에서 "사업의 개요" 섹션을 추출할 수 없습니다.'}
 
-    if not biz_content and not mgmt_analysis:
-        return {'error': '사업보고서에서 해당 섹션을 추출할 수 없습니다.'}
-
-    prompt = f"""다음은 {stock_name}({corp['corp_name']})의 가장 최근 사업보고서 발췌입니다.
-아래 두 섹션의 핵심 내용을 통합하여 한국어로 요약해주세요.
+    prompt = f"""다음은 {stock_name}({corp['corp_name']})의 가장 최근 사업보고서 '사업의 개요' 항목입니다.
+핵심 내용을 한국어로 요약해주세요.
 
 [요약 규칙]
 - '-' 부호로 시작하는 불릿 포인트만 사용
 - 정확히 10줄 이내
 - 각 줄은 한 문장으로 간결하게
-- 사업 모델, 주요 제품/서비스, 매출 구조, 주요 리스크/기회, 경영진 의견 순으로 자연스럽게 배치
-- 숫자나 비율이 본문에 명시된 경우 인용
+- 주요 사업, 제품/서비스, 시장 지위, 경쟁력 순으로 자연스럽게 배치
+- 본문에 나온 숫자·비율은 가능한 한 그대로 인용
 
-[1. 사업의 내용]
-{biz_content if biz_content else '(추출 실패)'}
-
-[2. 이사의 경영진단 및 분석의견]
-{mgmt_analysis if mgmt_analysis else '(추출 실패)'}
+[사업의 개요]
+{biz_overview}
 
 위 내용을 10줄 이내 '-' 불릿으로 요약:"""
 
