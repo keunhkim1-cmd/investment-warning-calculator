@@ -171,25 +171,25 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     cache_key = f'summary:{stock_code}'
     cached = _summary_cache.get(cache_key)
     if cached is not None:
-        print(f'[info] 캐시 히트: {stock_code}')
+        print(f'[info] 캐시 히트: {stock_code}', flush=True)
         return cached
 
     t0 = time.time()
     corp = find_corp_by_stock_code(stock_code)
-    print(f'[info] corp 매핑 {time.time()-t0:.1f}s: {corp}')
+    print(f'[info] corp 매핑 {time.time()-t0:.1f}s: {corp}', flush=True)
     if not corp:
         return {'error': f'DART에 등록된 기업 정보 없음 (종목코드: {stock_code})'}
 
     t0 = time.time()
     report = _find_latest_business_report(corp['corp_code'])
-    print(f'[info] 사업보고서 조회 {time.time()-t0:.1f}s: {report.get("rcept_no") if report else None}')
+    print(f'[info] 사업보고서 조회 {time.time()-t0:.1f}s: {report.get("rcept_no") if report else None}', flush=True)
     if not report:
         return {'error': '최근 사업보고서를 찾을 수 없습니다.'}
 
     rcept_no = report['rcept_no']
     t0 = time.time()
     full_text = _fetch_document_text(rcept_no)
-    print(f'[info] 본문 다운로드 {time.time()-t0:.1f}s: {len(full_text):,}자')
+    print(f'[info] 본문 다운로드 {time.time()-t0:.1f}s: {len(full_text):,}자', flush=True)
     if not full_text:
         return {'error': '사업보고서 본문을 가져올 수 없습니다.'}
 
@@ -197,7 +197,7 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     # 다음 하위 항목 '2. 주요 제품 및 서비스' 전까지가 범위.
     t0 = time.time()
     biz_overview = _extract_business_overview(full_text, max_chars=4000)
-    print(f'[info] 개요 추출 {time.time()-t0:.1f}s: {len(biz_overview):,}자')
+    print(f'[info] 개요 추출 {time.time()-t0:.1f}s: {len(biz_overview):,}자', flush=True)
 
     if not biz_overview:
         return {'error': '사업보고서에서 "사업의 개요" 섹션을 추출할 수 없습니다.'}
@@ -220,9 +220,9 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     try:
         t0 = time.time()
         summary = gemini_generate(prompt, max_output_tokens=512)
-        print(f'[info] Gemini 요약 {time.time()-t0:.1f}s: {len(summary)}자')
+        print(f'[info] Gemini 요약 {time.time()-t0:.1f}s: {len(summary)}자', flush=True)
     except Exception as e:
-        print(f'[info] Gemini 요약 실패: {e}')
+        print(f'[info] Gemini 요약 실패: {e}', flush=True)
         return {'error': f'Gemini 요약 실패: {e}'}
 
     result = {

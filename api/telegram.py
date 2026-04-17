@@ -132,7 +132,7 @@ def do_search(chat_id: int, query: str):
     try:
         tg_send_plain(chat_id, f'🔍 "{query}" 검색 중...')
     except Exception as e:
-        print(f'검색 중 메시지 전송 실패: {e}')
+        print(f'검색 중 메시지 전송 실패: {e}', flush=True)
 
     try:
         results = search_kind(query)
@@ -152,7 +152,7 @@ def do_search(chat_id: int, query: str):
                 prices = fetch_prices(codes[0]['code'], count=20)
                 return calc_thresholds(prices)
         except Exception as e:
-            print(f'주가 조회 실패: {e}')
+            print(f'주가 조회 실패: {e}', flush=True)
         return None
 
     targets = results[:3]
@@ -183,12 +183,12 @@ def do_info(chat_id: int, query: str):
     try:
         tg_send_plain(chat_id, f'📑 "{query}" 사업보고서 조회 중...')
     except Exception as e:
-        print(f'/info 안내 메시지 전송 실패: {e}')
+        print(f'/info 안내 메시지 전송 실패: {e}', flush=True)
 
     try:
         codes = naver_stock_code(query)
     except Exception as e:
-        print(f'[info] 네이버 종목조회 오류: {traceback.format_exc()}')
+        print(f'[info] 네이버 종목조회 오류: {traceback.format_exc()}', flush=True)
         tg_send_plain(chat_id, f'❌ 종목 조회 오류: {e}')
         return
 
@@ -199,17 +199,17 @@ def do_info(chat_id: int, query: str):
     target = codes[0]
     stock_code = target['code']
     stock_name = target['name']
-    print(f'[info] 대상 종목: {stock_name} ({stock_code})')
+    print(f'[info] 대상 종목: {stock_name} ({stock_code})', flush=True)
 
     try:
         result = summarize_business_report(stock_code, stock_name)
     except Exception as e:
-        print(f'[info] summarize 예외: {traceback.format_exc()}')
+        print(f'[info] summarize 예외: {traceback.format_exc()}', flush=True)
         tg_send_plain(chat_id, f'❌ 사업보고서 요약 실패: {e}')
         return
 
     if 'error' in result:
-        print(f'[info] 요약 실패: {result["error"]}')
+        print(f'[info] 요약 실패: {result["error"]}', flush=True)
         tg_send_plain(chat_id, f'❌ {result["error"]}')
         return
 
@@ -297,7 +297,7 @@ def process_update(update: dict):
             do_info(chat_id, query)
         except Exception as e:
             import traceback
-            print(f'[info] do_info 최상위 예외: {traceback.format_exc()}')
+            print(f'[info] do_info 최상위 예외: {traceback.format_exc()}', flush=True)
             try:
                 tg_send_plain(chat_id, f'❌ 처리 중 오류: {e}')
             except Exception:
@@ -337,7 +337,7 @@ class handler(BaseHTTPRequestHandler):
             update = json.loads(body)
             process_update(update)
         except Exception as e:
-            print(f'Update error: {e}')
+            print(f'Update error: {e}', flush=True)
 
         self.send_response(200)
         self.end_headers()
