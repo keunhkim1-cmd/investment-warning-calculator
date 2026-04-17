@@ -193,17 +193,24 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     if not full_text:
         return {'error': '사업보고서 본문을 가져올 수 없습니다.'}
 
-    # '사업의 개요'만 추출 — 사업보고서 '사업의 내용' 하위 1번 항목.
-    # 다음 하위 항목 '2. 주요 제품 및 서비스' 전까지가 범위.
+    # 1. 사업의 내용 (II. 사업의 내용 ~ III. 직전)
+    # 2. 이사의 경영진단 및 분석의견
     t0 = time.time()
-    biz_overview = _extract_business_overview(full_text, max_chars=4000)
-    print(f'[info] 개요 추출 {time.time()-t0:.1f}s: {len(biz_overview):,}자', flush=True)
+    biz_content = _extract_section(full_text, [
+        r'II\.\s*사업의\s*내용',
+        r'2\.\s*사업의\s*내용',
+    ], max_chars=8000)
+    mgmt_analysis = _extract_section(full_text, [
+        r'이사의\s*경영진단\s*및\s*분석\s*의견',
+        r'경영진단\s*및\s*분석\s*의견',
+    ], max_chars=5000)
+    print(f'[info] 섹션 추출 {time.time()-t0:.1f}s: 사업의내용 {len(biz_content):,}자, 경영진단 {len(mgmt_analysis):,}자', flush=True)
 
-    if not biz_overview:
-        return {'error': '사업보고서에서 "사업의 개요" 섹션을 추출할 수 없습니다.'}
+    if not biz_content and not mgmt_analysis:
+        return {'error': '사업보고서에서 해당 섹션을 추출할 수 없습니다.'}
 
-    prompt = f"""다음은 {stock_name}({corp['corp_name']})의 가장 최근 사업보고서 '사업의 개요' 항목입니다.
-핵심 내용을 한국어로 요약해주세요.
+    prompt = f"""다음은 {stock_name}({corp['corp_name']})의 가장 최근 사업보고서 발췌입니다.
+두 섹션의 핵심 내용을 통합해 한국어로 요약해주세요.
 
 [출력 형식]
 - 각 줄은 반드시 '- 카테고리: 내용' 형식 (콜론 앞은 카테고리 라벨, 뒤는 명사구)
@@ -212,19 +219,26 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
 
 [카테고리 예시]
 주요사업, 주요제품, 주요서비스, 매출구성, 주요고객, 시장지위, 경쟁력,
-생산시설, 판매망, 해외진출, 연구개발, 신규사업, 사업전략 등 본문 내용에 맞게 선택
+생산시설, 원재료, 판매망, 해외진출, 연구개발, 신규사업, 사업전략,
+실적동향, 재무상태, 리스크요인, 향후전망, 경영진의견 등 본문 내용에 맞게 선택
 
 [예시]
-- 주요사업: 나노 단위 미세물 분석을 위한 주사전자현미경(SEM) 및 주변기기 제조·판매
+- 주요사업: 나노 단위 미세물 분석용 주사전자현미경(SEM) 및 주변기기 제조·판매
 - 판매망: 국내 직판·딜러 병행, 해외 41개국 20개 대리점 간접판매
 - 경쟁력: Tabletop SEM 분야 글로벌 선도 지위 확보
+- 경영진의견: 전방 반도체 경기 회복 기대, 신제품 IP-SEM 상용화 박차
 
 [주의]
 - 본문에 명시된 숫자·비율·고유명사는 그대로 인용
 - 카테고리가 겹치지 않도록 서로 다른 관점으로 구성
+- '사업의 내용' 섹션에서 사업구조·제품·매출 정보를 뽑고
+  '이사의 경영진단' 섹션에서 실적·리스크·전망 정보를 뽑아 통합
 
-[사업의 개요]
-{biz_overview}
+[1. 사업의 내용]
+{biz_content if biz_content else '(추출 실패)'}
+
+[2. 이사의 경영진단 및 분석의견]
+{mgmt_analysis if mgmt_analysis else '(추출 실패)'}
 
 위 형식대로 10줄 이내 요약:"""
 
