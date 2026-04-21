@@ -12,7 +12,7 @@ import re
 import urllib.parse
 
 from lib.krx import search_kind
-from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview
+from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview, caution_search
 from lib.dart import search_disclosure
 from lib.financial_model import build_model
 
@@ -49,6 +49,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({'results': results, 'query': name})
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
+            return
+
+        if parsed.path == '/api/caution-search':
+            name = qs.get('name', [''])[0].strip()
+            try:
+                self.send_json(caution_search(name))
+            except Exception as e:
+                self.send_json({'status': 'error', 'errorMessage': str(e)}, 500)
             return
 
         if parsed.path == '/api/stock-code':

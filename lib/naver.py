@@ -1,9 +1,12 @@
 """네이버 금융 — 종목코드 검색 & 일별 주가 조회"""
 import urllib.request, urllib.parse, json
+from datetime import datetime, timezone, timedelta
 from xml.etree import ElementTree as ET
 
 from lib.retry import retry
 from lib.cache import TTLCache
+
+KST = timezone(timedelta(hours=9))
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
@@ -181,4 +184,141 @@ def calc_caution_escalation(prices: list) -> dict:
         'tClose': t_close,
         'tDate': t_date,
         'criteria': criteria,
+    }
+
+
+# ── 요건 레이블 & 헤드라인 (telegram.py build_caution_message 과 단일 소스) ──
+_CAUTION_LABELS = [
+    '① 초단기 (3일 100%)',
+    '② 단기 (5일 60%)',
+    '③ 단기&불건전 (5일 45%)',
+    '④ 장기 (15일 100%)',
+    '⑤ 장기&불건전 (15일 75%)',
+    '⑥ 반복 (15일 75%)',
+    '⑦ 초장기&불건전 (1년 200%)',
+]
+
+
+def caution_search(name: str) -> dict:
+    """투자주의 → 투자경고 격상 여부 점검 (웹 API / 텔레그램 공용 오케스트레이션).
+
+    반환 status:
+      'ok'             — 오늘 KST 지정 + 격상 계산 완료
+      'not_caution'    — KRX 결과 없음 또는 지정일이 오늘 KST가 아님
+      'code_not_found' — 네이버 종목코드 조회 실패
+      'price_error'    — 주가 조회 실패 또는 데이터 부족
+    최상위 예외는 호출자(핸들러)에서 'error' 로 감쌈.
+    """
+    # lib.krx 는 런타임에 import — 순환 import 회피
+    from lib.krx import search_kind_caution
+
+    today_kst = datetime.now(KST).date().isoformat()
+    name = (name or '').strip()
+    if not name:
+        return {'status': 'not_caution', 'query': '', 'todayKst': today_kst}
+
+    results = search_kind_caution(name)
+    if not results:
+        return {'status': 'not_caution', 'query': name, 'todayKst': today_kst}
+
+    warn = results[0]
+    if warn['latestDesignationDate'] != today_kst:
+        return {
+            'status': 'not_caution', 'query': name, 'todayKst': today_kst,
+            'latestDesignationDate': warn['latestDesignationDate'],
+            'stockName': warn.get('stockName', ''),
+        }
+
+    codes = stock_code(warn['stockName'])
+    if not codes:
+        return {
+            'status': 'code_not_found', 'query': name, 'todayKst': today_kst,
+            'stockName': warn['stockName'],
+            'latestDesignationDate': warn['latestDesignationDate'],
+            'recent15dCount': warn.get('recent15dCount', 0),
+            'allDates': warn.get('allDates', []),
+        }
+
+    code = codes[0]['code']
+    market = codes[0].get('market', '')
+
+    try:
+        prices = fetch_prices(code, count=260)
+        escalation = calc_caution_escalation(prices)
+    except Exception as e:
+        return {
+            'status': 'price_error', 'query': name, 'todayKst': today_kst,
+            'stockName': warn['stockName'],
+            'latestDesignationDate': warn['latestDesignationDate'],
+            'recent15dCount': warn.get('recent15dCount', 0),
+            'allDates': warn.get('allDates', []),
+            'code': code, 'market': market,
+            'errorMessage': str(e),
+        }
+
+    if 'error' in escalation:
+        return {
+            'status': 'price_error', 'query': name, 'todayKst': today_kst,
+            'stockName': warn['stockName'],
+            'latestDesignationDate': warn['latestDesignationDate'],
+            'recent15dCount': warn.get('recent15dCount', 0),
+            'allDates': warn.get('allDates', []),
+            'code': code, 'market': market,
+            'errorMessage': escalation['error'],
+        }
+
+    criteria = escalation['criteria']
+    count15 = warn.get('recent15dCount', 0)
+
+    # met / countActual 계산 — telegram.py:128-141 과 동일
+    for c in criteria:
+        if c['gating'] == 'count':
+            c['countActual'] = count15
+            c['countRequired'] = c.get('countRequired', 5)
+            c['met'] = bool(c['priceMet']) and count15 >= c['countRequired']
+        else:
+            c.setdefault('countActual', None)
+            c.setdefault('countRequired', None)
+            c['met'] = bool(c['priceMet'])
+
+    for i, c in enumerate(criteria):
+        c['label'] = _CAUTION_LABELS[i] if i < len(_CAUTION_LABELS) else c.get('name', '')
+
+    # 헤드라인 계층화 — telegram.py:137-141
+    strong_idx = next((i for i, c in enumerate(criteria)
+                       if c['met'] and c['gating'] != 'bulgunjeon'), None)
+    soft_idx = next((i for i, c in enumerate(criteria)
+                     if c['met'] and c['gating'] == 'bulgunjeon'), None)
+
+    if strong_idx is not None:
+        headline = {
+            'verdict': 'strong',
+            'criterionIndex': strong_idx,
+            'threshold': criteria[strong_idx]['threshold'],
+        }
+    elif soft_idx is not None:
+        headline = {
+            'verdict': 'soft',
+            'criterionIndex': soft_idx,
+            'threshold': criteria[soft_idx]['threshold'],
+        }
+    else:
+        headline = {'verdict': 'none', 'criterionIndex': None, 'threshold': None}
+
+    return {
+        'status': 'ok',
+        'query': name,
+        'stockName': warn['stockName'],
+        'latestDesignationDate': warn['latestDesignationDate'],
+        'todayKst': today_kst,
+        'recent15dCount': count15,
+        'allDates': warn.get('allDates', []),
+        'code': code,
+        'market': market,
+        'escalation': {
+            'tClose': escalation['tClose'],
+            'tDate': escalation['tDate'],
+            'criteria': criteria,
+            'headline': headline,
+        },
     }

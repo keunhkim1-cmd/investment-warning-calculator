@@ -26,11 +26,18 @@
       "headers": [
         { "key": "Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=300" }
       ]
+    },
+    {
+      "source": "/api/caution-search",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, s-maxage=120, stale-while-revalidate=60" }
+      ]
     }
   ],
   "functions": {
     "api/telegram.py": { "maxDuration": 300 },
     "api/warn-search.py": { "maxDuration": 30 },
+    "api/caution-search.py": { "maxDuration": 30 },
     "api/stock-price.py": { "maxDuration": 30 },
     "api/dart-search.py": { "maxDuration": 30 },
     "api/financial-model.py": { "maxDuration": 60 }
