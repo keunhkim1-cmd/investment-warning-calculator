@@ -368,7 +368,7 @@
     }
     .caution-nonprice strong { color: var(--text); }
 
-    /* 패치노트 */
+    /* 패치 노트 */
     .patch-entry {
       background: var(--surface); border-radius: 8px;
       padding: 24px; margin-bottom: 14px;
@@ -668,7 +668,7 @@
     <button class="nav-item" onclick="switchPage('dashboard', this)">재무 현황</button>
     <button class="nav-item active" onclick="switchPage('warning', this)">투자경고 계산기</button>
     <button class="nav-item" onclick="switchPage('dart', this)">공시 분석기</button>
-    <button class="nav-item" onclick="switchPage('patchnotes', this)">패치노트</button>
+    <button class="nav-item" onclick="switchPage('patchnotes', this)">패치 노트</button>
   </div>
 </nav>
 
@@ -957,13 +957,13 @@
 
 </div><!-- /page-dart -->
 
-<!-- ═══════════════ 패치노트 ═══════════════ -->
+<!-- ═══════════════ 패치 노트 ═══════════════ -->
 <div id="page-patchnotes" class="page-section">
   <div class="section-dark">
     <div class="section-inner">
       <div class="header">
         <div class="badge">Patch Notes</div>
-        <h1>패치노트</h1>
+        <h1>패치 노트</h1>
         <p>주요 업데이트와 기능 추가 기록입니다</p>
       </div>
       <div id="patchnotesContent">
@@ -995,7 +995,7 @@ function switchPage(page, el) {
   if (page === 'patchnotes') renderPatchNotes();
 }
 
-// 패치노트 — data/patchnotes.json 렌더
+// 패치 노트 — data/patchnotes.json 렌더
 async function renderPatchNotes() {
   const container = document.getElementById('patchnotesContent');
   if (!container || container.dataset.loaded === '1') return;
@@ -1005,7 +1005,7 @@ async function renderPatchNotes() {
     const entries = await resp.json();
     const tagLabel = { feat: 'NEW', fix: 'FIX', improve: 'IMPROVE', chore: 'CHORE' };
     if (!Array.isArray(entries) || entries.length === 0) {
-      container.innerHTML = '<div class="result-empty">기록된 패치노트가 없습니다.</div>';
+      container.innerHTML = '<div class="result-empty">기록된 패치 노트가 없습니다.</div>';
       return;
     }
     container.innerHTML = entries.map(e => {
@@ -1026,7 +1026,7 @@ async function renderPatchNotes() {
     }).join('');
     container.dataset.loaded = '1';
   } catch (e) {
-    container.innerHTML = `<div class="result-empty">패치노트를 불러올 수 없습니다: ${escHtml(e.message)}</div>`;
+    container.innerHTML = `<div class="result-empty">패치 노트를 불러올 수 없습니다: ${escHtml(e.message)}</div>`;
   }
 }
 
