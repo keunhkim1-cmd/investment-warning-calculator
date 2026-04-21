@@ -1106,14 +1106,23 @@ async function checkCautionFallback(query) {
 
 function _cautionMetaHtml(d, showIndex) {
   const codeLabel = d.code ? ` (${escHtml(d.code)}${d.market ? '·' + escHtml(d.market) : ''})` : '';
-  const reason = d.designationReason ? ` &nbsp;|&nbsp; 지정사유: <strong>${escHtml(d.designationReason)}</strong>` : '';
-  let html = `종목: <strong>${escHtml(d.stockName)}</strong>${codeLabel}` +
-    ` &nbsp;|&nbsp; 지정일: <strong>${escHtml(d.latestDesignationDate)}</strong>${reason}`;
+  let html = `종목: <strong>${escHtml(d.stockName)}</strong>${codeLabel}`;
+
+  const an = d.activeNotice;
+  if (an) {
+    html += ` &nbsp;|&nbsp; 지정예고일: <strong>${escHtml(an.noticeDate)}</strong>` +
+            ` &nbsp;|&nbsp; 판단 기간: <strong>${escHtml(an.firstJudgmentDate)} ~ ${escHtml(an.lastJudgmentDate)}</strong>` +
+            ` (판단일 ${an.judgmentDayIndex}/${an.judgmentWindowTotal})`;
+  } else if (d.latestDesignationDate) {
+    html += ` &nbsp;|&nbsp; 지정일: <strong>${escHtml(d.latestDesignationDate)}</strong>`;
+    if (d.designationReason) html += ` &nbsp;|&nbsp; 사유: <strong>${escHtml(d.designationReason)}</strong>`;
+  }
+
   if (showIndex && d.escalation) {
     const e = d.escalation;
     const idxTxt = typeof e.indexClose === 'number' ? e.indexClose.toLocaleString('ko-KR', {maximumFractionDigits: 2}) : '';
-    html += ` &nbsp;|&nbsp; 현재가: <strong>${e.tClose.toLocaleString()}원</strong> (${escHtml(e.tDate)})`;
-    if (idxTxt) html += ` &nbsp;|&nbsp; ${escHtml(d.indexSymbol || '지수')}: <strong>${idxTxt}</strong>`;
+    html += `<br/>현재가 <strong>${e.tClose.toLocaleString()}원</strong> (${escHtml(e.tDate)})`;
+    if (idxTxt) html += ` &nbsp;|&nbsp; ${escHtml(d.indexSymbol || '지수')} <strong>${idxTxt}</strong>`;
   }
   return html;
 }

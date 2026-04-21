@@ -128,22 +128,38 @@ def build_caution_message(d: dict) -> str:
         except ValueError:
             head_date = ''
 
+    active = d.get('activeNotice') or None
+
+    def _notice_line(a: dict) -> str:
+        try:
+            nd = sd(date.fromisoformat(a['noticeDate']))
+            fd = sd(date.fromisoformat(a['firstJudgmentDate']))
+            ld = sd(date.fromisoformat(a['lastJudgmentDate']))
+        except Exception:
+            nd = a.get('noticeDate', ''); fd = a.get('firstJudgmentDate', ''); ld = a.get('lastJudgmentDate', '')
+        return (f'지정예고 {nd} · 판단 {fd}~{ld} '
+                f'(판단일 {a.get("judgmentDayIndex", 0)}/{a.get("judgmentWindowTotal", 10)})')
+
     if status == 'non_price_reason':
         return (
             f'🟡 {name} 투자주의{head_date}\n'
             f'사유: {reason}\n\n'
-            '가격 기반 투자경고 격상 조건(단기/중장기급등)은 적용되지 않습니다.'
+            '활성 지정예고 없음 — 가격 기반 투자경고 격상 조건(단기/중장기급등)은 적용되지 않습니다.'
         )
 
     if status in ('code_not_found', 'price_error'):
         err = d.get('errorMessage', '알 수 없는 오류')
-        body = (f'🟡 {name} 투자주의{head_date}\n'
-                f'사유: {reason}\n\n')
-        if status == 'code_not_found':
-            body += '종목코드를 찾을 수 없어 격상 조건을 계산할 수 없습니다.'
+        header = f'🟡 {name} 투자주의{head_date}\n'
+        if active:
+            header += _notice_line(active) + '\n'
         else:
-            body += f'⚠️ 주가/지수 조회 불가: {err}'
-        return body
+            header += f'사유: {reason}\n'
+        header += '\n'
+        if status == 'code_not_found':
+            header += '종목코드를 찾을 수 없어 격상 조건을 계산할 수 없습니다.'
+        else:
+            header += f'⚠️ 주가/지수 조회 불가: {err}'
+        return header
 
     if status != 'ok':
         return f'⚠️ 처리 중 오류: {d.get("errorMessage", status)}'
@@ -154,8 +170,11 @@ def build_caution_message(d: dict) -> str:
     idx_close = e.get('indexClose', 0)
     idx_sym = d.get('indexSymbol', '')
 
-    lines = [f'🟡 {name} 투자주의{head_date}']
-    lines.append(f'사유: {reason}')
+    lines = [f'🟡 {name} 투자주의']
+    if active:
+        lines.append(_notice_line(active))
+    else:
+        lines.append(f'사유: {reason}{head_date}')
     lines.append('')
     idx_txt = f'{idx_close:,.2f}' if isinstance(idx_close, (int, float)) else '-'
     lines.append(f'현재가 {t_close:,}원 · {idx_sym} {idx_txt}  ({sd(t_date)})')

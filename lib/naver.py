@@ -1,6 +1,6 @@
 """네이버 금융 — 종목코드 검색 & 일별 주가 조회"""
 import urllib.request, urllib.parse, json
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from xml.etree import ElementTree as ET
 
 from lib.retry import retry
@@ -254,17 +254,20 @@ def calc_official_escalation(stock_prices: list, index_prices: list) -> dict:
 def caution_search(name: str) -> dict:
     """투자주의 → 투자경고 격상 여부 점검 (웹 API).
 
-    사유가 '투자경고 지정예고'일 때만 공식 [1]/[2] 조건을 계산한다.
+    활성 '투자경고 지정예고' 윈도우(예고일 + 10거래일 이내)가 있으면
+    공식 [1]/[2] 조건을 계산한다.
+
     반환 status:
-      'ok'                — 투자경고 지정예고 + 공식 [1]/[2] 계산 완료
-      'non_price_reason'  — 오늘 지정은 맞으나 사유가 가격 격상과 무관 (소수계좌 등)
-      'not_caution'       — KRX 결과 없음 또는 지정일이 오늘 KST가 아님
+      'ok'                — 활성 지정예고 + [1]/[2] 계산 완료
+      'non_price_reason'  — 오늘 지정은 있으나 활성 예고 없음 (소수계좌 등)
+      'not_caution'       — 투자주의 이력 자체 없음 또는 활성 이력 없음
       'code_not_found'    — 네이버 종목코드 조회 실패
       'price_error'       — 주가/지수 조회 실패 또는 데이터 부족
     최상위 예외는 호출자(핸들러)에서 'error' 로 감쌈.
     """
-    # lib.krx 는 런타임에 import — 순환 import 회피
+    # lib.krx / lib.holidays 는 런타임에 import — 순환 import 회피
     from lib.krx import search_kind_caution
+    from lib.holidays import add_trading_days, count_trading_days
 
     today_kst = datetime.now(KST).date().isoformat()
     name = (name or '').strip()
@@ -276,29 +279,58 @@ def caution_search(name: str) -> dict:
         return {'status': 'not_caution', 'query': name, 'todayKst': today_kst}
 
     warn = results[0]
-    if warn['latestDesignationDate'] != today_kst:
-        return {
-            'status': 'not_caution', 'query': name, 'todayKst': today_kst,
-            'latestDesignationDate': warn['latestDesignationDate'],
-            'stockName': warn.get('stockName', ''),
-        }
+    today_date = datetime.now(KST).date()
+    entries = warn.get('entries', [])
 
-    reason = warn.get('latestDesignationReason', '')
+    # 가장 최근의 '투자경고 지정예고' 행 중 판단 윈도우(예고일 + 10거래일)가
+    # 아직 유효한 것을 찾는다. entries는 최신→과거 순 정렬.
+    active_notice = None
+    for e in entries:
+        if e.get('reason') != '투자경고 지정예고':
+            continue
+        try:
+            notice_date = date.fromisoformat(e['date'])
+        except ValueError:
+            continue
+        last_judgment = add_trading_days(notice_date, 10)
+        if last_judgment >= today_date:
+            first_judgment = add_trading_days(notice_date, 1)
+            # 오늘이 몇 번째 판단일인지 (예고일 포함 거래일수 − 1)
+            try:
+                elapsed = count_trading_days(notice_date, today_date) - 1
+            except Exception:
+                elapsed = 0
+            active_notice = {
+                'noticeDate': e['date'],
+                'firstJudgmentDate': first_judgment.isoformat(),
+                'lastJudgmentDate': last_judgment.isoformat(),
+                'judgmentDayIndex': max(0, elapsed),  # 0=예고 당일, 1=첫 판단일…
+                'judgmentWindowTotal': 10,
+            }
+            break
+
     krx_market = warn.get('market', '')
+    latest_reason = warn.get('latestDesignationReason', '')
+    latest_date   = warn.get('latestDesignationDate', '')
 
     base_fields = {
         'query': name, 'todayKst': today_kst,
         'stockName': warn['stockName'],
-        'latestDesignationDate': warn['latestDesignationDate'],
-        'designationReason': reason,
+        'latestDesignationDate': latest_date,
+        'designationReason': latest_reason,
         'recent15dCount': warn.get('recent15dCount', 0),
         'allDates': warn.get('allDates', []),
+        'entries': entries,
         'krxMarket': krx_market,
     }
 
-    # 가격 기반 격상 조건은 '투자경고 지정예고' 사유에만 적용
-    if reason != '투자경고 지정예고':
-        return {'status': 'non_price_reason', **base_fields}
+    # 활성 지정예고 없음 → 오늘 지정된 다른 사유가 있으면 안내, 없으면 not_caution
+    if not active_notice:
+        if latest_date == today_kst:
+            return {'status': 'non_price_reason', **base_fields}
+        return {'status': 'not_caution', **base_fields}
+
+    base_fields['activeNotice'] = active_notice
 
     codes = stock_code(warn['stockName'])
     if not codes:

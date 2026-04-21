@@ -145,9 +145,10 @@ def search_kind_caution(stock_name: str) -> list:
 
     today = date.today()
     results = []
-    for name, entries in rows_by_stock.items():
-        entries.sort(key=lambda e: e[0], reverse=True)
-        sorted_dates = [e[0] for e in entries]
+    for name, row_entries in rows_by_stock.items():
+        row_entries.sort(key=lambda e: e[0], reverse=True)
+        entry_list = [{'date': d, 'reason': r} for (d, r, _) in row_entries]
+        sorted_dates = [e['date'] for e in entry_list]
         recent15 = 0
         for d_str in sorted_dates:
             try:
@@ -156,7 +157,7 @@ def search_kind_caution(stock_name: str) -> list:
                 continue
             if count_trading_days(d_obj, today) <= 15:
                 recent15 += 1
-        latest_date, latest_reason, latest_market = entries[0]
+        latest_date, latest_reason, latest_market = row_entries[0]
         results.append({
             'stockName': name,
             'latestDesignationDate': latest_date,
@@ -164,6 +165,7 @@ def search_kind_caution(stock_name: str) -> list:
             'market': latest_market,
             'recent15dCount': recent15,
             'allDates': sorted_dates,
+            'entries': entry_list,  # [{'date': 'YYYY-MM-DD', 'reason': '...'}, ...] 최신→과거
         })
 
     results.sort(key=lambda x: x['latestDesignationDate'], reverse=True)
