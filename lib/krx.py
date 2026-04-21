@@ -101,8 +101,11 @@ def search_kind_caution(stock_name: str) -> list:
     """투자주의(menuIndex=1) 페이지에서 stock_name 부분일치 종목의 지정 이력 집계.
 
     반환 각 항목:
-      {'stockName', 'latestDesignationDate', 'recent15dCount', 'allDates': [YYYY-MM-DD, ...]}
-    `recent15dCount`는 오늘 포함 15거래일 윈도우 안에 지정된 행 수 — 투자경고 '반복' 요건(5회)용.
+      {'stockName', 'latestDesignationDate', 'latestDesignationReason',
+       'market', 'recent15dCount', 'allDates': [YYYY-MM-DD, ...]}
+    - `latestDesignationReason`: 최신 지정의 사유 (예: '투자경고 지정예고', '소수계좌 매수관여 과다' 등)
+    - `market`: 시장 구분 ('KOSPI' | 'KOSDAQ' | '')  — 행의 아이콘(icn_t_yu/icn_t_ko)으로 판정
+    - `recent15dCount`: 오늘 포함 15거래일 윈도우 안의 지정 행 수 (참고용)
     """
     # 투자주의는 일일 지정 건수가 많아(일 20~40건) 기본 pageSize=100으로는
     # 페이지 1에 오래된 데이터만 들어온다. 21일치를 한 번에 받도록 pageSize를 키운다.
@@ -112,7 +115,8 @@ def search_kind_caution(stock_name: str) -> list:
         print(f'KIND caution error: {e}', flush=True)
         return []
 
-    rows_by_stock: dict[str, list[str]] = {}
+    # rows_by_stock[name] = [(date_str, reason, market), ...]
+    rows_by_stock: dict[str, list[tuple]] = {}
     tbody_m = re.search(r'<tbody>(.*?)</tbody>', html, re.DOTALL)
     if not tbody_m:
         return []
@@ -124,15 +128,26 @@ def search_kind_caution(stock_name: str) -> list:
             r'<td[^>]*class="[^"]*txc[^"]*"[^>]*>\s*(\d{4}-\d{2}-\d{2})\s*</td>', row)
         if not dates:
             continue
+        tds = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+        reason = ''
+        if len(tds) >= 3:
+            reason = re.sub(r'<[^>]+>', '', tds[2]).strip()
+        if 'icn_t_yu' in row:
+            market = 'KOSPI'
+        elif 'icn_t_ko' in row:
+            market = 'KOSDAQ'
+        else:
+            market = ''
         name = name_m.group(1).strip()
         if stock_name and stock_name not in name:
             continue
-        rows_by_stock.setdefault(name, []).append(dates[-1])
+        rows_by_stock.setdefault(name, []).append((dates[-1], reason, market))
 
     today = date.today()
     results = []
-    for name, date_list in rows_by_stock.items():
-        sorted_dates = sorted(date_list, reverse=True)
+    for name, entries in rows_by_stock.items():
+        entries.sort(key=lambda e: e[0], reverse=True)
+        sorted_dates = [e[0] for e in entries]
         recent15 = 0
         for d_str in sorted_dates:
             try:
@@ -141,9 +156,12 @@ def search_kind_caution(stock_name: str) -> list:
                 continue
             if count_trading_days(d_obj, today) <= 15:
                 recent15 += 1
+        latest_date, latest_reason, latest_market = entries[0]
         results.append({
             'stockName': name,
-            'latestDesignationDate': sorted_dates[0],
+            'latestDesignationDate': latest_date,
+            'latestDesignationReason': latest_reason,
+            'market': latest_market,
             'recent15dCount': recent15,
             'allDates': sorted_dates,
         })

@@ -63,6 +63,37 @@ def fetch_prices(code: str, count: int = 20) -> list:
     return _price_cache.get_or_set(f'price:{code}:{count}', _fetch)
 
 
+def fetch_index_prices(symbol: str, count: int = 20) -> list:
+    """종합주가지수(KOSPI/KOSDAQ) 일별 종가 — float 보존."""
+    def _fetch():
+        url = (f'https://fchart.stock.naver.com/sise.nhn'
+               f'?symbol={symbol}&timeframe=day&count={count}&requestType=0')
+
+        def _call():
+            req = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(req, timeout=10) as r:
+                raw = r.read().decode('euc-kr', errors='replace')
+            root = ET.fromstring(raw)
+            prices = []
+            for item in root.iter('item'):
+                parts = item.get('data', '').split('|')
+                if len(parts) < 5 or not parts[4]:
+                    continue
+                try:
+                    close = float(parts[4])
+                except ValueError:
+                    continue
+                if close == 0:
+                    continue
+                d = parts[0]
+                prices.append({'date': f'{d[:4]}-{d[4:6]}-{d[6:8]}', 'close': close})
+            return prices
+
+        return retry(_call)
+
+    return _price_cache.get_or_set(f'idx:{symbol}:{count}', _fetch)
+
+
 _overview_cache = TTLCache(ttl=120)
 
 
@@ -198,15 +229,113 @@ _CAUTION_LABELS = [
     '⑦ 초장기&불건전 (1년 200%)',
 ]
 
+# 시장명(한글/영문) → 네이버 fchart 지수 심볼
+def _market_to_index_symbol(market: str) -> str:
+    if not market:
+        return ''
+    m = market.upper()
+    if 'KOSDAQ' in m or '코스닥' in market:
+        return 'KOSDAQ'
+    if 'KOSPI' in m or '코스피' in market or '유가증권' in market:
+        return 'KOSPI'
+    return ''
+
+
+def calc_official_escalation(stock_prices: list, index_prices: list) -> dict:
+    """KRX 공식 [1] 단기급등 / [2] 중장기급등 조건 점검.
+
+    [1] 단기급등(모두 해당): ① T/T-5 ≥ 1.60  ② T가 최근 15일 최고 종가  ③ 상승률 ≥ 지수 상승률 × 5
+    [2] 중장기급등(모두 해당): ① T/T-15 ≥ 2.00  ② T가 최근 15일 최고 종가  ③ 상승률 ≥ 지수 상승률 × 3
+    [1] 또는 [2] 중 하나 이상의 세트가 모두 충족되면 투자경고 지정 예상.
+
+    stock_prices: 오래된→최신, int 종가.
+    index_prices: 오래된→최신, float 종가 (같은 날짜들이 다 있어야 함).
+    """
+    if len(stock_prices) < 16:
+        return {'error': f'주가 데이터 부족 ({len(stock_prices)}일치, 최소 16일 필요)'}
+    if len(index_prices) < 16:
+        return {'error': f'지수 데이터 부족 ({len(index_prices)}일치, 최소 16일 필요)'}
+
+    # 날짜 정렬 — 최신(T)이 같아야 함. 다르면 판단 보류.
+    t_date_s = stock_prices[-1]['date']
+    t_date_i = index_prices[-1]['date']
+    if t_date_s != t_date_i:
+        return {'error': f'종목/지수 최신 날짜 불일치 ({t_date_s} vs {t_date_i})'}
+
+    t_close = stock_prices[-1]['close']
+    t_idx   = index_prices[-1]['close']
+    t5      = stock_prices[-6]
+    t15     = stock_prices[-16]
+    t5_idx  = index_prices[-6]
+    t15_idx = index_prices[-16]
+
+    recent15 = stock_prices[-15:]
+    max15 = max(p['close'] for p in recent15)
+    max15_date = next(p['date'] for p in recent15 if p['close'] == max15)
+    is_max15 = t_close >= max15  # 당일 포함 15일 최고 (>= 로 허용)
+
+    def _set(mult_price: float, base_s: dict, base_i: dict, mult_idx: float, label_prefix: str, window_lbl: str):
+        stock_ret = (t_close - base_s['close']) / base_s['close']
+        idx_ret   = (t_idx   - base_i['close']) / base_i['close']
+        threshold_price = round(base_s['close'] * mult_price)
+        cond1 = t_close >= threshold_price
+        cond2 = is_max15
+        cond3 = stock_ret >= mult_idx * idx_ret
+        all_met = cond1 and cond2 and cond3
+        return {
+            'label': label_prefix,
+            'window': window_lbl,
+            'baseDate': base_s['date'],
+            'baseClose': base_s['close'],
+            'thresholdPrice': threshold_price,
+            'priceMultiplier': mult_price,
+            'stockReturn': stock_ret,
+            'indexBaseClose': base_i['close'],
+            'indexReturn': idx_ret,
+            'indexMultiplier': mult_idx,
+            'conditions': [
+                {'key': 'priceRise',  'label': f'{window_lbl} 대비 {int((mult_price-1)*100)}% 이상 상승',
+                 'met': cond1,
+                 'detail': f'T={t_close:,}원 vs 기준가 {threshold_price:,}원 (상승률 {stock_ret*100:.1f}%)'},
+                {'key': 'max15',      'label': '당일 종가가 최근 15일 최고 종가',
+                 'met': cond2,
+                 'detail': f'T={t_close:,}원 vs 최고 {max15:,}원 ({max15_date})'},
+                {'key': 'vsIndex',    'label': f'상승률이 지수 상승률의 {int(mult_idx)}배 이상',
+                 'met': cond3,
+                 'detail': f'종목 {stock_ret*100:+.1f}% vs 지수 {idx_ret*100:+.2f}%×{int(mult_idx)} = {idx_ret*mult_idx*100:+.2f}%'},
+            ],
+            'allMet': all_met,
+        }
+
+    set1 = _set(1.60, t5,  t5_idx,  5, '[1] 단기급등',   'T-5')
+    set2 = _set(2.00, t15, t15_idx, 3, '[2] 중장기급등', 'T-15')
+
+    verdict = 'strong' if (set1['allMet'] or set2['allMet']) else 'none'
+
+    return {
+        'tClose': t_close,
+        'tDate': t_date_s,
+        'indexClose': t_idx,
+        'max15': max15,
+        'max15Date': max15_date,
+        'sets': [set1, set2],
+        'headline': {
+            'verdict': verdict,
+            'matchedSet': 0 if set1['allMet'] else (1 if set2['allMet'] else None),
+        },
+    }
+
 
 def caution_search(name: str) -> dict:
-    """투자주의 → 투자경고 격상 여부 점검 (웹 API / 텔레그램 공용 오케스트레이션).
+    """투자주의 → 투자경고 격상 여부 점검 (웹 API).
 
+    사유가 '투자경고 지정예고'일 때만 공식 [1]/[2] 조건을 계산한다.
     반환 status:
-      'ok'             — 오늘 KST 지정 + 격상 계산 완료
-      'not_caution'    — KRX 결과 없음 또는 지정일이 오늘 KST가 아님
-      'code_not_found' — 네이버 종목코드 조회 실패
-      'price_error'    — 주가 조회 실패 또는 데이터 부족
+      'ok'                — 투자경고 지정예고 + 공식 [1]/[2] 계산 완료
+      'non_price_reason'  — 오늘 지정은 맞으나 사유가 가격 격상과 무관 (소수계좌 등)
+      'not_caution'       — KRX 결과 없음 또는 지정일이 오늘 KST가 아님
+      'code_not_found'    — 네이버 종목코드 조회 실패
+      'price_error'       — 주가/지수 조회 실패 또는 데이터 부족
     최상위 예외는 호출자(핸들러)에서 'error' 로 감쌈.
     """
     # lib.krx 는 런타임에 import — 순환 import 회피
@@ -229,96 +358,58 @@ def caution_search(name: str) -> dict:
             'stockName': warn.get('stockName', ''),
         }
 
+    reason = warn.get('latestDesignationReason', '')
+    krx_market = warn.get('market', '')
+
+    base_fields = {
+        'query': name, 'todayKst': today_kst,
+        'stockName': warn['stockName'],
+        'latestDesignationDate': warn['latestDesignationDate'],
+        'designationReason': reason,
+        'recent15dCount': warn.get('recent15dCount', 0),
+        'allDates': warn.get('allDates', []),
+        'krxMarket': krx_market,
+    }
+
+    # 가격 기반 격상 조건은 '투자경고 지정예고' 사유에만 적용
+    if reason != '투자경고 지정예고':
+        return {'status': 'non_price_reason', **base_fields}
+
     codes = stock_code(warn['stockName'])
     if not codes:
-        return {
-            'status': 'code_not_found', 'query': name, 'todayKst': today_kst,
-            'stockName': warn['stockName'],
-            'latestDesignationDate': warn['latestDesignationDate'],
-            'recent15dCount': warn.get('recent15dCount', 0),
-            'allDates': warn.get('allDates', []),
-        }
+        return {'status': 'code_not_found', **base_fields}
 
     code = codes[0]['code']
-    market = codes[0].get('market', '')
+    naver_market = codes[0].get('market', '')
+    idx_symbol = _market_to_index_symbol(krx_market or naver_market)
+
+    if not idx_symbol:
+        return {
+            'status': 'price_error', **base_fields,
+            'code': code, 'market': naver_market,
+            'errorMessage': f'시장 구분 판정 실패 ({krx_market or naver_market!r})',
+        }
 
     try:
-        prices = fetch_prices(code, count=260)
-        escalation = calc_caution_escalation(prices)
+        prices = fetch_prices(code, count=30)
+        index_prices = fetch_index_prices(idx_symbol, count=30)
     except Exception as e:
         return {
-            'status': 'price_error', 'query': name, 'todayKst': today_kst,
-            'stockName': warn['stockName'],
-            'latestDesignationDate': warn['latestDesignationDate'],
-            'recent15dCount': warn.get('recent15dCount', 0),
-            'allDates': warn.get('allDates', []),
-            'code': code, 'market': market,
+            'status': 'price_error', **base_fields,
+            'code': code, 'market': naver_market, 'indexSymbol': idx_symbol,
             'errorMessage': str(e),
         }
 
+    escalation = calc_official_escalation(prices, index_prices)
     if 'error' in escalation:
         return {
-            'status': 'price_error', 'query': name, 'todayKst': today_kst,
-            'stockName': warn['stockName'],
-            'latestDesignationDate': warn['latestDesignationDate'],
-            'recent15dCount': warn.get('recent15dCount', 0),
-            'allDates': warn.get('allDates', []),
-            'code': code, 'market': market,
+            'status': 'price_error', **base_fields,
+            'code': code, 'market': naver_market, 'indexSymbol': idx_symbol,
             'errorMessage': escalation['error'],
         }
 
-    criteria = escalation['criteria']
-    count15 = warn.get('recent15dCount', 0)
-
-    # met / countActual 계산 — telegram.py:128-141 과 동일
-    for c in criteria:
-        if c['gating'] == 'count':
-            c['countActual'] = count15
-            c['countRequired'] = c.get('countRequired', 5)
-            c['met'] = bool(c['priceMet']) and count15 >= c['countRequired']
-        else:
-            c.setdefault('countActual', None)
-            c.setdefault('countRequired', None)
-            c['met'] = bool(c['priceMet'])
-
-    for i, c in enumerate(criteria):
-        c['label'] = _CAUTION_LABELS[i] if i < len(_CAUTION_LABELS) else c.get('name', '')
-
-    # 헤드라인 계층화 — telegram.py:137-141
-    strong_idx = next((i for i, c in enumerate(criteria)
-                       if c['met'] and c['gating'] != 'bulgunjeon'), None)
-    soft_idx = next((i for i, c in enumerate(criteria)
-                     if c['met'] and c['gating'] == 'bulgunjeon'), None)
-
-    if strong_idx is not None:
-        headline = {
-            'verdict': 'strong',
-            'criterionIndex': strong_idx,
-            'threshold': criteria[strong_idx]['threshold'],
-        }
-    elif soft_idx is not None:
-        headline = {
-            'verdict': 'soft',
-            'criterionIndex': soft_idx,
-            'threshold': criteria[soft_idx]['threshold'],
-        }
-    else:
-        headline = {'verdict': 'none', 'criterionIndex': None, 'threshold': None}
-
     return {
-        'status': 'ok',
-        'query': name,
-        'stockName': warn['stockName'],
-        'latestDesignationDate': warn['latestDesignationDate'],
-        'todayKst': today_kst,
-        'recent15dCount': count15,
-        'allDates': warn.get('allDates', []),
-        'code': code,
-        'market': market,
-        'escalation': {
-            'tClose': escalation['tClose'],
-            'tDate': escalation['tDate'],
-            'criteria': criteria,
-            'headline': headline,
-        },
+        'status': 'ok', **base_fields,
+        'code': code, 'market': naver_market, 'indexSymbol': idx_symbol,
+        'escalation': escalation,
     }

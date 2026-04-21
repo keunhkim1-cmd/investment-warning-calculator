@@ -337,26 +337,36 @@
     .overall-status.release { background: rgba(0,113,227,0.12); color: var(--blue-bright); }
     .overall-status.soft   { background: rgba(255,149,0,0.12); color: #ff9f0a; }
 
-    /* 투자주의 7요건 테이블 */
-    .caution-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:13px; }
-    .caution-table th { text-align:left; padding:8px 6px; color:var(--text-muted);
-      font-weight:400; font-size:12px; border-bottom:1px solid var(--border); letter-spacing:-0.12px; }
-    .caution-table th.num, .caution-table td.num { text-align:right; }
-    .caution-table td { padding:10px 6px; border-bottom:1px solid rgba(255,255,255,0.06);
-      color:var(--text-secondary); letter-spacing:-0.224px; }
-    .caution-table tr:last-child td { border-bottom:none; }
-    .caution-table td:first-child { color:var(--text); font-family:var(--font-text); font-weight:600; }
-    .ct-status { font-size:12px; font-weight:600; padding:2px 8px; border-radius:5px; letter-spacing:-0.12px; }
-    .ct-status.met    { background:rgba(255,69,58,0.16); color:var(--negative); }
-    .ct-status.unmet  { background:rgba(0,113,227,0.16); color:var(--blue-bright); }
-    .ct-status.soft   { background:rgba(255,149,0,0.16); color:#ff9f0a; }
-    .ct-status.na     { background:rgba(255,255,255,0.06); color:var(--text-muted); }
-    .caution-bulgunjeon summary { cursor:pointer; font-size:14px; color:var(--text-secondary); letter-spacing:-0.224px; padding:6px 0; }
-    .caution-bulgunjeon summary:hover { color:var(--text); }
-    .caution-bulgunjeon-body { font-size:13px; color:var(--text-secondary); line-height:1.6; margin-top:12px; letter-spacing:-0.224px; }
-    .caution-bulgunjeon-body h4 { font-size:14px; font-weight:600; color:var(--text); margin:6px 0; letter-spacing:-0.224px; }
-    .caution-bulgunjeon-body ul { padding-left:18px; margin-bottom:10px; }
-    .caution-bulgunjeon-body li { margin-bottom:4px; }
+    /* 투자경고 지정예고 — 공식 [1]/[2] 조건 세트 */
+    .caution-set {
+      background: var(--surface2); border-radius: 8px; padding: 14px;
+      margin-bottom: 10px;
+    }
+    .caution-set-head {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom: 10px;
+    }
+    .caution-set-title { font-size:14px; font-weight:600; color:var(--text); letter-spacing:-0.224px; }
+    .caution-set-status {
+      font-size:12px; font-weight:600; padding:3px 10px; border-radius:5px;
+      letter-spacing:-0.12px;
+    }
+    .caution-set-status.met   { background:rgba(255,69,58,0.16); color:var(--negative); }
+    .caution-set-status.unmet { background:rgba(0,113,227,0.16); color:var(--blue-bright); }
+    .caution-cond {
+      display:grid; grid-template-columns: 20px 1fr; column-gap: 10px;
+      padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .caution-cond:first-child { border-top: none; }
+    .caution-cond-mark { font-size: 13px; line-height: 1.4; }
+    .caution-cond-label { font-size: 13px; color: var(--text); font-weight: 600; letter-spacing: -0.224px; }
+    .caution-cond-detail { font-size: 12px; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; letter-spacing: -0.12px; }
+    .caution-nonprice {
+      background: rgba(255,149,0,0.08); border-radius: 8px;
+      padding: 14px 16px; font-size: 14px; color: #ff9f0a; line-height: 1.5;
+      letter-spacing: -0.224px;
+    }
+    .caution-nonprice strong { color: var(--text); }
 
     .price-loading {
       text-align: center; padding: 20px; font-size: 14px; color: var(--text-muted);
@@ -795,26 +805,10 @@
 
       <!-- 투자주의 격상 점검 -->
       <div class="price-card" id="cautionCard" style="display:none">
-        <h2>투자주의 격상 점검 <span style="font-size:12px;color:var(--text-muted);font-weight:400;letter-spacing:-0.12px;">KRX KIND · NAVER</span></h2>
+        <h2>투자경고 지정 점검 <span style="font-size:12px;color:var(--text-muted);font-weight:400;letter-spacing:-0.12px;">KRX KIND · NAVER</span></h2>
         <div class="price-meta" id="cautionMeta"></div>
         <div id="cautionContent"></div>
         <div class="overall-status" id="cautionVerdict" style="margin-top:12px;display:none"></div>
-        <details class="caution-bulgunjeon" style="margin-top:16px">
-          <summary>불건전 요건 안내 보기</summary>
-          <div class="caution-bulgunjeon-body">
-            <h4>1. 5일 or 15일 상승 &amp; 불건전요건</h4>
-            <ul>
-              <li>최근 5일(15일) 중 전일 대비 주가 상승하고, 특정 계좌(군)이 일중 전체 최고가 매수거래량의 10% 이상 매수일수가 2일(4일) 이상</li>
-              <li>최근 5일(15일) 중 특정 계좌(군)의 시세영향력을 고려한 매수관여율이 위원장이 정하는 기준에 해당하는 일수가 2일(4일) 이상</li>
-              <li>최근 5일(15일) 중 특정계좌(군)의 시가 또는 종가의 매수관여율이 20% 이상인 일수가 2일(4일) 이상</li>
-            </ul>
-            <p>→ 3가지 요건 중 하나에 해당하는 경우</p>
-            <h4 style="margin-top:10px;">2. 1년간 상승 &amp; 불건전요건</h4>
-            <ul>
-              <li>최근 15일 중 시세영향력을 고려한 매수관여율 상위 10개 계좌의 관여율이 일정 수준 이상인 경우에 해당하는 일수가 4일 이상</li>
-            </ul>
-          </div>
-        </details>
       </div>
 
       <!-- 해제 요건 -->
@@ -1089,6 +1083,10 @@ async function checkCautionFallback(query) {
         resultsEl.classList.remove('show');
         renderCaution(d);
         return;
+      case 'non_price_reason':
+        resultsEl.classList.remove('show');
+        renderCautionNonPrice(d);
+        return;
       case 'code_not_found':
       case 'price_error':
         resultsEl.classList.remove('show');
@@ -1106,61 +1104,81 @@ async function checkCautionFallback(query) {
   }
 }
 
+function _cautionMetaHtml(d, showIndex) {
+  const codeLabel = d.code ? ` (${escHtml(d.code)}${d.market ? '·' + escHtml(d.market) : ''})` : '';
+  const reason = d.designationReason ? ` &nbsp;|&nbsp; 지정사유: <strong>${escHtml(d.designationReason)}</strong>` : '';
+  let html = `종목: <strong>${escHtml(d.stockName)}</strong>${codeLabel}` +
+    ` &nbsp;|&nbsp; 지정일: <strong>${escHtml(d.latestDesignationDate)}</strong>${reason}`;
+  if (showIndex && d.escalation) {
+    const e = d.escalation;
+    const idxTxt = typeof e.indexClose === 'number' ? e.indexClose.toLocaleString('ko-KR', {maximumFractionDigits: 2}) : '';
+    html += ` &nbsp;|&nbsp; 현재가: <strong>${e.tClose.toLocaleString()}원</strong> (${escHtml(e.tDate)})`;
+    if (idxTxt) html += ` &nbsp;|&nbsp; ${escHtml(d.indexSymbol || '지수')}: <strong>${idxTxt}</strong>`;
+  }
+  return html;
+}
+
 function renderCaution(d) {
   const card = document.getElementById('cautionCard');
   const meta = document.getElementById('cautionMeta');
   const content = document.getElementById('cautionContent');
   const verdict = document.getElementById('cautionVerdict');
 
+  meta.innerHTML = _cautionMetaHtml(d, true);
+
   const e = d.escalation;
-  const codeLabel = d.code ? ` (${escHtml(d.code)}${d.market ? '·' + escHtml(d.market) : ''})` : '';
-  meta.innerHTML =
-    `종목: <strong>${escHtml(d.stockName)}</strong>${codeLabel}` +
-    ` &nbsp;|&nbsp; 지정일: <strong>${escHtml(d.latestDesignationDate)}</strong>` +
-    ` &nbsp;|&nbsp; 현재가: <strong>${e.tClose.toLocaleString()}원</strong> (${escHtml(e.tDate)})` +
-    ` &nbsp;|&nbsp; 최근 15일 지정: <strong>${d.recent15dCount}회</strong>`;
-
-  const rows = e.criteria.map(c => {
-    let priceCell = '—', countCell = '—', badge = '<span class="ct-status na">데이터 부족</span>';
-    if (c.threshold != null) {
-      priceCell = `${c.threshold.toLocaleString()}원`;
-      if (c.gating === 'count') countCell = `${c.countActual} / ${c.countRequired}회`;
-      if (!c.met) {
-        badge = '<span class="ct-status unmet">미충족</span>';
-      } else if (c.gating === 'bulgunjeon') {
-        badge = '<span class="ct-status soft">확인 필요</span>';
-      } else {
-        badge = '<span class="ct-status met">충족</span>';
-      }
-    }
-    return `<tr>
-      <td>${escHtml(c.label || c.name || '')}</td>
-      <td class="num">${priceCell}</td>
-      <td class="num">${countCell}</td>
-      <td>${badge}</td>
-    </tr>`;
-  }).join('');
-
-  content.innerHTML = `
-    <table class="caution-table">
-      <thead><tr><th>조건</th><th class="num">기준가</th><th class="num">횟수</th><th>결과</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  const setHtml = (s) => {
+    const statusCls = s.allMet ? 'met' : 'unmet';
+    const statusTxt = s.allMet ? '모두 충족' : '해당 없음';
+    const conds = s.conditions.map(c => `
+      <div class="caution-cond">
+        <div class="caution-cond-mark">${c.met ? '✅' : '❌'}</div>
+        <div>
+          <div class="caution-cond-label">${escHtml(c.label)}</div>
+          <div class="caution-cond-detail">${escHtml(c.detail)}</div>
+        </div>
+      </div>`).join('');
+    return `
+      <div class="caution-set">
+        <div class="caution-set-head">
+          <span class="caution-set-title">${escHtml(s.label)}</span>
+          <span class="caution-set-status ${statusCls}">${statusTxt}</span>
+        </div>
+        ${conds}
+      </div>`;
+  };
+  content.innerHTML = e.sets.map(setHtml).join('');
 
   verdict.classList.remove('keep', 'release', 'soft');
   verdict.style.display = '';
   const h = e.headline || { verdict: 'none' };
   if (h.verdict === 'strong') {
+    const matched = e.sets[h.matchedSet];
     verdict.classList.add('keep');
-    verdict.textContent = `→ 투자경고 지정 예상 (기준가 ${h.threshold.toLocaleString()}원) 🔴`;
-  } else if (h.verdict === 'soft') {
-    verdict.classList.add('soft');
-    verdict.textContent = `→ 불건전 조건 확인 필요 (기준가 ${h.threshold.toLocaleString()}원) 🟠`;
+    verdict.textContent = `→ 투자경고 지정 예상 · ${matched.label} 충족 🔴`;
   } else {
     verdict.classList.add('release');
-    verdict.textContent = '→ 투자경고 미해당 🟢';
+    verdict.textContent = '→ 투자경고 지정 미해당 🟢';
   }
 
+  card.style.display = 'block';
+}
+
+function renderCautionNonPrice(d) {
+  const card = document.getElementById('cautionCard');
+  const meta = document.getElementById('cautionMeta');
+  const content = document.getElementById('cautionContent');
+  const verdict = document.getElementById('cautionVerdict');
+
+  meta.innerHTML = _cautionMetaHtml(d, false);
+  content.innerHTML = `
+    <div class="caution-nonprice">
+      이 종목은 <strong>${escHtml(d.designationReason || '')}</strong> 사유로 투자주의 지정되었습니다.<br/>
+      가격 기반 투자경고 격상 조건(단기급등/중장기급등)은 적용되지 않습니다.
+    </div>`;
+  verdict.classList.remove('keep', 'release', 'soft');
+  verdict.style.display = 'none';
+  verdict.textContent = '';
   card.style.display = 'block';
 }
 
@@ -1173,12 +1191,10 @@ function renderCautionPartial(d) {
   verdict.style.display = 'none';
   verdict.textContent = '';
 
-  const name = d.stockName || d.query || '';
-  const designation = d.latestDesignationDate ? ` &nbsp;|&nbsp; 지정일: <strong>${escHtml(d.latestDesignationDate)}</strong>` : '';
-  meta.innerHTML = `종목: <strong>${escHtml(name)}</strong>${designation}`;
+  meta.innerHTML = _cautionMetaHtml(d, false);
   const msg = d.status === 'code_not_found'
     ? '종목코드를 찾을 수 없어 격상 요건을 계산할 수 없습니다.'
-    : `주가 조회 불가: ${escHtml(d.errorMessage || '알 수 없는 오류')}`;
+    : `주가/지수 조회 불가: ${escHtml(d.errorMessage || '알 수 없는 오류')}`;
   content.innerHTML = `<div class="price-error">${msg}</div>`;
   card.style.display = 'block';
 }
