@@ -11,8 +11,8 @@ KST = timezone(timedelta(hours=9))
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib.holidays import add_trading_days, count_trading_days
-from lib.krx import search_kind, search_kind_caution
-from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, calc_caution_escalation
+from lib.krx import search_kind
+from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, caution_search
 from lib.dart_report import summarize_business_report
 from lib.cache import TTLCache
 
@@ -107,96 +107,79 @@ def build_message(stock_name: str, warn: dict, thresholds: dict | None) -> str:
     return '\n'.join(lines)
 
 
-def build_caution_message(stock_name: str, warn: dict, escalation: dict | None) -> str:
-    """투자주의 → 투자경고 격상 여부 메시지."""
-    d_str  = warn['latestDesignationDate']
-    d_date = date.fromisoformat(d_str)
-    lines  = [f'🟡 {stock_name} 투자주의', '']
+def build_caution_message(d: dict) -> str:
+    """투자주의 / 투자경고 지정예고 응답 → 텔레그램 메시지.
 
-    if not escalation or 'error' in (escalation or {}):
-        lines.append(f'```\n지정일  {sd(d_date)}\n```')
-        if escalation and 'error' in escalation:
-            lines.append(f'⚠️ 주가 조회 불가: {escalation["error"]}')
+    d: lib.naver.caution_search() 의 반환 dict — status 가 분기 키.
+    """
+    status = d.get('status')
+    query  = d.get('query', '')
+    name   = d.get('stockName', query)
+
+    if status == 'not_caution':
+        return f'"{query}" — 현재 투자경고가 아님.'
+
+    reason = d.get('designationReason', '')
+    d_str  = d.get('latestDesignationDate', '')
+    head_date = ''
+    if d_str:
+        try:
+            head_date = f' ({sd(date.fromisoformat(d_str))})'
+        except ValueError:
+            head_date = ''
+
+    if status == 'non_price_reason':
+        return (
+            f'🟡 {name} 투자주의{head_date}\n'
+            f'사유: {reason}\n\n'
+            '가격 기반 투자경고 격상 조건(단기/중장기급등)은 적용되지 않습니다.'
+        )
+
+    if status in ('code_not_found', 'price_error'):
+        err = d.get('errorMessage', '알 수 없는 오류')
+        body = (f'🟡 {name} 투자주의{head_date}\n'
+                f'사유: {reason}\n\n')
+        if status == 'code_not_found':
+            body += '종목코드를 찾을 수 없어 격상 조건을 계산할 수 없습니다.'
+        else:
+            body += f'⚠️ 주가/지수 조회 불가: {err}'
+        return body
+
+    if status != 'ok':
+        return f'⚠️ 처리 중 오류: {d.get("errorMessage", status)}'
+
+    e = d['escalation']
+    t_close = e['tClose']
+    t_date  = date.fromisoformat(e['tDate'])
+    idx_close = e.get('indexClose', 0)
+    idx_sym = d.get('indexSymbol', '')
+
+    lines = [f'🟡 {name} 투자주의{head_date}']
+    lines.append(f'사유: {reason}')
+    lines.append('')
+    idx_txt = f'{idx_close:,.2f}' if isinstance(idx_close, (int, float)) else '-'
+    lines.append(f'현재가 {t_close:,}원 · {idx_sym} {idx_txt}  ({sd(t_date)})')
+    lines.append('')
+
+    def _set_block(s: dict) -> list:
+        head = '모두 충족 ✅' if s['allMet'] else '해당 없음'
+        out = [f"*{s['label']}* — {head}"]
+        for c in s['conditions']:
+            mark = '✅' if c['met'] else '❌'
+            out.append(f'  {mark} {c["label"]}')
+            out.append(f'     {c["detail"]}')
+        return out
+
+    for s in e['sets']:
+        lines.extend(_set_block(s))
         lines.append('')
-        lines.append('불건전 요건은 /bulgunjeon 을 참고')
-        return '\n'.join(lines)
 
-    criteria = escalation['criteria']
-    count15  = warn.get('recent15dCount', 0)
-
-    # 각 조건의 최종 결과(met) 확정
-    for c in criteria:
-        if c['gating'] == 'count':
-            c['countActual'] = count15
-            c['met'] = bool(c['priceMet']) and count15 >= c['countRequired']
-        else:
-            # 'none' & 'bulgunjeon' 모두 가격 결과만 표기.
-            # 불건전은 시스템에서 판정 불가 — 사용자가 /bulgunjeon 로 수동 확인.
-            c['met'] = bool(c['priceMet'])
-
-    # 헤드라인 계층화: 확정 매칭(가격만/가격+카운트) vs 조건부 매칭(가격+불건전)
-    strong_idx = next((i for i, c in enumerate(criteria)
-                       if c['met'] and c['gating'] != 'bulgunjeon'), None)
-    soft_idx   = next((i for i, c in enumerate(criteria)
-                       if c['met'] and c['gating'] == 'bulgunjeon'), None)
-
-    cur = escalation['tClose']
-    t_d = date.fromisoformat(escalation['tDate'])
-
-    lines.append(f'현재가 {cur:,}원 ({sd(t_d)})')
-    lines.append('')
-
-    # 상세 표
-    def ci(c):
-        if c.get('threshold') is None:
-            return '—'
-        return '✅' if c['met'] else '❌'
-
-    row_labels = [
-        '① 초단기(3일 100%)',
-        '② 단기(5일 60%)',
-        '③ 단기&불건전(5일 45%)',
-        '④ 장기(15일 100%)',
-        '⑤ 장기&불건전(15일 75%)',
-        '⑥ 반복(15일 75%)',
-        '⑦ 초장기&불건전(1년 200%)',
-    ]
-    price_strs = []
-    for c in criteria:
-        if c.get('threshold') is None:
-            price_strs.append('—')
-        elif c['gating'] == 'count':
-            price_strs.append(f"{c['threshold']:,}원·{c['countActual']}/{c['countRequired']}회")
-        else:
-            price_strs.append(f"{c['threshold']:,}원")
-
-    lw   = max(vlen(lbl) for lbl in row_labels) + 1
-    pw_v = max(vlen(p) for p in price_strs)
-    sep  = lw + 2 + pw_v + 3 + vlen('결과')
-
-    def row(label, price, icon):
-        return vpad_l(label, lw) + '  ' + vpad_r(price, pw_v) + '   ' + icon
-
-    block_lines = [
-        vpad_l('조건', lw) + '  ' + vpad_r('기준가', pw_v) + '   결과',
-        '─' * sep,
-    ]
-    for lbl, p, c in zip(row_labels, price_strs, criteria):
-        block_lines.append(row(lbl, p, ci(c)))
-    lines.append('```\n' + '\n'.join(block_lines) + '\n```')
-    lines.append('')
-
-    if strong_idx is not None:
-        thresh = criteria[strong_idx]['threshold']
-        lines.append(f'→ 투자경고 지정 예상 (기준가 {thresh:,}원) 🔴')
-    elif soft_idx is not None:
-        thresh = criteria[soft_idx]['threshold']
-        lines.append(f'→ 불건전 요건 시 투자경고 지정 예상 (기준가 {thresh:,}원) 🟠')
+    h = e.get('headline', {'verdict': 'none'})
+    if h.get('verdict') == 'strong':
+        matched = e['sets'][h['matchedSet']]
+        lines.append(f'→ 투자경고 지정 예상 · {matched["label"]} 충족 🔴')
     else:
-        lines.append('→ 투자경고 미해당 🟢')
-    lines.append('')
-    lines.append('불건전 요건은 /bulgunjeon 을 참고')
-
+        lines.append('→ 투자경고 지정 미해당 🟢')
     return '\n'.join(lines)
 
 # ── Telegram API ─────────────────────────────────────────────
@@ -344,38 +327,17 @@ def do_caution(chat_id: int, query: str):
         print(f'/caution 안내 메시지 전송 실패: {e}', flush=True)
 
     try:
-        results = search_kind_caution(query)
+        result = caution_search(query)
     except Exception as e:
-        tg_send_plain(chat_id, f'❌ KRX 조회 오류: {e}')
+        tg_send_plain(chat_id, f'❌ 조회 오류: {e}')
         return
 
-    if not results:
-        tg_send_plain(chat_id, f'"{query}" — 현재 투자주의가 아님.')
-        return
-
-    # 투자주의는 1거래일 지정 — 오늘(KST) 지정분이 아니면 현재 투자주의가 아님
-    today_kst = datetime.now(KST).date().isoformat()
-    warn = results[0]
-    if warn['latestDesignationDate'] != today_kst:
-        tg_send_plain(chat_id, f'"{query}" — 현재 투자주의가 아님.')
-        return
-
-    escalation = None
+    msg = build_caution_message(result)
     try:
-        codes = naver_stock_code(warn['stockName'])
-        if codes:
-            # 초장기(1년 200%) 조건 판정을 위해 250거래일 이상 필요 → 260일로 여유 있게 조회
-            prices = fetch_prices(codes[0]['code'], count=260)
-            escalation = calc_caution_escalation(prices)
-    except Exception as e:
-        print(f'주가 조회 실패: {e}', flush=True)
-        escalation = {'error': str(e)}
-
-    try:
-        tg_send(chat_id, build_caution_message(warn['stockName'], warn, escalation))
+        tg_send(chat_id, msg)
     except Exception:
         try:
-            tg_send_plain(chat_id, build_caution_message(warn['stockName'], warn, escalation))
+            tg_send_plain(chat_id, msg)
         except Exception as e:
             tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {e}')
 
@@ -420,17 +382,18 @@ def process_update(update: dict):
             '`/warning 종목명` 또는 종목명을 직접 입력\n'
             '예: `/warning 코셈` 또는 `코셈`\n\n'
             '*2. 투자경고 지정 예상*\n'
-            '`/caution 종목명` — 투자주의 종목의 경고 격상 요건 점검\n'
+            '`/caution 종목명` — "투자경고 지정예고" 종목의 실제 지정 여부 점검\n'
             '예: `/caution 코셈`\n'
-            '4가지 요건 중 하나라도 충족 시 "지정 예상":\n'
-            '① 초단기 3일 100% ② 단기 5일 60%\n'
-            '③ 장기 15일 100% ④ 반복 15일 75% \\+ 5회\n\n'
+            'KRX 공식 [1] 또는 [2] 중 하나라도 모두 충족 시 "지정 예상":\n'
+            '  \\[1] 단기급등: T/T\\-5 ≥ 160%, 15일 최고, 지수 ×5\n'
+            '  \\[2] 중장기급등: T/T\\-15 ≥ 200%, 15일 최고, 지수 ×3\n'
+            '지정예고 외 사유(소수계좌 등)는 가격 조건 적용되지 않음\n\n'
             '*3. 불건전 요건 안내*\n'
-            '`/bulgunjeon` — 불공정거래 판단 기준 참고용\n\n'
+            '`/bulgunjeon` — KRX 불공정거래 판단 기준 참고용\n\n'
             '*4. 사업보고서 요약*\n'
             '`/info 종목명` — 가장 최근 사업보고서를 10줄로 요약\n'
             '예: `/info 삼성전자`\n\n'
-            '*해제 조건 안내*\n'
+            '*투자경고 해제 조건 안내*\n'
             '아래 3가지 중 하나라도 미해당 시 다음 거래일 해제:\n'
             '① 현재가 ≥ T\\-5 종가의 145%\n'
             '② 현재가 ≥ T\\-15 종가의 175%\n'
