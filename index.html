@@ -1345,6 +1345,28 @@
       margin-bottom: 0;
     }
     #page-warning .warning-terminal .result-card .section-inner { padding: 0; }
+
+    /* ─── Responsive (v1 desktop-first) ─── */
+    @media (max-width: 1199px) {
+      #page-warning .tm-tbl { display: block; overflow-x: auto; white-space: nowrap; }
+      #page-warning .tm-chart { height: 280px !important; }
+    }
+    @media (max-width: 767px) {
+      #page-warning .tm-sym { flex-wrap: wrap; gap: 10px; }
+      #page-warning .tm-sym .chips { order: 3; margin-left: 0; width: 100%; }
+      #page-warning .tm-sym .px { margin-left: auto; }
+      #page-warning .tm-tl-track { grid-template-columns: repeat(11, minmax(40px, 1fr)); overflow-x: auto; }
+      #page-warning .tm-strip { grid-template-columns: 1fr; }
+      #page-warning .tm-strip .tm-cell { border-right: none; border-bottom: 1px solid var(--tm-hairline); }
+      #page-warning .tm-strip .tm-cell:last-child { border-bottom: none; }
+      #page-warning .tm-verdict { flex-wrap: wrap; }
+      #page-warning .tm-verdict .side { border-left: none; border-top: 1px solid var(--tm-hairline); padding-left: 0; padding-top: 10px; margin-left: 0; margin-top: 10px; width: 100%; text-align: left; }
+      #page-warning .tm-rules .r { grid-template-columns: 28px 1fr; }
+      #page-warning .tm-rules .r .m { grid-column: 2; font-size: 9px; }
+      #page-warning .tm-chart { height: 220px !important; }
+      body.is-warning-active .ticker-wrap::before { display: none; }
+      body.is-warning-active .ticker-track { padding-left: 0; }
+    }
   </style>
 </head>
 <body>
