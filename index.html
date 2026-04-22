@@ -707,6 +707,96 @@
       .section-inner { padding: 0 16px; }
       .section-dark { padding: 32px 0; }
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       Warning Calculator — Terminal Mono Night Scope
+       All styles scoped under #page-warning .warning-terminal
+       Other tabs (#page-dashboard / #page-dart / #page-patchnotes) unaffected.
+       ═══════════════════════════════════════════════════════════════ */
+    #page-warning .warning-terminal {
+      background: var(--tm-bg);
+      color: var(--tm-text);
+      font-family: var(--font-text);
+      font-size: var(--tm-fs-sm);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* Override outer section-dark spacing inside warning scope */
+    #page-warning .warning-terminal .section-dark {
+      background: var(--tm-bg);
+      padding: 0;
+    }
+    #page-warning .warning-terminal .section-inner {
+      max-width: 1380px;
+      padding: 0;
+    }
+    /* Helpers */
+    #page-warning .warning-terminal .num {
+      font-variant-numeric: tabular-nums;
+      font-family: var(--mono);
+    }
+    #page-warning .warning-terminal .caps {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: var(--tm-ls-caps);
+    }
+    #page-warning .warning-terminal .label {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: var(--tm-ls-label);
+      font-size: var(--tm-fs-micro);
+      color: var(--tm-text-mute);
+      font-weight: var(--tm-fw-med);
+    }
+    /* Scrollbar */
+    #page-warning .warning-terminal ::-webkit-scrollbar { width: 6px; height: 6px; }
+    #page-warning .warning-terminal ::-webkit-scrollbar-thumb { background: #2A2A2E; }
+
+    /* Strip rounded corners inside warning scope */
+    #page-warning .warning-terminal .card,
+    #page-warning .warning-terminal .result-card,
+    #page-warning .warning-terminal .price-card,
+    #page-warning .warning-terminal .search-results,
+    #page-warning .warning-terminal .thresh-row,
+    #page-warning .warning-terminal .thresh-num,
+    #page-warning .warning-terminal .caution-set,
+    #page-warning .warning-terminal .caution-set-status,
+    #page-warning .warning-terminal .caution-nonprice,
+    #page-warning .warning-terminal .overall-status,
+    #page-warning .warning-terminal .warning-box,
+    #page-warning .warning-terminal .server-notice,
+    #page-warning .warning-terminal .info-card,
+    #page-warning .warning-terminal .date-item,
+    #page-warning .warning-terminal .search-btn,
+    #page-warning .warning-terminal .dday-badge,
+    #page-warning .warning-terminal .ps-status,
+    #page-warning .warning-terminal .result-level-badge,
+    #page-warning .warning-terminal .condition-item .icon {
+      border-radius: 0;
+    }
+
+    /* Tone down existing card backgrounds inside warning scope */
+    #page-warning .warning-terminal .card {
+      background: var(--tm-panel);
+      border: 1px solid var(--tm-hairline);
+    }
+    #page-warning .warning-terminal .info-card {
+      background: var(--tm-panel);
+      border: 1px solid var(--tm-hairline);
+    }
+    #page-warning .warning-terminal .header h1 {
+      font-family: var(--font-display);
+      color: var(--tm-text);
+    }
+    #page-warning .warning-terminal .header p {
+      color: var(--tm-text-dim);
+    }
+    #page-warning .warning-terminal .badge {
+      background: var(--tm-accent-soft);
+      color: var(--tm-accent);
+      border: 1px solid var(--tm-accent);
+      border-radius: 0;
+    }
   </style>
 </head>
 <body>
@@ -813,6 +903,7 @@
 
 <!-- ═══════════════ 투자경고 계산기 ═══════════════ -->
 <div id="page-warning" class="page-section active">
+  <div class="warning-terminal">
 
   <div class="section-dark">
     <div class="section-inner">
@@ -941,6 +1032,7 @@
     </div>
   </div>
 
+  </div><!-- /.warning-terminal -->
 </div><!-- /page-warning -->
 
 <!-- ═══════════════ 공시 분석기 ═══════════════ -->
