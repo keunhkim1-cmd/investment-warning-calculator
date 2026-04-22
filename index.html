@@ -836,6 +836,135 @@
       border: 1px solid var(--tm-accent);
       border-radius: 0;
     }
+    /* 검색 버튼·입력창 터미널 스킨 */
+    #page-warning .warning-terminal .search-btn {
+      background: var(--tm-accent);
+      color: #000;
+      border: 1px solid var(--tm-accent);
+      font-family: var(--font-display);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    #page-warning .warning-terminal .search-btn:hover {
+      background: var(--tm-text);
+      border-color: var(--tm-text);
+    }
+    #page-warning .warning-terminal input[type="text"] {
+      background: var(--tm-elev);
+      border: 1px solid var(--tm-hairline);
+      color: var(--tm-text);
+      border-radius: 0;
+      font-family: var(--font-text);
+    }
+    #page-warning .warning-terminal input[type="text"]::placeholder {
+      color: var(--tm-text-mute);
+    }
+    #page-warning .warning-terminal input[type="text"]:focus {
+      border-color: var(--tm-accent);
+      outline: none;
+    }
+    #page-warning .warning-terminal .search-results {
+      background: var(--tm-panel);
+      border: 1px solid var(--tm-hairline);
+    }
+    #page-warning .warning-terminal .search-results-header {
+      color: var(--tm-text-mute);
+      font-size: 10px;
+      font-family: var(--font-display);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    #page-warning .warning-terminal .result-item:hover {
+      background: var(--tm-elev);
+    }
+    #page-warning .warning-terminal .result-stock-name {
+      color: var(--tm-text);
+    }
+    #page-warning .warning-terminal .result-level-badge {
+      font-family: var(--font-display);
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-radius: 0;
+      background: var(--tm-accent-soft);
+      color: var(--tm-accent);
+      border: 1px solid var(--tm-accent);
+    }
+    #page-warning .warning-terminal .result-date {
+      color: var(--tm-text-mute);
+      font-family: var(--mono);
+    }
+    /* 시장경보 단계 안내 (info-card) 터미널 스킨 */
+    #page-warning .warning-terminal .info-card h3 {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--tm-text);
+      border-left: 2px solid var(--tm-accent);
+      padding-left: 10px;
+    }
+    #page-warning .warning-terminal .stage-item {
+      color: var(--tm-text-dim);
+      font-size: 12px;
+    }
+    #page-warning .warning-terminal .stage-item strong {
+      color: var(--tm-text);
+    }
+    #page-warning .warning-terminal .footnote {
+      color: var(--tm-text-mute);
+      font-size: 11px;
+    }
+    #page-warning .warning-terminal .footnote strong {
+      color: var(--tm-text-dim);
+    }
+    /* 헤더 섹션 — 터미널 간격 */
+    #page-warning .warning-terminal .header {
+      padding: 32px 16px 24px;
+      text-align: left;
+    }
+    #page-warning .warning-terminal .header h1 {
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin: 6px 0;
+    }
+    #page-warning .warning-terminal .header p {
+      font-size: 12px;
+    }
+    /* 검색 카드·info-card padding 조정 */
+    #page-warning .warning-terminal .card {
+      padding: 14px 16px;
+      margin: 0 16px 16px;
+    }
+    #page-warning .warning-terminal .card h2 {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--tm-text);
+      border-left: 2px solid var(--tm-accent);
+      padding-left: 10px;
+      margin: 0 0 10px;
+    }
+    #page-warning .warning-terminal .card h2 span {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.3px;
+      text-transform: none;
+      color: var(--tm-text-mute);
+      border: none;
+      margin-left: 8px;
+    }
+    #page-warning .warning-terminal .info-card {
+      padding: 14px 16px;
+      margin: 0 16px 16px;
+    }
+    #page-warning .warning-terminal .result-card {
+      margin: 0 16px 16px;
+    }
 
     /* ─── §1 Terminal sub-bar ─── */
     #page-warning .tm-top {

@@ -6,3 +6,6 @@ __pycache__/
 .vercel/
 .vercel
 .env*.local
+
+# Claude Code dev config
+.claude/
