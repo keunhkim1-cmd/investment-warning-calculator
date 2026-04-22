@@ -280,15 +280,6 @@
     }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
-    /* 자동입력 표시 */
-    .auto-filled-tag {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: rgba(0,113,227,0.16);
-      color: var(--blue-bright); font-size: 12px; padding: 3px 10px;
-      border-radius: 5px; margin-top: 6px; border: none;
-      letter-spacing: -0.12px;
-    }
-
     /* 서버 상태 알림 */
     .server-notice {
       background: var(--surface); border: none;
@@ -298,17 +289,6 @@
     }
     .server-notice.show { display: block; }
     .server-notice a { color: var(--link); text-decoration: none; }
-
-    /* Buttons */
-    .btn {
-      width: 100%; background: var(--blue); color: #ffffff;
-      font-size: 17px; font-weight: 400; border: none;
-      border-radius: 8px; padding: 11px 20px; cursor: pointer;
-      transition: opacity 0.2s; margin-top: 10px;
-      letter-spacing: -0.374px;
-    }
-    .btn:hover { background: #0077ED; }
-    .btn:active { background: var(--surface2); color: var(--text); }
 
     /* Result */
     .result-card {
@@ -456,42 +436,95 @@
     }
     .caution-nonprice strong { color: var(--text); }
 
-    /* 패치 노트 */
-    .patch-entry {
-      background: var(--surface); border-radius: 8px;
-      padding: 24px; margin-bottom: 14px;
+    /* 패치 노트 — terminal skin */
+    #page-patchnotes .warning-terminal .header {
+      padding: 32px 16px 16px;
+      text-align: left;
     }
-    .patch-entry-head {
-      display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px;
+    #page-patchnotes .warning-terminal .header h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--tm-text);
+      margin: 6px 0;
+      letter-spacing: -0.2px;
+      line-height: 1.10;
+    }
+    #page-patchnotes .warning-terminal .header p {
+      font-size: 12px;
+      color: var(--tm-text-dim);
+      text-align: left;
+    }
+    #page-patchnotes #patchnotesContent {
+      padding: 0 16px 24px;
+    }
+    .patch-entry {
+      background: var(--tm-panel);
+      border: 1px solid var(--tm-hairline);
+      border-radius: 0;
+      padding: 0;
       margin-bottom: 12px;
     }
+    .patch-entry-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 11px 16px 9px;
+      border-bottom: 1px solid var(--tm-hairline);
+    }
     .patch-entry-date {
-      font-family: var(--mono); font-size: 13px;
-      color: var(--text-muted); letter-spacing: -0.12px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--tm-text-mute);
+      letter-spacing: 0.3px;
+      font-variant-numeric: tabular-nums;
     }
     .patch-entry-tag {
-      font-size: 11px; font-weight: 600; padding: 2px 8px;
-      border-radius: 5px; letter-spacing: -0.12px;
-      text-transform: uppercase;
-    }
-    .patch-entry-tag.feat    { background: rgba(0,113,227,0.16); color: var(--blue-bright); }
-    .patch-entry-tag.fix     { background: rgba(255,69,58,0.16); color: var(--negative); }
-    .patch-entry-tag.improve { background: rgba(255,149,0,0.16); color: #ff9f0a; }
-    .patch-entry-tag.chore   { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-    .patch-entry-title {
       font-family: var(--font-display);
-      font-size: 17px; font-weight: 600; color: var(--text);
-      letter-spacing: -0.374px; line-height: 1.3;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 0;
+      border: 1px solid;
     }
-    .patch-entry-items { list-style: none; padding: 0; margin: 0; }
+    .patch-entry-tag.feat    { background: var(--tm-toss-soft);  color: var(--tm-toss);     border-color: var(--tm-toss); }
+    .patch-entry-tag.fix     { background: var(--tm-up-soft);    color: var(--tm-up);       border-color: var(--tm-up); }
+    .patch-entry-tag.improve { background: var(--tm-amber-soft); color: var(--tm-amber);    border-color: var(--tm-amber); }
+    .patch-entry-tag.chore   { background: var(--tm-accent-soft);color: var(--tm-text-mute);border-color: var(--tm-text-mute); }
+    .patch-entry-title {
+      flex: 1 1 100%;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--tm-text);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-left: 2px solid var(--tm-accent);
+      padding-left: 10px;
+      line-height: 1.2;
+    }
+    .patch-entry-items {
+      list-style: none;
+      padding: 14px 16px;
+      margin: 0;
+    }
     .patch-entry-items li {
-      padding: 5px 0 5px 18px; position: relative;
-      font-size: 14px; color: var(--text-secondary); line-height: 1.5;
-      letter-spacing: -0.224px;
+      padding: 4px 0 4px 14px;
+      position: relative;
+      font-family: var(--font-text);
+      font-size: 12px;
+      color: var(--tm-text-dim);
+      line-height: 1.5;
+      letter-spacing: -0.12px;
     }
     .patch-entry-items li::before {
-      content: "–"; position: absolute; left: 0;
-      color: var(--text-muted);
+      content: "–";
+      position: absolute;
+      left: 0;
+      color: var(--tm-text-mute);
     }
 
     .price-loading {
@@ -547,169 +580,6 @@
     .footnote {
       text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 32px;
       letter-spacing: -0.12px;
-    }
-
-    /* 재무 모델 (Model 시트 양식) — DESIGN.md 준수 */
-    .model-table {
-      width: 100%; border-collapse: collapse; min-width: 1100px;
-      font-family: var(--mono);
-    }
-    .model-table th, .model-table td {
-      padding: 8px 10px; text-align: right; vertical-align: baseline;
-    }
-    .model-table th:first-child, .model-table td:first-child {
-      text-align: left; font-family: var(--font-text);
-    }
-    /* 컬럼 그룹 헤더 (Annual / Quarterly) — Caption 14/400/-0.224 */
-    .model-table thead th.mt-group {
-      font-family: var(--font-text);
-      font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      color: var(--text-muted); text-align: center;
-      padding-bottom: 4px;
-    }
-    /* 연도/분기 컬럼 라벨 — Micro Bold 12/600/-0.12 */
-    .model-table thead th.mt-period {
-      font-family: var(--font-text);
-      font-size: 12px; font-weight: 600; letter-spacing: -0.12px;
-      color: var(--text-muted);
-      padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    .model-table thead th.mt-corner {
-      font-family: var(--font-text);
-      font-size: 12px; font-weight: 400; letter-spacing: -0.12px;
-      color: var(--text-muted);
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    /* 섹션 구분 행 — Body Emphasis 17/600/-0.374 */
-    .model-table tr.mt-section td {
-      font-family: var(--font-text);
-      font-size: 17px; font-weight: 600; letter-spacing: -0.374px;
-      color: var(--text);
-      padding-top: 28px; padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    /* 일반 행 — Caption 14/400/-0.224 */
-    .model-table tbody td {
-      font-family: var(--mono);
-      font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      color: var(--text-secondary);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .model-table tbody td.mt-label {
-      font-family: var(--font-text);
-      font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      color: var(--text-secondary);
-    }
-    /* 강조(합계) 행 — Caption Bold 14/600 + 상단 hairline */
-    .model-table tr.mt-total td {
-      font-weight: 600;
-      border-top: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.03);
-    }
-    .model-table tr.mt-total td.mt-label { color: var(--text); }
-    /* 하위 비율 행 — Caption 14/400 + 들여쓰기 + 흐린 색 */
-    .model-table tr.mt-sub td {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .model-table tr.mt-sub td.mt-label {
-      padding-left: 24px;
-      color: var(--text-muted);
-    }
-    /* Annual / Quarterly 구분선 */
-    .model-table .mt-q-first { border-left: 2px solid rgba(255,255,255,0.18); }
-    /* 음수 / 빈값 */
-    .model-table .mt-neg { color: var(--negative); }
-    .model-table .mt-empty { color: rgba(255,255,255,0.24); }
-
-    /* 푸트노트 — Micro 12/400/-0.12 */
-    .model-foot {
-      font-family: var(--font-text);
-      font-size: 12px; font-weight: 400; letter-spacing: -0.12px;
-      color: var(--text-muted);
-      line-height: 1.7; margin-top: 16px;
-    }
-    /* 컨트롤 (회계 구분 select) */
-    .model-controls {
-      display: flex; gap: 12px; align-items: baseline; margin-bottom: 16px;
-    }
-    .model-controls label {
-      font-family: var(--font-text);
-      font-size: 12px; font-weight: 600; letter-spacing: -0.12px;
-      color: var(--text-muted);
-    }
-    .model-controls select {
-      font-family: var(--font-text);
-      font-size: 14px; font-weight: 400; letter-spacing: -0.224px;
-      padding: 6px 10px; border-radius: 8px;
-    }
-    .model-meta {
-      font-family: var(--font-text);
-      font-size: 12px; font-weight: 400; letter-spacing: -0.12px;
-      color: var(--text-muted);
-    }
-
-    /* 기업 개요 */
-    .overview-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-    }
-    .ov-item {
-      background: var(--surface2); border: none; border-radius: 8px;
-      padding: 14px 10px; text-align: center;
-    }
-    .ov-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; letter-spacing: -0.12px; }
-    .ov-value { font-size: 14px; font-weight: 600; color: var(--text); font-family: var(--mono); letter-spacing: -0.224px; }
-    .ov-value.primary { color: var(--blue-bright); }
-    .ov-value.green { color: var(--down); }
-    .ov-value.red { color: var(--up); }
-    @media (max-width: 480px) {
-      .overview-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    /* 공시 분석기 */
-    .dart-filters {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;
-    }
-    .dart-filters .form-group.full { grid-column: 1 / -1; }
-    .dart-results-list { display: flex; flex-direction: column; gap: 0; }
-    .dart-item {
-      background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.06);
-      border-radius: 0; padding: 14px 0; cursor: pointer;
-      transition: opacity 0.15s; display: block;
-    }
-    .dart-item:hover { opacity: 0.7; }
-    .dart-item-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .dart-corp { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.224px; }
-    .dart-date { font-size: 12px; color: var(--text-muted); font-family: var(--mono); letter-spacing: -0.12px; }
-    .dart-title { font-size: 14px; color: var(--text-secondary); line-height: 1.43; letter-spacing: -0.224px; }
-    .dart-cls-badge {
-      display: inline-block; font-size: 12px; font-weight: 600;
-      padding: 2px 8px; border-radius: 5px; margin-left: 6px;
-      letter-spacing: -0.12px;
-    }
-    .cls-Y { background: rgba(0,113,227,0.16); color: var(--blue-bright); border: none; }
-    .cls-K { background: rgba(0,113,227,0.16); color: var(--blue-bright); border: none; }
-    .cls-N { background: rgba(255,214,10,0.12); color: #ffd60a; border: none; }
-    .cls-E { background: rgba(255,255,255,0.06); color: var(--text-muted); border: none; }
-    .dart-pagination {
-      display: flex; align-items: center; justify-content: center;
-      gap: 12px; margin-top: 16px;
-    }
-    .dart-pagination button {
-      background: var(--surface2); border: none; color: var(--text-secondary);
-      padding: 8px 20px; border-radius: 980px; cursor: pointer;
-      font-size: 14px; font-weight: 400; transition: opacity 0.15s;
-      letter-spacing: -0.224px;
-    }
-    .dart-pagination button:hover { background: rgba(255,255,255,0.12); }
-    .dart-pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
-    .dart-pagination span { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
-    .dart-empty {
-      text-align: center; padding: 40px 20px;
-      font-size: 14px; color: var(--text-muted);
     }
 
     /* Ticker tape */
@@ -779,7 +649,6 @@
     @media (max-width: 480px) {
       .date-grid { grid-template-columns: 1fr; }
       .header h1 { font-size: 28px; }
-      .dart-filters { grid-template-columns: 1fr; }
       .nav-item { padding: 0 10px; }
       .section-inner { padding: 0 16px; }
       .section-dark { padding: 32px 0; }
@@ -787,10 +656,10 @@
 
     /* ═══════════════════════════════════════════════════════════════
        Warning Calculator — Terminal Mono Night Scope
-       All styles scoped under #page-warning .warning-terminal
-       Other tabs (#page-dashboard / #page-dart / #page-patchnotes) unaffected.
+       All styles scoped under .warning-terminal
+       Other tabs (#page-about / #page-patchnotes) unaffected.
        ═══════════════════════════════════════════════════════════════ */
-    #page-warning .warning-terminal {
+    .warning-terminal {
       background: var(--tm-bg);
       color: var(--tm-text);
       font-family: var(--font-text);
@@ -800,25 +669,25 @@
       -webkit-font-smoothing: antialiased;
     }
     /* Override outer section-dark spacing inside warning scope */
-    #page-warning .warning-terminal .section-dark {
+    .warning-terminal .section-dark {
       background: var(--tm-bg);
       padding: 0;
     }
-    #page-warning .warning-terminal .section-inner {
+    .warning-terminal .section-inner {
       max-width: 1380px;
       padding: 0;
     }
     /* Helpers */
-    #page-warning .warning-terminal .num {
+    .warning-terminal .num {
       font-variant-numeric: tabular-nums;
       font-family: var(--mono);
     }
-    #page-warning .warning-terminal .caps {
+    .warning-terminal .caps {
       font-family: var(--font-display);
       text-transform: uppercase;
       letter-spacing: var(--tm-ls-caps);
     }
-    #page-warning .warning-terminal .label {
+    .warning-terminal .label {
       font-family: var(--font-display);
       text-transform: uppercase;
       letter-spacing: var(--tm-ls-label);
@@ -827,50 +696,50 @@
       font-weight: var(--tm-fw-med);
     }
     /* Scrollbar */
-    #page-warning .warning-terminal ::-webkit-scrollbar { width: 6px; height: 6px; }
-    #page-warning .warning-terminal ::-webkit-scrollbar-thumb { background: #2A2A2E; }
+    .warning-terminal ::-webkit-scrollbar { width: 6px; height: 6px; }
+    .warning-terminal ::-webkit-scrollbar-thumb { background: #2A2A2E; }
 
     /* Strip rounded corners inside warning scope */
-    #page-warning .warning-terminal .card,
-    #page-warning .warning-terminal .result-card,
-    #page-warning .warning-terminal .price-card,
-    #page-warning .warning-terminal .search-results,
-    #page-warning .warning-terminal .thresh-row,
-    #page-warning .warning-terminal .thresh-num,
-    #page-warning .warning-terminal .caution-set,
-    #page-warning .warning-terminal .caution-set-status,
-    #page-warning .warning-terminal .caution-nonprice,
-    #page-warning .warning-terminal .overall-status,
-    #page-warning .warning-terminal .warning-box,
-    #page-warning .warning-terminal .server-notice,
-    #page-warning .warning-terminal .info-card,
-    #page-warning .warning-terminal .date-item,
-    #page-warning .warning-terminal .search-btn,
-    #page-warning .warning-terminal .dday-badge,
-    #page-warning .warning-terminal .ps-status,
-    #page-warning .warning-terminal .result-level-badge,
-    #page-warning .warning-terminal .condition-item .icon {
+    .warning-terminal .card,
+    .warning-terminal .result-card,
+    .warning-terminal .price-card,
+    .warning-terminal .search-results,
+    .warning-terminal .thresh-row,
+    .warning-terminal .thresh-num,
+    .warning-terminal .caution-set,
+    .warning-terminal .caution-set-status,
+    .warning-terminal .caution-nonprice,
+    .warning-terminal .overall-status,
+    .warning-terminal .warning-box,
+    .warning-terminal .server-notice,
+    .warning-terminal .info-card,
+    .warning-terminal .date-item,
+    .warning-terminal .search-btn,
+    .warning-terminal .dday-badge,
+    .warning-terminal .ps-status,
+    .warning-terminal .result-level-badge,
+    .warning-terminal .condition-item .icon {
       border-radius: 0;
     }
 
     /* Tone down existing card backgrounds inside warning scope */
-    #page-warning .warning-terminal .card {
+    .warning-terminal .card {
       background: var(--tm-panel);
       border: 1px solid var(--tm-hairline);
     }
-    #page-warning .warning-terminal .info-card {
+    .warning-terminal .info-card {
       background: var(--tm-panel);
       border: 1px solid var(--tm-hairline);
     }
-    #page-warning .warning-terminal .header h1 {
+    .warning-terminal .header h1 {
       font-family: var(--font-display);
       color: var(--tm-text);
     }
-    #page-warning .warning-terminal .header p {
+    .warning-terminal .header p {
       color: var(--tm-text-dim);
     }
     /* 검색 버튼·입력창 터미널 스킨 */
-    #page-warning .warning-terminal .search-btn {
+    .warning-terminal .search-btn {
       background: var(--tm-accent);
       color: #000;
       border: 1px solid var(--tm-accent);
@@ -880,42 +749,42 @@
       text-transform: uppercase;
       font-weight: 600;
     }
-    #page-warning .warning-terminal .search-btn:hover {
+    .warning-terminal .search-btn:hover {
       background: var(--tm-text);
       border-color: var(--tm-text);
     }
-    #page-warning .warning-terminal input[type="text"] {
+    .warning-terminal input[type="text"] {
       background: var(--tm-elev);
       border: 1px solid var(--tm-hairline);
       color: var(--tm-text);
       border-radius: 0;
       font-family: var(--font-text);
     }
-    #page-warning .warning-terminal input[type="text"]::placeholder {
+    .warning-terminal input[type="text"]::placeholder {
       color: var(--tm-text-mute);
     }
-    #page-warning .warning-terminal input[type="text"]:focus {
+    .warning-terminal input[type="text"]:focus {
       border-color: var(--tm-accent);
       outline: none;
     }
-    #page-warning .warning-terminal .search-results {
+    .warning-terminal .search-results {
       background: var(--tm-panel);
       border: 1px solid var(--tm-hairline);
     }
-    #page-warning .warning-terminal .search-results-header {
+    .warning-terminal .search-results-header {
       color: var(--tm-text-mute);
       font-size: 10px;
       font-family: var(--font-display);
       letter-spacing: 0.8px;
       text-transform: uppercase;
     }
-    #page-warning .warning-terminal .result-item:hover {
+    .warning-terminal .result-item:hover {
       background: var(--tm-elev);
     }
-    #page-warning .warning-terminal .result-stock-name {
+    .warning-terminal .result-stock-name {
       color: var(--tm-text);
     }
-    #page-warning .warning-terminal .result-level-badge {
+    .warning-terminal .result-level-badge {
       font-family: var(--font-display);
       font-size: 10px;
       letter-spacing: 1px;
@@ -925,12 +794,12 @@
       color: var(--tm-accent);
       border: 1px solid var(--tm-accent);
     }
-    #page-warning .warning-terminal .result-date {
+    .warning-terminal .result-date {
       color: var(--tm-text-mute);
       font-family: var(--mono);
     }
     /* 시장경보 단계 안내 (info-card) 터미널 스킨 */
-    #page-warning .warning-terminal .info-card h3 {
+    .warning-terminal .info-card h3 {
       font-family: var(--font-display);
       font-size: 12px;
       font-weight: 500;
@@ -940,41 +809,41 @@
       border-left: 2px solid var(--tm-accent);
       padding-left: 10px;
     }
-    #page-warning .warning-terminal .stage-item {
+    .warning-terminal .stage-item {
       color: var(--tm-text-dim);
       font-size: 12px;
     }
-    #page-warning .warning-terminal .stage-item strong {
+    .warning-terminal .stage-item strong {
       color: var(--tm-text);
     }
-    #page-warning .warning-terminal .footnote {
+    .warning-terminal .footnote {
       color: var(--tm-text-mute);
       font-size: 12px;
     }
-    #page-warning .warning-terminal .footnote strong {
+    .warning-terminal .footnote strong {
       color: var(--tm-text-dim);
     }
     /* 헤더 섹션 — 터미널 간격 */
-    #page-warning .warning-terminal .header {
+    .warning-terminal .header {
       padding: 32px 16px 24px;
       text-align: left;
     }
-    #page-warning .warning-terminal .header h1 {
+    .warning-terminal .header h1 {
       font-size: 28px;
       font-weight: 600;
       letter-spacing: -0.3px;
       margin: 6px 0;
     }
-    #page-warning .warning-terminal .header p {
+    .warning-terminal .header p {
       font-size: 12px;
       text-align: left;
     }
     /* 검색 카드·info-card padding 조정 */
-    #page-warning .warning-terminal .card {
+    .warning-terminal .card {
       padding: 14px 16px;
       margin: 0 16px 16px;
     }
-    #page-warning .warning-terminal .card h2 {
+    .warning-terminal .card h2 {
       font-family: var(--font-display);
       font-size: 12px;
       font-weight: 500;
@@ -985,7 +854,7 @@
       padding-left: 10px;
       margin: 0 0 10px;
     }
-    #page-warning .warning-terminal .card h2 span {
+    .warning-terminal .card h2 span {
       font-family: var(--mono);
       font-size: 10px;
       letter-spacing: 0.3px;
@@ -994,14 +863,14 @@
       border: none;
       margin-left: 8px;
     }
-    #page-warning .warning-terminal .info-card {
+    .warning-terminal .info-card {
       padding: 14px 16px;
       margin: 0 16px 16px;
     }
-    #page-warning .warning-terminal .result-card {
+    .warning-terminal .result-card {
       margin: 0 16px 16px;
     }
-    #page-warning .warning-terminal .chart-standalone {
+    .warning-terminal .chart-standalone {
       margin: 0 16px 16px;
       background: var(--tm-panel);
       border: 1px solid var(--tm-hairline);
@@ -1494,22 +1363,22 @@
     }
 
     /* ─── Result card container (override) ─── */
-    #page-warning .warning-terminal .result-card {
+    .warning-terminal .result-card {
       background: var(--tm-panel);
       border: 1px solid var(--tm-hairline);
       padding: 0;
       margin-bottom: 0;
     }
-    #page-warning .warning-terminal .result-card .section-inner { padding: 0; }
+    .warning-terminal .result-card .section-inner { padding: 0; }
 
     /* ─── Edge cases / Caution fallback terminal skin ─── */
-    #page-warning .warning-terminal .price-card {
+    .warning-terminal .price-card {
       background: var(--tm-panel);
       border: 1px solid var(--tm-hairline);
       padding: 16px;
       margin-top: 16px;
     }
-    #page-warning .warning-terminal .price-card h2 {
+    .warning-terminal .price-card h2 {
       font-family: var(--font-display);
       font-size: 12px;
       letter-spacing: 1.5px;
@@ -1519,37 +1388,37 @@
       padding-left: 10px;
       margin: 0 0 12px;
     }
-    #page-warning .warning-terminal .price-meta {
+    .warning-terminal .price-meta {
       font-size: 12px;
       color: var(--tm-text-dim);
       margin-bottom: 10px;
       font-family: var(--font-text);
     }
-    #page-warning .warning-terminal .price-meta strong {
+    .warning-terminal .price-meta strong {
       color: var(--tm-text);
       font-family: var(--mono);
       font-variant-numeric: tabular-nums;
       font-weight: 500;
     }
-    #page-warning .warning-terminal .caution-set {
+    .warning-terminal .caution-set {
       background: var(--tm-elev);
       border: 1px solid var(--tm-hairline);
       padding: 10px 12px;
       margin-top: 8px;
     }
-    #page-warning .warning-terminal .caution-set-head {
+    .warning-terminal .caution-set-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
     }
-    #page-warning .warning-terminal .caution-set-title {
+    .warning-terminal .caution-set-title {
       font-size: 12px;
       color: var(--tm-text);
       font-family: var(--font-text);
       letter-spacing: 0;
     }
-    #page-warning .warning-terminal .caution-set-status {
+    .warning-terminal .caution-set-status {
       font-family: var(--font-display);
       font-size: 10px;
       letter-spacing: 1.2px;
@@ -1557,23 +1426,23 @@
       padding: 2px 8px;
       font-weight: 600;
     }
-    #page-warning .warning-terminal .caution-set-status.met {
+    .warning-terminal .caution-set-status.met {
       background: var(--tm-up-soft);
       color: var(--tm-up);
       border: 1px solid var(--tm-up);
     }
-    #page-warning .warning-terminal .caution-set-status.unmet {
+    .warning-terminal .caution-set-status.unmet {
       background: var(--tm-ok-soft);
       color: var(--tm-ok);
       border: 1px solid var(--tm-ok);
     }
-    #page-warning .warning-terminal .caution-cond {
+    .warning-terminal .caution-cond {
       display: flex;
       gap: 10px;
       padding: 6px 0;
       border-top: 1px solid var(--tm-hairline-soft);
     }
-    #page-warning .warning-terminal .caution-cond-mark {
+    .warning-terminal .caution-cond-mark {
       font-family: var(--font-display);
       font-size: 10px;
       letter-spacing: 1.2px;
@@ -1583,26 +1452,26 @@
       flex-shrink: 0;
       align-self: flex-start;
     }
-    #page-warning .warning-terminal .caution-cond-mark.met {
+    .warning-terminal .caution-cond-mark.met {
       background: var(--tm-up-soft);
       color: var(--tm-up);
       border: 1px solid var(--tm-up);
     }
-    #page-warning .warning-terminal .caution-cond-mark.unmet {
+    .warning-terminal .caution-cond-mark.unmet {
       background: var(--tm-text-mute);
       color: var(--tm-bg);
       border: 1px solid var(--tm-text-mute);
     }
-    #page-warning .warning-terminal .caution-cond-label {
+    .warning-terminal .caution-cond-label {
       font-size: 12px;
       color: var(--tm-text);
       font-weight: 500;
     }
-    #page-warning .warning-terminal .caution-cond-detail {
+    .warning-terminal .caution-cond-detail {
       color: var(--tm-text-mute);
       font-size: 10px;
     }
-    #page-warning .warning-terminal .caution-nonprice {
+    .warning-terminal .caution-nonprice {
       background: var(--tm-elev);
       border: 1px dashed var(--tm-hairline);
       color: var(--tm-text-dim);
@@ -1610,7 +1479,7 @@
       padding: 12px;
       line-height: 1.55;
     }
-    #page-warning .warning-terminal .overall-status {
+    .warning-terminal .overall-status {
       padding: 10px 12px;
       font-family: var(--font-display);
       font-size: 10px;
@@ -1619,17 +1488,17 @@
       font-weight: 600;
       border-left: 2px solid var(--tm-hairline);
     }
-    #page-warning .warning-terminal .overall-status.keep {
+    .warning-terminal .overall-status.keep {
       background: var(--tm-up-soft);
       color: var(--tm-up);
       border-left-color: var(--tm-up);
     }
-    #page-warning .warning-terminal .overall-status.release {
+    .warning-terminal .overall-status.release {
       background: var(--tm-ok-soft);
       color: var(--tm-ok);
       border-left-color: var(--tm-ok);
     }
-    #page-warning .warning-terminal .price-error {
+    .warning-terminal .price-error {
       background: var(--tm-up-soft);
       color: var(--tm-up);
       border: 1px dashed var(--tm-up);
@@ -1637,7 +1506,7 @@
       font-size: 12px;
       font-family: var(--font-text);
     }
-    #page-warning .warning-terminal .result-empty {
+    .warning-terminal .result-empty {
       padding: 14px 16px;
       font-size: 12px;
       color: var(--tm-text-dim);
@@ -1675,9 +1544,7 @@
 <nav class="nav-bar">
   <div class="nav-inner">
     <button class="nav-title" onclick="switchPage('about', this)">Shamanism Research</button>
-    <button class="nav-item" onclick="switchPage('dashboard', this)">재무 현황 (개발중)</button>
     <button class="nav-item active" onclick="switchPage('warning', this)">투자경고 계산기</button>
-    <button class="nav-item" onclick="switchPage('dart', this)">공시 분석기 (개발중)</button>
     <button class="nav-item" onclick="switchPage('patchnotes', this)">패치 노트</button>
     <span id="tmClock" class="nav-clock">--:--:--</span>
   </div>
@@ -1709,68 +1576,7 @@
   </div>
 </div><!-- /page-about -->
 
-<!-- ═══════════════ DASHBOARD ═══════════════ -->
-<div id="page-dashboard" class="page-section">
-
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="header">
-        <div class="badge">종목 정보</div>
-        <h1>재무 현황</h1>
-        <p>종목 검색으로 기업 개요와 재무 현황을 한눈에 확인합니다</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="card">
-        <h2>종목 검색</h2>
-        <div class="form-group">
-          <label>기업명</label>
-          <div class="search-row">
-            <input type="text" id="dashCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dashCorpSearch()" />
-            <button class="search-btn" id="dashCorpSearchBtn" onclick="dashCorpSearch()">검색</button>
-          </div>
-          <div class="search-results" id="dashCorpResults"></div>
-          <div id="dashSelectedCorp" style="display:none;margin-top:8px;"></div>
-        </div>
-      </div>
-
-      <!-- 기업 개요 -->
-      <div class="card" id="overviewCard" style="display:none;">
-        <h2>기업 개요</h2>
-        <div id="overviewContent"></div>
-      </div>
-
-      <!-- TradingView 차트 -->
-      <div class="card" id="tvChartCard" style="display:none;">
-        <h2>차트</h2>
-        <div id="tvChartContainer" style="height:500px;"></div>
-      </div>
-
-      <!-- 재무 모델 (Model 시트) -->
-      <div class="card" id="modelCard" style="display:none;">
-        <h2>재무 모델 <span class="model-meta" style="margin-left:8px;">DART 사업·분기보고서</span></h2>
-        <div class="model-controls">
-          <label>회계 구분</label>
-          <select id="modelFsDiv" onchange="fetchModel()">
-            <option value="CFS">연결</option>
-            <option value="OFS">별도</option>
-          </select>
-          <span id="modelMeta" class="model-meta"></span>
-        </div>
-        <div id="modelContent" style="overflow-x:auto;"></div>
-        <div id="modelFootnote" class="model-foot"></div>
-      </div>
-
-      <div class="footnote">
-        데이터 출처: <strong>네이버 금융</strong> · <strong>금융감독원 DART</strong>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /page-dashboard -->
+<!-- DASHBOARD/DART 페이지는 재구현 예정으로 UI 만 제거 (백엔드 API/lib 유지) -->
 
 <!-- ═══════════════ 투자경고 계산기 ═══════════════ -->
 <div id="page-warning" class="page-section active">
@@ -1962,80 +1768,18 @@
   </div><!-- /.warning-terminal -->
 </div><!-- /page-warning -->
 
-<!-- ═══════════════ 공시 분석기 ═══════════════ -->
-<div id="page-dart" class="page-section">
-
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="header">
-        <div class="badge">DART Open API</div>
-        <h1>공시 분석기</h1>
-        <p>금융감독원 전자공시시스템(DART) 공시를 검색하고 분석합니다</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="card">
-        <h2>공시 검색</h2>
-        <div class="dart-filters">
-          <div class="form-group full">
-            <label>기업명</label>
-            <div class="search-row">
-              <input type="text" id="dartCorpName" placeholder="기업명 입력 (예: 삼성전자)" onkeydown="if(event.key==='Enter') dartCorpSearch()" />
-              <button class="search-btn" id="dartCorpSearchBtn" onclick="dartCorpSearch()">기업 검색</button>
-            </div>
-            <div class="search-results" id="dartCorpResults"></div>
-            <div id="dartSelectedCorp" style="display:none;margin-top:8px;"></div>
-          </div>
-          <div class="form-group">
-            <label>시작일</label>
-            <input type="date" id="dartBgnDe" />
-          </div>
-          <div class="form-group">
-            <label>종료일</label>
-            <input type="date" id="dartEndDe" />
-          </div>
-          <div class="form-group full">
-            <label>공시 유형</label>
-            <select id="dartPblntfTy">
-              <option value="">전체</option>
-              <option value="A">정기공시</option>
-              <option value="B">주요사항보고</option>
-              <option value="C">발행공시</option>
-              <option value="D">지분공시</option>
-              <option value="E">기타공시</option>
-              <option value="F">외부감사관련</option>
-              <option value="I">거래소공시</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn" id="dartSearchBtn" onclick="dartSearch()">공시 검색</button>
-      </div>
-
-      <div id="dartResultArea"></div>
-
-      <div class="footnote" style="margin-top:20px;">
-        데이터 출처: <strong>금융감독원 DART (dart.fss.or.kr)</strong><br/>
-        공시 원문은 DART 전자공시시스템에서 확인하세요.
-      </div>
-    </div>
-  </div>
-
-</div><!-- /page-dart -->
-
 <!-- ═══════════════ 패치 노트 ═══════════════ -->
 <div id="page-patchnotes" class="page-section">
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="header">
-        <div class="badge">Patch Notes</div>
-        <h1>패치 노트</h1>
-        <p>주요 업데이트와 기능 추가 기록입니다</p>
-      </div>
-      <div id="patchnotesContent">
-        <div class="search-loading">불러오는 중...</div>
+  <div class="warning-terminal">
+    <div class="section-dark">
+      <div class="section-inner">
+        <div class="header">
+          <h1>패치 노트</h1>
+          <p>주요 업데이트와 기능 추가 기록입니다</p>
+        </div>
+        <div id="patchnotesContent">
+          <div class="search-loading">불러오는 중...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -2246,7 +1990,6 @@ function selectResult(r) {
 
   // 기준가 조회 → 해제 여부 판별 후 결과 표시
   checkAndDisplay(r);
-  syncDartCorp(r.stockName);
 }
 
 async function checkCautionFallback(query) {
@@ -2909,414 +2652,6 @@ function getConditions(type) {
   return base;
 }
 
-// ────────────────────────────────────────────────
-// 공시 분석기 (DART)
-// ────────────────────────────────────────────────
-// 기본 날짜: 최근 7일
-(function initDartDates() {
-  const today = new Date();
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  document.getElementById('dartEndDe').value = today.toISOString().slice(0, 10);
-  document.getElementById('dartBgnDe').value = weekAgo.toISOString().slice(0, 10);
-})();
-
-let dartCurrentPage = 1;
-let dartSelectedCorpCode = '';
-let dartSelectedCorpName = '';
-let dartCorps = []; // 기업코드 캐시
-
-// 페이지 로드 시 프리로드 시작 (검색 시 대기 없도록)
-const dartCorpsReady = fetch('/data/dart-corps.json')
-  .then(r => r.json())
-  .then(data => { dartCorps = data; })
-  .catch(e => console.warn('기업코드 로드 실패:', e));
-
-async function loadDartCorps() {
-  await dartCorpsReady;
-}
-
-function dartCorpSearch() {
-  const name = document.getElementById('dartCorpName').value.trim();
-  if (!name) { alert('기업명을 입력하세요.'); return; }
-
-  const btn = document.getElementById('dartCorpSearchBtn');
-  const resultsEl = document.getElementById('dartCorpResults');
-
-  btn.disabled = true;
-  btn.textContent = '검색 중...';
-  resultsEl.innerHTML = '<div class="search-loading">기업을 검색하는 중...</div>';
-  resultsEl.classList.add('show');
-
-  loadDartCorps().then(() => {
-    const items = dartCorps.filter(c => c.n.includes(name))
-      .sort((a, b) => a.n.length - b.n.length)
-      .slice(0, 20);
-
-    if (items.length === 0) {
-      resultsEl.innerHTML = '<div class="result-empty">일치하는 기업이 없습니다.</div>';
-      btn.disabled = false;
-      btn.textContent = '기업 검색';
-      return;
-    }
-
-    const header = `<div class="search-results-header">${items.length}개 기업 — 클릭하여 선택</div>`;
-    const rows = items.map((c, idx) => `
-      <div class="result-item" data-dart-idx="${idx}">
-        <span class="result-stock-name">${escHtml(c.n)} <span class="dart-cls-badge cls-Y">${escHtml(c.s)}</span></span>
-      </div>`).join('');
-    window._dartCorpItems = items;
-    resultsEl.innerHTML = header + rows;
-    btn.disabled = false;
-    btn.textContent = '기업 검색';
-  }).catch(e => {
-    resultsEl.innerHTML = `<div class="result-empty">${escHtml(e.message)}</div>`;
-    btn.disabled = false;
-    btn.textContent = '기업 검색';
-  });
-}
-
-// 투자경고 페이지에서 종목 선택 시 → DART 공시 검색에 기업 연동
-async function syncDartCorp(stockName) {
-  await loadDartCorps();
-  const match = dartCorps.find(c => c.n === stockName);
-  if (match) {
-    selectDartCorp(match.c, match.n);
-    document.getElementById('dartCorpName').value = match.n;
-  }
-}
-
-function selectDartCorp(corpCode, corpName) {
-  dartSelectedCorpCode = corpCode;
-  dartSelectedCorpName = corpName;
-  document.getElementById('dartCorpResults').classList.remove('show');
-  document.getElementById('dartSelectedCorp').style.display = 'block';
-  document.getElementById('dartSelectedCorp').innerHTML =
-    `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(corpCode)})</span>`;
-}
-
-document.getElementById('dartCorpResults').addEventListener('click', (e) => {
-  const item = e.target.closest('.result-item');
-  if (item && item.dataset.dartIdx != null && window._dartCorpItems) {
-    const c = window._dartCorpItems[item.dataset.dartIdx];
-    selectDartCorp(c.c, c.n);
-  }
-});
-
-// ────────────────────────────────────────────────
-// DASHBOARD — 종목 검색 / 기업 개요 / 재무제표
-// ────────────────────────────────────────────────
-let dashSelectedStockCode = '';
-
-function dashCorpSearch() {
-  const name = document.getElementById('dashCorpName').value.trim();
-  if (!name) { alert('기업명을 입력하세요.'); return; }
-
-  const btn = document.getElementById('dashCorpSearchBtn');
-  const resultsEl = document.getElementById('dashCorpResults');
-
-  btn.disabled = true;
-  btn.textContent = '검색 중...';
-  resultsEl.innerHTML = '<div class="search-loading">기업을 검색하는 중...</div>';
-  resultsEl.classList.add('show');
-
-  loadDartCorps().then(() => {
-    const items = dartCorps.filter(c => c.n.includes(name))
-      .sort((a, b) => a.n.length - b.n.length)
-      .slice(0, 20);
-
-    if (items.length === 0) {
-      resultsEl.innerHTML = '<div class="result-empty">일치하는 기업이 없습니다.</div>';
-      btn.disabled = false;
-      btn.textContent = '검색';
-      return;
-    }
-
-    const header = `<div class="search-results-header">${items.length}개 기업 — 클릭하여 선택</div>`;
-    const rows = items.map((c, idx) => `
-      <div class="result-item" data-dash-idx="${idx}">
-        <span class="result-stock-name">${escHtml(c.n)} <span class="dart-cls-badge cls-Y">${escHtml(c.s)}</span></span>
-      </div>`).join('');
-    window._dashCorpItems = items;
-    resultsEl.innerHTML = header + rows;
-    btn.disabled = false;
-    btn.textContent = '검색';
-  }).catch(e => {
-    resultsEl.innerHTML = `<div class="result-empty">${escHtml(e.message)}</div>`;
-    btn.disabled = false;
-    btn.textContent = '검색';
-  });
-}
-
-document.getElementById('dashCorpResults').addEventListener('click', (e) => {
-  const item = e.target.closest('.result-item');
-  if (item && item.dataset.dashIdx != null && window._dashCorpItems) {
-    const c = window._dashCorpItems[item.dataset.dashIdx];
-    selectDashCorp(c.c, c.n, c.s);
-  }
-});
-
-function selectDashCorp(corpCode, corpName, stockCode) {
-  dashSelectedStockCode = stockCode || '';
-  document.getElementById('dashCorpResults').classList.remove('show');
-  document.getElementById('dashSelectedCorp').style.display = 'block';
-  document.getElementById('dashSelectedCorp').innerHTML =
-    `<span class="auto-filled-tag">선택: <strong>${escHtml(corpName)}</strong> (${escHtml(stockCode || corpCode)})</span>`;
-  // 기업 개요 + 차트 + 재무 모델 병렬 조회
-  fetchModel(corpCode);
-  if (stockCode) { fetchOverview(stockCode); loadTvChart(stockCode); }
-  else { document.getElementById('tvChartCard').style.display = 'none'; }
-}
-
-let _modelCorpCode = '';
-
-async function fetchModel(corpCode) {
-  if (corpCode) _modelCorpCode = corpCode;
-  if (!_modelCorpCode) return;
-  const fsDiv = document.getElementById('modelFsDiv').value;
-  const card = document.getElementById('modelCard');
-  const content = document.getElementById('modelContent');
-  const meta = document.getElementById('modelMeta');
-  card.style.display = 'block';
-  content.innerHTML = '<div class="search-loading">재무 모델을 구성하는 중... (DART 다년·분기 데이터 수집)</div>';
-  meta.textContent = '';
-  try {
-    const resp = await fetch(`/api/financial-model?corp_code=${_modelCorpCode}&fs_div=${fsDiv}&years=5`);
-    const data = await resp.json();
-    if (data.error) { content.innerHTML = `<div class="dart-empty">${escHtml(data.error)}</div>`; return; }
-    renderModel(data);
-  } catch (e) {
-    content.innerHTML = `<div class="dart-empty">${escHtml(e.message)}</div>`;
-  }
-}
-
-function renderModel(data) {
-  const meta = document.getElementById('modelMeta');
-  const content = document.getElementById('modelContent');
-  const foot = document.getElementById('modelFootnote');
-
-  const years = data.meta.years;
-  const quarters = [];
-  const lastTwo = years.slice(-2);
-  for (const y of lastTwo) for (const q of ['1Q','2Q','3Q','4Q']) quarters.push(`${q}${y.slice(2)}`);
-
-  meta.textContent = `${data.meta.fs_div === 'CFS' ? '연결' : '별도'} · ${years[0]}–${years[years.length-1]} 연간 + 최근 ${lastTwo.length}년 분기`;
-
-  function fmtBn(v) {
-    if (v === null || v === undefined) return '<span class="mt-empty">—</span>';
-    const n = v / 1e9;
-    return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  }
-  function fmtPct(v) {
-    if (v === null || v === undefined) return '<span class="mt-empty">—</span>';
-    return (v * 100).toFixed(1) + '%';
-  }
-
-  // [라벨, 키, 포맷터, 행유형] — 행유형: 'total'(합계), 'sub'(하위 비율), undefined(일반)
-  const ROWS = [
-    ['__SECTION__', '손익계산서'],
-    ['매출액', 'revenue', fmtBn, 'total'],
-    ['YoY', 'revenue_yoy', fmtPct, 'sub'],
-    ['매출원가', 'cogs', fmtBn],
-    ['매출총이익', 'gross_profit', fmtBn],
-    ['GPM', 'gpm', fmtPct, 'sub'],
-    ['판매비와관리비', 'sga', fmtBn],
-    ['영업이익', 'operating_income', fmtBn, 'total'],
-    ['OPM', 'opm', fmtPct, 'sub'],
-    ['금융수익', 'finance_income', fmtBn],
-    ['금융비용', 'finance_cost', fmtBn],
-    ['세전이익', 'pretax_income', fmtBn],
-    ['법인세', 'income_tax', fmtBn],
-    ['Tax Rate', 'tax_rate', fmtPct, 'sub'],
-    ['당기순이익', 'net_income', fmtBn, 'total'],
-    ['지배주주순이익', 'net_income_owner', fmtBn],
-    ['NPM', 'npm', fmtPct, 'sub'],
-
-    ['__SECTION__', '재무상태표'],
-    ['순현금', 'net_cash', fmtBn, 'total'],
-    ['차입금', 'total_borrowings', fmtBn],
-    ['매출채권', 'trade_receivables', fmtBn],
-    ['재고자산', 'inventories', fmtBn],
-    ['매입채무', 'trade_payables', fmtBn],
-    ['유형자산', 'ppe', fmtBn],
-    ['무형자산', 'intangible', fmtBn],
-    ['영업권', 'goodwill', fmtBn],
-    ['자본총계', 'total_equity', fmtBn, 'total'],
-    ['자본잉여금', 'capital_surplus', fmtBn],
-    ['이익잉여금', 'retained_earnings', fmtBn],
-
-    ['__SECTION__', '현금흐름표'],
-    ['영업활동현금흐름', 'cfo', fmtBn, 'total'],
-    ['감가상각비', 'depreciation', fmtBn, 'sub'],
-    ['무형자산상각비', 'amortization', fmtBn, 'sub'],
-    ['투자활동현금흐름', 'cfi', fmtBn, 'total'],
-    ['CAPEX', 'capex', fmtBn, 'sub'],
-    ['재무활동현금흐름', 'cff', fmtBn, 'total'],
-  ];
-
-  function cellsFor(key, fmt) {
-    const a = years.map(y => `<td>${fmt(data.annual[y]?.[key] ?? null)}</td>`).join('');
-    const q = quarters.map((p, i) => `<td${i === 0 ? ' class="mt-q-first"' : ''}>${fmt(data.quarterly[p]?.[key] ?? null)}</td>`).join('');
-    return a + q;
-  }
-
-  const colCount = years.length + quarters.length + 1;
-
-  let body = '';
-  for (const row of ROWS) {
-    if (row[0] === '__SECTION__') {
-      body += `<tr class="mt-section"><td colspan="${colCount}">${escHtml(row[1])}</td></tr>`;
-      continue;
-    }
-    const [label, key, fmt, type] = row;
-    const trCls = type === 'total' ? 'mt-total' : (type === 'sub' ? 'mt-sub' : '');
-    body += `<tr class="${trCls}"><td class="mt-label">${escHtml(label)}</td>${cellsFor(key, fmt)}</tr>`;
-  }
-
-  const headAnnual = `<th colspan="${years.length}" class="mt-group">Annual</th>`;
-  const headQ = `<th colspan="${quarters.length}" class="mt-group mt-q-first">Quarterly</th>`;
-  const subHeadAnnual = years.map(y => `<th class="mt-period">${y}</th>`).join('');
-  const subHeadQ = quarters.map((p, i) => `<th class="mt-period${i === 0 ? ' mt-q-first' : ''}">${p}</th>`).join('');
-
-  content.innerHTML = `
-    <table class="model-table">
-      <thead>
-        <tr><th rowspan="2" class="mt-corner">(십억원, %)</th>${headAnnual}${headQ}</tr>
-        <tr>${subHeadAnnual}${subHeadQ}</tr>
-      </thead>
-      <tbody>${body}</tbody>
-    </table>`;
-
-  const unsupported = data.meta.unsupported || [];
-  foot.innerHTML = `
-    <div>단위: 십억원 (1 = 10억원). 분기 IS/CF는 단일 분기(3개월), Q4는 사업보고서 - (Q1+Q2+Q3) 산출. BS는 시점값.</div>
-    <div>데이터 출처: 금융감독원 DART 사업·분기보고서 (fnlttSinglAcntAll).</div>
-    <div>미지원 필드 (추후 업그레이드 예정): ${unsupported.join(', ')}</div>`;
-}
-
-async function dartSearch(page) {
-  page = page || 1;
-  dartCurrentPage = page;
-
-  const bgnDe = document.getElementById('dartBgnDe').value.replace(/-/g, '');
-  const endDe = document.getElementById('dartEndDe').value.replace(/-/g, '');
-  const pblntfTy = document.getElementById('dartPblntfTy').value;
-
-  const btn = document.getElementById('dartSearchBtn');
-  const area = document.getElementById('dartResultArea');
-
-  btn.disabled = true;
-  btn.textContent = '검색 중...';
-  area.innerHTML = '<div class="card"><div class="search-loading">DART에서 공시 데이터를 가져오는 중...</div></div>';
-
-  try {
-    const params = new URLSearchParams({
-      corp_code: dartSelectedCorpCode,
-      bgn_de: bgnDe,
-      end_de: endDe,
-      pblntf_ty: pblntfTy,
-      page_no: page,
-      page_count: 15,
-    });
-    const resp = await fetch(`/api/dart-search?${params}`);
-    const data = await resp.json();
-
-    if (data.error) {
-      area.innerHTML = `<div class="card"><div class="dart-empty">${escHtml(data.error)}</div></div>`;
-      return;
-    }
-    if (data.status !== '000') {
-      const msg = data.status === '013' ? '검색 결과가 없습니다.' : (data.message || '조회 실패');
-      area.innerHTML = `<div class="card"><div class="dart-empty">${escHtml(msg)}</div></div>`;
-      return;
-    }
-
-    renderDartResults(data);
-  } catch (e) {
-    area.innerHTML = `<div class="card"><div class="dart-empty">${escHtml(e.message)}</div></div>`;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '공시 검색';
-  }
-}
-
-// ────────────────────────────────────────────────
-// 기업 개요
-// ────────────────────────────────────────────────
-async function fetchOverview(stockCode) {
-  const card = document.getElementById('overviewCard');
-  const content = document.getElementById('overviewContent');
-  card.style.display = 'block';
-  content.innerHTML = '<div class="search-loading">기업 개요를 불러오는 중...</div>';
-
-  try {
-    const resp = await fetch(`/api/stock-overview?code=${stockCode}`);
-    const d = await resp.json();
-    if (d.error) { content.innerHTML = `<div class="dart-empty">${escHtml(d.error)}</div>`; return; }
-
-    function item(label, value, cls) {
-      return `<div class="ov-item"><div class="ov-label">${label}</div><div class="ov-value${cls ? ' ' + cls : ''}">${value}</div></div>`;
-    }
-
-    content.innerHTML = `<div class="overview-grid">
-      ${item('시가총액', d.marketCap, 'primary')}
-      ${item('현재가', d.closePrice)}
-      ${item('PER', d.per)}
-      ${item('PBR', d.pbr)}
-      ${item('EPS', d.eps)}
-      ${item('BPS', d.bps)}
-      ${item('52주 최고', d.high52w, 'red')}
-      ${item('52주 최저', d.low52w, 'green')}
-      ${item('외인소진율', d.foreignRate)}
-      ${item('배당수익률', d.dividendYield)}
-      ${item('거래량', d.volume)}
-      ${item('거래대금', d.tradingValue)}
-    </div>`;
-  } catch (e) {
-    content.innerHTML = `<div class="dart-empty">${escHtml(e.message)}</div>`;
-  }
-}
-
-// ────────────────────────────────────────────────
-// TradingView 차트
-// ────────────────────────────────────────────────
-function loadTvChart(stockCode) {
-  const card = document.getElementById('tvChartCard');
-  const container = document.getElementById('tvChartContainer');
-  if (!stockCode) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  _mountTvWidget(container, stockCode, '500', '#1a1a2e');
-}
-
-function _mountTvWidget(container, stockCode, height, toolbarBg) {
-  if (!container || !stockCode) return;
-  // 동일 컨테이너에 재마운트 방지 가드
-  if (container.dataset.tvCode === stockCode) return;
-  container.dataset.tvCode = stockCode;
-
-  const config = {
-    symbol: 'KRX:' + stockCode,
-    width: '100%',
-    height: String(height || '360'),
-    theme: 'dark',
-    style: '1',
-    locale: 'kr',
-    toolbar_bg: toolbarBg || '#0A0A0A',
-    hide_side_toolbar: true,
-    allow_symbol_change: false,
-    show_popup_button: false,
-  };
-  container.innerHTML =
-    '<div class="tradingview-widget-container" style="height:100%">' +
-    '<div class="tradingview-widget-container__widget" style="height:100%"></div>' +
-    '</div>';
-  const script = document.createElement('script');
-  script.type = 'text/javascript';
-  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-  script.async = true;
-  script.textContent = JSON.stringify(config);
-  container.querySelector('.tradingview-widget-container').appendChild(script);
-}
 
 // 경고 탭 인라인 SVG 차트 — NAVER 일별 주가 + 3개 임계선
 // TV 무료 embed는 한국 소형주 차트 렌더가 막혀 AAPL로 fallback되므로 사용하지 않음.
@@ -3454,56 +2789,6 @@ async function syncTvChartByName(stockName) {
   } catch (e) { /* 네트워크/서버 오류는 조용히 무시 */ }
 }
 
-// 하위호환 — 기존 호출 포인트 유지
-function loadTvChartWarning(stockCode) {
-  // stockCode 로부터 priceData 를 다시 받아 SVG 렌더
-  if (!stockCode) return;
-  fetch(`/api/stock-price?code=${stockCode}`)
-    .then(r => r.json())
-    .then(priceData => {
-      if (!priceData.error) renderInlineChart(priceData, stockCode, '');
-    })
-    .catch(() => {});
-}
-
-const CLS_NAMES = { Y: '유가', K: '코스닥', N: '코넥스', E: '기타' };
-
-function renderDartResults(data) {
-  const area = document.getElementById('dartResultArea');
-  const list = data.list || [];
-  const totalPage = data.total_page || 1;
-  const totalCount = data.total_count || 0;
-
-  const header = `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;font-family:var(--mono);letter-spacing:-0.12px;">총 ${totalCount.toLocaleString()}건 (${dartCurrentPage} / ${totalPage} 페이지)</div>`;
-
-  const items = list.map(item => {
-    const cls = item.corp_cls || 'E';
-    const clsName = CLS_NAMES[cls] || '기타';
-    const dartUrl = `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${item.rcept_no}`;
-    return `
-      <a href="${dartUrl}" target="_blank" rel="noopener" class="dart-item" style="text-decoration:none;">
-        <div class="dart-item-header">
-          <div>
-            <span class="dart-corp">${escHtml(item.corp_name)}</span>
-            <span class="dart-cls-badge cls-${escHtml(cls)}">${escHtml(clsName)}</span>
-          </div>
-          <span class="dart-date">${escHtml(item.rcept_dt.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3'))}</span>
-        </div>
-        <div class="dart-title">${escHtml(item.report_nm)}</div>
-      </a>`;
-  }).join('');
-
-  const prevDisabled = dartCurrentPage <= 1 ? 'disabled' : '';
-  const nextDisabled = dartCurrentPage >= totalPage ? 'disabled' : '';
-  const pagination = `
-    <div class="dart-pagination">
-      <button ${prevDisabled} onclick="dartSearch(${dartCurrentPage - 1})">이전</button>
-      <span>${dartCurrentPage} / ${totalPage}</span>
-      <button ${nextDisabled} onclick="dartSearch(${dartCurrentPage + 1})">다음</button>
-    </div>`;
-
-  area.innerHTML = header + '<div class="dart-results-list">' + items + '</div>' + pagination;
-}
 </script>
 <!-- Ticker Tape -->
 <div class="ticker-wrap">
