@@ -56,22 +56,29 @@
       --tm-space-1: 4px;  --tm-space-2: 6px;  --tm-space-3: 8px;  --tm-space-4: 10px;
       --tm-space-5: 14px; --tm-space-6: 16px; --tm-space-7: 24px;
 
-      --tm-fs-micro:  9px;
-      --tm-fs-xs:    10px;
-      --tm-fs-sm:    11px;
-      --tm-fs-md:    12px;
-      --tm-fs-lg:    15px;
-      --tm-fs-xl:    22px;
-      --tm-fs-2xl:   26px;
+      /* DESIGN.md 매핑 (Apple SF Pro 스케일) */
+      --tm-fs-micro: 10px;   /* Nano 10/400/-0.08 */
+      --tm-fs-xs:    10px;   /* Nano */
+      --tm-fs-sm:    12px;   /* Micro 12/400/-0.12 */
+      --tm-fs-md:    12px;   /* Micro */
+      --tm-fs-lg:    14px;   /* Caption 14/400/-0.224 */
+      --tm-fs-xl:    21px;   /* Card Title 21/600/0.231 */
+      --tm-fs-2xl:   28px;   /* Tile Heading 28/400/0.196 */
 
       --tm-fw-reg:  400;
       --tm-fw-med:  500;
       --tm-fw-semi: 600;
       --tm-fw-bold: 700;
 
+      /* uppercase 라벨용 (터미널 density 보존) */
       --tm-ls-caps:   1.5px;
       --tm-ls-label:  0.8px;
-      --tm-ls-tight: -0.3px;
+      /* DESIGN.md negative tracking (본문 사이즈) */
+      --tm-ls-12:    -0.12px;   /* 12px body */
+      --tm-ls-14:    -0.224px;  /* 14px caption */
+      --tm-ls-21:     0.231px;  /* 21px card title */
+      --tm-ls-28:     0.196px;  /* 28px tile heading */
+      --tm-ls-tight: -0.3px;    /* 대형 숫자 */
 
       --tm-radius: 0;
       --tm-radius-pill: 50%;
@@ -758,6 +765,7 @@
       font-family: var(--font-text);
       font-size: var(--tm-fs-sm);
       line-height: 1.45;
+      letter-spacing: var(--tm-ls-12);
       -webkit-font-smoothing: antialiased;
     }
     /* Override outer section-dark spacing inside warning scope */
@@ -884,7 +892,7 @@
     }
     #page-warning .warning-terminal .result-level-badge {
       font-family: var(--font-display);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 1px;
       text-transform: uppercase;
       border-radius: 0;
@@ -899,7 +907,7 @@
     /* 시장경보 단계 안내 (info-card) 터미널 스킨 */
     #page-warning .warning-terminal .info-card h3 {
       font-family: var(--font-display);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -916,7 +924,7 @@
     }
     #page-warning .warning-terminal .footnote {
       color: var(--tm-text-mute);
-      font-size: 11px;
+      font-size: 12px;
     }
     #page-warning .warning-terminal .footnote strong {
       color: var(--tm-text-dim);
@@ -927,7 +935,7 @@
       text-align: left;
     }
     #page-warning .warning-terminal .header h1 {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 600;
       letter-spacing: -0.3px;
       margin: 6px 0;
@@ -942,7 +950,7 @@
     }
     #page-warning .warning-terminal .card h2 {
       font-family: var(--font-display);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -953,7 +961,7 @@
     }
     #page-warning .warning-terminal .card h2 span {
       font-family: var(--mono);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 0.3px;
       text-transform: none;
       color: var(--tm-text-mute);
@@ -1007,7 +1015,7 @@
       gap: 10px;
       padding: 11px 16px 9px;
       font-family: var(--font-display);
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
     }
@@ -1020,7 +1028,7 @@
     #page-warning .tm-sec-head .src {
       margin-left: auto;
       color: var(--tm-text-mute);
-      font-size: 9px;
+      font-size: 10px;
       font-family: var(--mono);
       letter-spacing: 0.3px;
       text-transform: none;
@@ -1036,7 +1044,7 @@
     }
     #page-warning .tm-sym .ticker {
       font-family: var(--font-display);
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 600;
       color: var(--tm-accent);
       letter-spacing: 0.5px;
@@ -1045,7 +1053,7 @@
     }
     #page-warning .tm-sym .name-block { display: flex; flex-direction: column; gap: 2px; }
     #page-warning .tm-sym .name {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--tm-text);
       font-family: var(--font-text);
     }
@@ -1060,7 +1068,7 @@
       gap: 6px;
     }
     #page-warning .tm-sym .chip {
-      font-size: 9px;
+      font-size: 10px;
       padding: 3px 8px;
       letter-spacing: 1px;
       font-weight: 600;
@@ -1096,14 +1104,14 @@
       margin-left: 24px;
     }
     #page-warning .tm-sym .px .val {
-      font-size: 22px;
+      font-size: 21px;
       color: var(--tm-text);
       font-weight: 500;
       letter-spacing: -0.3px;
       line-height: 1;
     }
     #page-warning .tm-sym .px .chg {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--tm-text-mute);
       font-weight: 500;
     }
@@ -1125,7 +1133,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 9px;
+      font-size: 10px;
       color: var(--tm-text-mute);
       letter-spacing: 0.3px;
       font-family: var(--font-display);
@@ -1139,7 +1147,7 @@
     #page-warning .tm-tl-cell.today {
       background: var(--tm-accent);
       color: #000;
-      font-weight: 700;
+      font-weight: 600;
       border-color: var(--tm-accent);
     }
     #page-warning .tm-tl-cell.release {
@@ -1150,7 +1158,7 @@
     #page-warning .tm-tl-foot {
       display: flex;
       justify-content: space-between;
-      font-size: 9px;
+      font-size: 10px;
       color: var(--tm-text-mute);
       margin-top: 4px;
       font-family: var(--font-display);
@@ -1170,12 +1178,12 @@
     #page-warning .tm-tbl {
       width: 100%;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 12px;
       font-variant-numeric: tabular-nums;
     }
     #page-warning .tm-tbl th {
       font-family: var(--font-display);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       color: var(--tm-text-mute);
@@ -1208,7 +1216,7 @@
       align-items: center;
       justify-content: center;
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 600;
       font-family: var(--font-display);
       background: var(--tm-hairline);
       color: var(--tm-text-dim);
@@ -1242,7 +1250,7 @@
     #page-warning .tm-tbl .flag {
       display: inline-block;
       padding: 2px 8px;
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 1.2px;
       font-weight: 600;
       text-transform: uppercase;
@@ -1301,7 +1309,7 @@
     #page-warning .tm-verdict .body { flex: 1; min-width: 0; }
     #page-warning .tm-verdict .tag {
       display: inline-block;
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 1.2px;
       color: var(--tm-ok);
       padding: 2px 7px;
@@ -1322,7 +1330,7 @@
       border-color: var(--tm-amber);
     }
     #page-warning .tm-verdict .h {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--tm-text);
       font-weight: 600;
       letter-spacing: -0.2px;
@@ -1341,7 +1349,7 @@
       text-align: right;
     }
     #page-warning .tm-verdict .side .d {
-      font-size: 18px;
+      font-size: 17px;
       color: var(--tm-ok);
       letter-spacing: -0.3px;
       font-family: var(--mono);
@@ -1350,7 +1358,7 @@
     #page-warning .tm-verdict.hold .side .d { color: var(--tm-up); }
     #page-warning .tm-verdict.risk .side .d { color: var(--tm-amber); }
     #page-warning .tm-verdict .side .l {
-      font-size: 9px;
+      font-size: 10px;
       color: var(--tm-text-mute);
       letter-spacing: 1px;
       margin-top: 3px;
@@ -1410,7 +1418,7 @@
     }
     #page-warning .tm-strip .tm-cell:last-child { border-right: none; }
     #page-warning .tm-strip .tm-cell .l {
-      font-size: 9px;
+      font-size: 10px;
       color: var(--tm-text-mute);
       letter-spacing: 0.8px;
       text-transform: uppercase;
@@ -1419,7 +1427,7 @@
       font-weight: 500;
     }
     #page-warning .tm-strip .tm-cell .v {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--tm-text);
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.2px;
@@ -1445,12 +1453,12 @@
       gap: 12px;
       padding: 9px 16px;
       border-bottom: 1px solid var(--tm-hairline-soft);
-      font-size: 11px;
+      font-size: 12px;
     }
     #page-warning .tm-rules .r:last-child { border-bottom: none; }
     #page-warning .tm-rules .r .k {
       font-family: var(--font-display);
-      font-size: 9px;
+      font-size: 10px;
       color: var(--tm-accent);
       letter-spacing: 1px;
       font-weight: 600;
@@ -1501,7 +1509,7 @@
     }
     #page-warning .warning-terminal .price-card h2 {
       font-family: var(--font-display);
-      font-size: 11px;
+      font-size: 12px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--tm-text);
@@ -1510,7 +1518,7 @@
       margin: 0 0 12px;
     }
     #page-warning .warning-terminal .price-meta {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--tm-text-dim);
       margin-bottom: 10px;
       font-family: var(--font-text);
@@ -1541,7 +1549,7 @@
     }
     #page-warning .warning-terminal .caution-set-status {
       font-family: var(--font-display);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 1.2px;
       text-transform: uppercase;
       padding: 2px 8px;
@@ -1565,7 +1573,7 @@
     }
     #page-warning .warning-terminal .caution-cond-mark {
       font-family: var(--font-display);
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 1.2px;
       font-weight: 600;
       padding: 2px 6px;
@@ -1652,7 +1660,7 @@
       #page-warning .tm-verdict { flex-wrap: wrap; }
       #page-warning .tm-verdict .side { border-left: none; border-top: 1px solid var(--tm-hairline); padding-left: 0; padding-top: 10px; margin-left: 0; margin-top: 10px; width: 100%; text-align: left; }
       #page-warning .tm-rules .r { grid-template-columns: 28px 1fr; }
-      #page-warning .tm-rules .r .m { grid-column: 2; font-size: 9px; }
+      #page-warning .tm-rules .r .m { grid-column: 2; font-size: 10px; }
       #page-warning .tm-chart { height: 220px !important; }
       body.is-warning-active .ticker-wrap::before { display: none; }
       body.is-warning-active .ticker-track { padding-left: 0; }
