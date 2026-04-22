@@ -2069,6 +2069,7 @@ async function checkAndDisplay(r) {
     renderPriceStrip({ ...t, ...priceData });
     const priceSec = document.getElementById('sec-price'); if (priceSec) priceSec.style.display = '';
     renderChartLegend(t);
+    loadTvChartWarning(code);
 
   } catch (e) {
     // 오류 시 기존대로 표시
@@ -2133,8 +2134,9 @@ async function fetchPriceThresholds(stockName) {
     renderPriceStrip({ ...t, ...priceData });
     document.getElementById('sec-price').style.display = '';
 
-    // Chart legend (TradingView widget will be mounted in Step 5)
+    // Chart legend + TradingView widget mount
     renderChartLegend(t);
+    loadTvChartWarning(code);
 
   } catch (e) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="tm-error" style="color:var(--tm-up)">가격 조회 오류: ${escHtml(e.message)}</td></tr>`;
@@ -2897,22 +2899,30 @@ function loadTvChart(stockCode) {
   const container = document.getElementById('tvChartContainer');
   if (!stockCode) { card.style.display = 'none'; return; }
   card.style.display = 'block';
+  _mountTvWidget(container, stockCode, '500', '#1a1a2e');
+}
+
+function _mountTvWidget(container, stockCode, height, toolbarBg) {
+  if (!container || !stockCode) return;
+  // 동일 컨테이너에 재마운트 방지 가드
+  if (container.dataset.tvCode === stockCode) return;
+  container.dataset.tvCode = stockCode;
+
   const config = {
     symbol: 'KRX:' + stockCode,
     width: '100%',
-    height: '500',
+    height: String(height || '360'),
     theme: 'dark',
     style: '1',
     locale: 'kr',
-    toolbar_bg: '#1a1a2e',
-    hide_side_toolbar: false,
+    toolbar_bg: toolbarBg || '#0A0A0A',
+    hide_side_toolbar: true,
     allow_symbol_change: false,
-    studies: ['MASimple@tv-basicstudies'],
-    show_popup_button: true,
+    show_popup_button: false,
   };
   container.innerHTML =
-    '<div class="tradingview-widget-container">' +
-    '<div class="tradingview-widget-container__widget"></div>' +
+    '<div class="tradingview-widget-container" style="height:100%">' +
+    '<div class="tradingview-widget-container__widget" style="height:100%"></div>' +
     '</div>';
   const script = document.createElement('script');
   script.type = 'text/javascript';
@@ -2920,6 +2930,14 @@ function loadTvChart(stockCode) {
   script.async = true;
   script.textContent = JSON.stringify(config);
   container.querySelector('.tradingview-widget-container').appendChild(script);
+}
+
+function loadTvChartWarning(stockCode) {
+  const container = document.getElementById('tvChartWarning');
+  const section = document.getElementById('sec-chart');
+  if (!stockCode || !container) { if (section) section.style.display = 'none'; return; }
+  if (section) section.style.display = '';
+  _mountTvWidget(container, stockCode, '360', '#0A0A0A');
 }
 
 const CLS_NAMES = { Y: '유가', K: '코스닥', N: '코넥스', E: '기타' };
