@@ -1,5 +1,5 @@
 """DART 사업보고서 본문 추출 + Gemini 요약"""
-import urllib.request, urllib.parse, io, zipfile, json, os, re, time
+import urllib.request, io, zipfile, json, os, re, time
 from xml.etree import ElementTree as ET
 from datetime import date, timedelta
 
@@ -7,9 +7,11 @@ from lib.retry import retry
 from lib.cache import TTLCache
 from lib.dart_corp import find_corp_by_stock_code
 from lib.gemini import generate as gemini_generate
+from lib.http_utils import build_url, safe_exception_text, urlopen_sanitized
 
 DART_BASE = 'https://opendart.fss.or.kr/api'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+DART_SECRET_PARAMS = ('crtfc_key',)
 
 # 사업보고서는 분기당 1회 갱신 — 24시간 캐시
 _summary_cache = TTLCache(ttl=24 * 3600)
@@ -30,7 +32,7 @@ def _find_latest_business_report(corp_code: str) -> dict | None:
     bgn = (today - timedelta(days=540)).strftime('%Y%m%d')
     end = today.strftime('%Y%m%d')
 
-    params = urllib.parse.urlencode({
+    params = {
         'crtfc_key': _api_key(),
         'corp_code': corp_code,
         'bgn_de': bgn,
@@ -39,12 +41,12 @@ def _find_latest_business_report(corp_code: str) -> dict | None:
         'page_count': '10',
         'sort': 'date',
         'sort_mth': 'desc',
-    })
-    url = f'{DART_BASE}/list.json?{params}'
+    }
+    request_url = build_url(DART_BASE, 'list.json', params)
 
     def _call():
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=10) as r:
+        req = urllib.request.Request(request_url, headers=HEADERS)
+        with urlopen_sanitized(req, timeout=10, secret_query_keys=DART_SECRET_PARAMS) as r:
             return json.loads(r.read().decode('utf-8'))
 
     data = retry(_call)
@@ -60,11 +62,14 @@ def _fetch_document_text(rcept_no: str) -> str:
     if cached is not None:
         return cached
 
-    url = f'{DART_BASE}/document.xml?crtfc_key={_api_key()}&rcept_no={rcept_no}'
+    request_url = build_url(DART_BASE, 'document.xml', {
+        'crtfc_key': _api_key(),
+        'rcept_no': rcept_no,
+    })
 
     def _call():
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=30) as r:
+        req = urllib.request.Request(request_url, headers=HEADERS)
+        with urlopen_sanitized(req, timeout=30, secret_query_keys=DART_SECRET_PARAMS) as r:
             return r.read()
 
     raw = retry(_call)
@@ -270,8 +275,9 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
         summary = gemini_generate(prompt, max_output_tokens=512)
         print(f'[info] Gemini 요약 {time.time()-t0:.1f}s: {len(summary)}자', flush=True)
     except Exception as e:
-        print(f'[info] Gemini 요약 실패: {e}', flush=True)
-        return {'error': f'Gemini 요약 실패: {e}'}
+        message = safe_exception_text(e)
+        print(f'[info] Gemini 요약 실패: {message}', flush=True)
+        return {'error': f'Gemini 요약 실패: {message}'}
 
     result = {
         'corp_name': corp['corp_name'],

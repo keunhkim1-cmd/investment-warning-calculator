@@ -4,9 +4,11 @@ from xml.etree import ElementTree as ET
 
 from lib.retry import retry
 from lib.cache import TTLCache
+from lib.http_utils import build_url, urlopen_sanitized
 
 DART_BASE = 'https://opendart.fss.or.kr/api'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+DART_SECRET_PARAMS = ('crtfc_key',)
 
 # corp_code 매핑은 거의 변하지 않음 — 24시간 캐시
 _cache = TTLCache(ttl=24 * 3600)
@@ -25,11 +27,11 @@ def _load_corp_map() -> dict:
     if cached is not None:
         return cached
 
-    url = f'{DART_BASE}/corpCode.xml?crtfc_key={_api_key()}'
+    request_url = build_url(DART_BASE, 'corpCode.xml', {'crtfc_key': _api_key()})
 
     def _call():
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=30) as r:
+        req = urllib.request.Request(request_url, headers=HEADERS)
+        with urlopen_sanitized(req, timeout=30, secret_query_keys=DART_SECRET_PARAMS) as r:
             return r.read()
 
     raw = retry(_call)

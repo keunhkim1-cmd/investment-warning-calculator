@@ -7,9 +7,10 @@
 - Supabase 캐싱: 확정 기간(전년도 이전) 데이터는 DB에서 조회, 미확정만 DART 호출.
 """
 import json, os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 from lib.dart_full import fetch_all
+from lib.http_utils import safe_exception_text
 from lib.period import derive_q4_from_annual, yoy, safe_div, REPRT_QUARTER
 
 _MAPPING_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -17,6 +18,14 @@ _MAPPING_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 with open(_MAPPING_PATH, encoding='utf-8') as _f:
     MAPPING = json.load(_f)
+
+
+def _env_int(name: str, default: int, min_value: int, max_value: int) -> int:
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+    return max(min_value, min(max_value, value))
 
 
 def _to_num(s):
@@ -148,7 +157,9 @@ def _enrich_derived(period: dict) -> dict:
 def _load_cache(corp_code: str, fs_div: str) -> dict:
     """Supabase에서 기존 캐시 데이터를 일괄 로드 → {(period_type, period_key): data}"""
     try:
-        from lib.supabase_client import get_client
+        from lib.supabase_client import cache_enabled, get_client
+        if not cache_enabled():
+            return {}
         rows = (get_client().table('financial_data')
                 .select('period_type, period_key, data')
                 .eq('corp_code', corp_code)
@@ -156,7 +167,7 @@ def _load_cache(corp_code: str, fs_div: str) -> dict:
                 .execute()).data
         return {(r['period_type'], r['period_key']): r['data'] for r in rows}
     except Exception as e:
-        print(f'[cache] Supabase 조회 실패 (fallback to DART): {e}')
+        print(f'[cache] Supabase 조회 실패 (fallback to DART): {safe_exception_text(e)}')
         return {}
 
 
@@ -165,13 +176,15 @@ def _save_cache(corp_code: str, fs_div: str, rows: list):
     if not rows:
         return
     try:
-        from lib.supabase_client import get_client
+        from lib.supabase_client import cache_writes_enabled, get_client
+        if not cache_writes_enabled():
+            return
         records = [{'corp_code': corp_code, 'fs_div': fs_div, **r} for r in rows]
         (get_client().table('financial_data')
          .upsert(records, on_conflict='corp_code,fs_div,period_type,period_key')
          .execute())
     except Exception as e:
-        print(f'[cache] Supabase 저장 실패 (무시): {e}')
+        print(f'[cache] Supabase 저장 실패 (무시): {safe_exception_text(e)}')
 
 
 def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
@@ -231,7 +244,8 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     # ── 캐시 미스 연도만 DART 병렬 호출 ──
     if years_to_fetch:
         tasks = []
-        with ThreadPoolExecutor(max_workers=8) as ex:
+        max_workers = _env_int('DART_FINANCIAL_MAX_WORKERS', 4, 1, 8)
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
             for y in years_to_fetch:
                 for reprt in REPRT_QUARTER:
                     tasks.append((y, reprt, ex.submit(_fetch_period_safe, corp_code, y, reprt, fs_div)))

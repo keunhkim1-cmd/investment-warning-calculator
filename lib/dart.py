@@ -1,10 +1,12 @@
 """DART Open API — 공시 검색 & 재무제표 조회"""
-import urllib.request, urllib.parse, json, os
+import urllib.request, json, os
 
 from lib.retry import retry
+from lib.http_utils import build_url, urlopen_sanitized
 
 DART_BASE = 'https://opendart.fss.or.kr/api'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'}
+DART_SECRET_PARAMS = ('crtfc_key',)
 
 
 def _get_api_key() -> str:
@@ -33,11 +35,11 @@ def search_disclosure(corp_code: str = '', bgn_de: str = '', end_de: str = '',
     if pblntf_ty:
         params['pblntf_ty'] = pblntf_ty
 
-    url = f'{DART_BASE}/list.json?{urllib.parse.urlencode(params)}'
+    request_url = build_url(DART_BASE, 'list.json', params)
 
     def _call():
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=10) as r:
+        req = urllib.request.Request(request_url, headers=HEADERS)
+        with urlopen_sanitized(req, timeout=10, secret_query_keys=DART_SECRET_PARAMS) as r:
             return json.loads(r.read().decode('utf-8'))
 
     return retry(_call)

@@ -1,12 +1,20 @@
 from http.server import BaseHTTPRequestHandler
-import urllib.parse, json, sys, os, traceback
+import urllib.parse, json, sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lib.dart import search_disclosure
-
-ALLOWED_ORIGIN = os.environ.get('ALLOWED_ORIGIN', 'https://investment-warning-calculator.vercel.app')
+from lib.validation import (
+    parse_int_range,
+    validate_corp_code,
+    validate_dart_pblntf_ty,
+    validate_date_range,
+)
+from lib.http_utils import safe_traceback, send_json_headers, send_options_response
 
 class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        send_options_response(self)
+
     def do_GET(self):
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         corp_code = qs.get('corp_code', [''])[0].strip()
@@ -17,21 +25,28 @@ class handler(BaseHTTPRequestHandler):
         pblntf_ty = qs.get('pblntf_ty', [''])[0].strip()
 
         try:
+            corp_code = validate_corp_code(corp_code, required=False)
+            bgn_de, end_de = validate_date_range(bgn_de, end_de)
+            page_no = parse_int_range(page_no, 'page_no', 1, 1, 1000)
+            page_count = parse_int_range(page_count, 'page_count', 20, 1, 100)
+            pblntf_ty = validate_dart_pblntf_ty(pblntf_ty)
             data = search_disclosure(
                 corp_code=corp_code,
                 bgn_de=bgn_de,
                 end_de=end_de,
-                page_no=int(page_no),
-                page_count=min(int(page_count), 100),
+                page_no=page_no,
+                page_count=page_count,
                 pblntf_ty=pblntf_ty,
             )
             body = json.dumps(data, ensure_ascii=False).encode()
             self.send_response(200)
+        except ValueError as e:
+            body = json.dumps({'error': str(e)}, ensure_ascii=False).encode()
+            self.send_response(400)
         except Exception as e:
-            print(f'Error: {traceback.format_exc()}')
+            print(f'Error: {safe_traceback()}')
             body = json.dumps({'error': '서버 오류가 발생했습니다.'}, ensure_ascii=False).encode()
             self.send_response(500)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', ALLOWED_ORIGIN)
+        send_json_headers(self)
         self.end_headers()
         self.wfile.write(body)

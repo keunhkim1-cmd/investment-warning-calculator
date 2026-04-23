@@ -11,6 +11,10 @@ import os
 import sys
 import urllib.request
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+from lib.http_utils import telegram_bot_url, urlopen_sanitized
+
 COMMANDS = [
     {'command': 'warning',    'description': '투자경고/위험 해제일 계산'},
     {'command': 'caution',    'description': '투자경고 지정 예상 점검 (투자주의 종목)'},
@@ -26,7 +30,7 @@ def load_token() -> str:
     token = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
     if token:
         return token
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+    env_path = os.path.join(ROOT, '.env')
     if os.path.exists(env_path):
         with open(env_path, encoding='utf-8') as f:
             for line in f:
@@ -40,11 +44,11 @@ def main():
     token = load_token()
     body = json.dumps({'commands': COMMANDS}).encode('utf-8')
     req = urllib.request.Request(
-        f'https://api.telegram.org/bot{token}/setMyCommands',
+        telegram_bot_url(token, 'setMyCommands'),
         data=body,
         headers={'Content-Type': 'application/json'},
     )
-    with urllib.request.urlopen(req, timeout=10) as r:
+    with urlopen_sanitized(req, timeout=10) as r:
         resp = json.loads(r.read())
     if not resp.get('ok'):
         print('FAIL:', resp, file=sys.stderr)

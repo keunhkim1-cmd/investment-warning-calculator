@@ -3,7 +3,7 @@
 종목명을 보내면 투자경고/위험 지정일, 해제 예상일, 기준가를 알려줍니다.
 """
 from http.server import BaseHTTPRequestHandler
-import json, os, urllib.request, re, sys, unicodedata
+import hmac, json, os, urllib.request, re, sys, unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone, timedelta
 
@@ -15,13 +15,34 @@ from lib.krx import search_kind
 from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, caution_search
 from lib.dart_report import summarize_business_report
 from lib.cache import TTLCache
+from lib.http_utils import (
+    safe_exception_text,
+    safe_traceback,
+    send_text_headers,
+    telegram_bot_url,
+    urlopen_sanitized,
+)
+from lib.validation import normalize_query
 
 # 동일 update_id 중복 처리 차단 (텔레그램 재시도 방어)
 _seen_updates = TTLCache(ttl=600)
 
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+
+
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-TG_API    = f'https://api.telegram.org/bot{BOT_TOKEN}'
 WEBHOOK_SECRET = os.environ.get('TELEGRAM_WEBHOOK_SECRET', '')
+MAX_WEBHOOK_BODY_BYTES = _env_int('TELEGRAM_MAX_BODY_BYTES', 64 * 1024)
+MAX_UPDATE_AGE_SECONDS = _env_int('TELEGRAM_MAX_UPDATE_AGE_SECONDS', 600)
+ADMIN_CHAT_IDS = {
+    int(v.strip()) for v in os.environ.get('TELEGRAM_ADMIN_CHAT_IDS', '').split(',')
+    if re.fullmatch(r'-?\d+', v.strip())
+}
 
 # ── 메시지 포맷 ──────────────────────────────────────────────
 def sd(d: date) -> str:
@@ -207,29 +228,44 @@ def tg_send(chat_id: int, text: str):
         'chat_id': chat_id, 'text': text, 'parse_mode': 'Markdown',
     }).encode('utf-8')
     req = urllib.request.Request(
-        f'{TG_API}/sendMessage', data=body,
+        telegram_bot_url(BOT_TOKEN, 'sendMessage'), data=body,
         headers={'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=10) as r:
+    with urlopen_sanitized(req, timeout=10) as r:
         return json.loads(r.read())
 
 def tg_send_plain(chat_id: int, text: str):
     body = json.dumps({'chat_id': chat_id, 'text': text}).encode('utf-8')
     req  = urllib.request.Request(
-        f'{TG_API}/sendMessage', data=body,
+        telegram_bot_url(BOT_TOKEN, 'sendMessage'), data=body,
         headers={'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=10) as r:
+    with urlopen_sanitized(req, timeout=10) as r:
         return json.loads(r.read())
+
+
+def _is_admin_chat(chat_id: int) -> bool:
+    return chat_id in ADMIN_CHAT_IDS
+
+
+def _is_fresh_update(msg: dict) -> bool:
+    """Drop stale Telegram updates to reduce replay and delayed retry abuse."""
+    msg_ts = msg.get('date')
+    if not isinstance(msg_ts, int):
+        return True
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    return abs(now_ts - msg_ts) <= MAX_UPDATE_AGE_SECONDS
 
 # ── 업데이트 처리 ────────────────────────────────────────────
 def do_search(chat_id: int, query: str):
-    if not query:
+    try:
+        query = normalize_query(query)
+    except ValueError:
         tg_send_plain(chat_id, '종목명을 입력해주세요.\n예: /warning 코셈')
         return
 
     try:
         tg_send_plain(chat_id, f'🔍 "{query}" 검색 중...')
     except Exception as e:
-        print(f'검색 중 메시지 전송 실패: {e}', flush=True)
+        print(f'검색 중 메시지 전송 실패: {safe_exception_text(e)}', flush=True)
 
     try:
         results = search_kind(query)
@@ -249,7 +285,7 @@ def do_search(chat_id: int, query: str):
                 prices = fetch_prices(codes[0]['code'], count=20)
                 return calc_thresholds(prices)
         except Exception as e:
-            print(f'주가 조회 실패: {e}', flush=True)
+            print(f'주가 조회 실패: {safe_exception_text(e)}', flush=True)
         return None
 
     targets = results[:3]
@@ -272,21 +308,22 @@ def do_search(chat_id: int, query: str):
 
 
 def do_info(chat_id: int, query: str):
-    import traceback
-    if not query:
+    try:
+        query = normalize_query(query)
+    except ValueError:
         tg_send_plain(chat_id, '종목명을 입력해주세요.\n예: /info 삼성전자')
         return
 
     try:
         tg_send_plain(chat_id, f'📑 "{query}" 사업보고서 조회 중...')
     except Exception as e:
-        print(f'/info 안내 메시지 전송 실패: {e}', flush=True)
+        print(f'/info 안내 메시지 전송 실패: {safe_exception_text(e)}', flush=True)
 
     try:
         codes = naver_stock_code(query)
     except Exception as e:
-        print(f'[info] 네이버 종목조회 오류: {traceback.format_exc()}', flush=True)
-        tg_send_plain(chat_id, f'❌ 종목 조회 오류: {e}')
+        print(f'[info] 네이버 종목조회 오류: {safe_traceback()}', flush=True)
+        tg_send_plain(chat_id, f'❌ 종목 조회 오류: {safe_exception_text(e)}')
         return
 
     if not codes:
@@ -301,8 +338,8 @@ def do_info(chat_id: int, query: str):
     try:
         result = summarize_business_report(stock_code, stock_name)
     except Exception as e:
-        print(f'[info] summarize 예외: {traceback.format_exc()}', flush=True)
-        tg_send_plain(chat_id, f'❌ 사업보고서 요약 실패: {e}')
+        print(f'[info] summarize 예외: {safe_traceback()}', flush=True)
+        tg_send_plain(chat_id, f'❌ 사업보고서 요약 실패: {safe_exception_text(e)}')
         return
 
     if 'error' in result:
@@ -332,23 +369,25 @@ def do_info(chat_id: int, query: str):
                 plain += f'\n원문: {viewer_url}'
             tg_send_plain(chat_id, plain)
         except Exception as e:
-            tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {e}')
+            tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {safe_exception_text(e)}')
 
 
 def do_caution(chat_id: int, query: str):
-    if not query:
+    try:
+        query = normalize_query(query)
+    except ValueError:
         tg_send_plain(chat_id, '종목명을 입력해주세요.\n예: /caution 코셈')
         return
 
     try:
         tg_send_plain(chat_id, f'🔍 "{query}" 투자주의 조회 중...')
     except Exception as e:
-        print(f'/caution 안내 메시지 전송 실패: {e}', flush=True)
+        print(f'/caution 안내 메시지 전송 실패: {safe_exception_text(e)}', flush=True)
 
     try:
         result = caution_search(query)
     except Exception as e:
-        tg_send_plain(chat_id, f'❌ 조회 오류: {e}')
+        tg_send_plain(chat_id, f'❌ 조회 오류: {safe_exception_text(e)}')
         return
 
     msg = build_caution_message(result)
@@ -358,10 +397,13 @@ def do_caution(chat_id: int, query: str):
         try:
             tg_send_plain(chat_id, msg)
         except Exception as e:
-            tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {e}')
+            tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {safe_exception_text(e)}')
 
 
 def process_update(update: dict):
+    if not isinstance(update, dict):
+        return
+
     update_id = update.get('update_id')
     if update_id is not None:
         key = f'upd:{update_id}'
@@ -372,7 +414,13 @@ def process_update(update: dict):
     msg = update.get('message') or update.get('edited_message')
     if not msg:
         return
-    chat_id = msg['chat']['id']
+    if not _is_fresh_update(msg):
+        return
+
+    chat = msg.get('chat') or {}
+    chat_id = chat.get('id')
+    if not isinstance(chat_id, int):
+        return
     text    = msg.get('text', '').strip()
 
     if not text:
@@ -388,7 +436,7 @@ def process_update(update: dict):
             '/warning `종목명` — 종목 투자경고 조회\n'
             '/caution `종목명` — 투자경고 지정 예상 점검\n'
             '/bulgunjeon — 불건전 요건 안내\n'
-            '/info `종목명` — 사업보고서 요약\n'
+            '/info `종목명` — 사업보고서 요약 (관리자)\n'
             '/help — 사용법 안내\n\n'
             '또는 종목명을 바로 입력해도 됩니다.\n'
             '예: `코셈`, `레이저쎌`')
@@ -410,7 +458,7 @@ def process_update(update: dict):
             '*3. 불건전 요건 안내*\n'
             '`/bulgunjeon` — KRX 불공정거래 판단 기준 참고용\n\n'
             '*4. 사업보고서 요약*\n'
-            '`/info 종목명` — 가장 최근 사업보고서를 10줄로 요약\n'
+            '`/info 종목명` — 가장 최근 사업보고서를 10줄로 요약 (관리자 전용)\n'
             '예: `/info 삼성전자`\n\n'
             '*투자경고 해제 조건 안내*\n'
             '아래 3가지 중 하나라도 미해당 시 다음 거래일 해제:\n'
@@ -427,13 +475,15 @@ def process_update(update: dict):
 
     if text.startswith('/info'):
         query = re.sub(r'^/\S+\s*', '', text).strip()
+        if not _is_admin_chat(chat_id):
+            tg_send_plain(chat_id, '이 명령어는 관리자만 사용할 수 있습니다.')
+            return
         try:
             do_info(chat_id, query)
         except Exception as e:
-            import traceback
-            print(f'[info] do_info 최상위 예외: {traceback.format_exc()}', flush=True)
+            print(f'[info] do_info 최상위 예외: {safe_traceback()}', flush=True)
             try:
-                tg_send_plain(chat_id, f'❌ 처리 중 오류: {e}')
+                tg_send_plain(chat_id, f'❌ 처리 중 오류: {safe_exception_text(e)}')
             except Exception:
                 pass
         return
@@ -470,20 +520,43 @@ def process_update(update: dict):
         tg_send_plain(chat_id, '알 수 없는 명령어입니다.\n/help 로 사용법을 확인하세요.')
         return
 
-    chat_type = msg['chat'].get('type', 'private')
+    chat_type = chat.get('type', 'private')
     if chat_type == 'private':
         do_search(chat_id, text)
 
 # ── Vercel Handler ───────────────────────────────────────────
 class handler(BaseHTTPRequestHandler):
+    def _respond_text(self, status: int, body: bytes):
+        self.send_response(status)
+        send_text_headers(self, cors=False, cache_control='no-store')
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_POST(self):
-        if WEBHOOK_SECRET:
-            token = self.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
-            if token != WEBHOOK_SECRET:
-                self.send_response(403)
-                self.end_headers()
-                return
-        length = int(self.headers.get('Content-Length', 0))
+        if not WEBHOOK_SECRET:
+            self._respond_text(503, b'Webhook secret is not configured.')
+            return
+
+        token = self.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+        if not hmac.compare_digest(token, WEBHOOK_SECRET):
+            self._respond_text(403, b'Forbidden')
+            return
+
+        ctype = self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
+        if ctype != 'application/json':
+            self._respond_text(415, b'Unsupported Media Type')
+            return
+
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+        except ValueError:
+            self._respond_text(400, b'Bad Content-Length')
+            return
+
+        if length <= 0 or length > MAX_WEBHOOK_BODY_BYTES:
+            self._respond_text(413, b'Payload Too Large')
+            return
+
         body   = self.rfile.read(length)
 
         # Vercel Python runtime은 HTTP 응답 완료 후 함수를 suspend하므로
@@ -492,17 +565,17 @@ class handler(BaseHTTPRequestHandler):
         try:
             update = json.loads(body)
             process_update(update)
+        except json.JSONDecodeError:
+            self._respond_text(400, b'Invalid JSON')
+            return
         except Exception as e:
-            print(f'Update error: {e}', flush=True)
+            print(f'Update error: {safe_exception_text(e)}', flush=True)
 
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'OK')
+        self._respond_text(200, b'OK')
 
     def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b'Telegram bot webhook is active.')
+        status = b'configured' if WEBHOOK_SECRET else b'missing secret'
+        self._respond_text(200, b'Telegram bot webhook is ' + status + b'.')
 
     def log_message(self, *args):
         pass

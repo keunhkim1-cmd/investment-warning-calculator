@@ -3,39 +3,28 @@
 DEBUG_ENABLED=true 환경변수가 설정된 경우에만 동작
 """
 from http.server import BaseHTTPRequestHandler
-import json, os, urllib.request
+import json, os, sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lib.http_utils import send_json_headers, send_text_headers
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if os.environ.get('DEBUG_ENABLED', '') != 'true':
             self.send_response(404)
+            send_text_headers(self, cors=False, cache_control='no-store')
             self.end_headers()
             return
 
         token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
         result = {
             'token_set': bool(token),
+            'telegram_api': 'SKIP (token-bearing API check disabled)',
         }
-
-        # 토큰이 있으면 실제 Telegram API 호출 테스트
-        if token:
-            try:
-                req = urllib.request.Request(
-                    f'https://api.telegram.org/bot{token}/getMe',
-                    headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=5) as r:
-                    data = json.loads(r.read())
-                result['telegram_api'] = 'OK'
-                result['bot_name'] = data['result'].get('first_name', '')
-                result['bot_username'] = data['result'].get('username', '')
-            except Exception as e:
-                result['telegram_api'] = f'ERROR: {e}'
-        else:
-            result['telegram_api'] = 'SKIP (토큰 없음)'
 
         body = json.dumps(result, ensure_ascii=False, indent=2).encode()
         self.send_response(200)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        send_json_headers(self, cors=False, cache_control='no-store')
         self.end_headers()
         self.wfile.write(body)
 

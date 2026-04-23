@@ -1,7 +1,8 @@
 """Google Gemini API 호출 (stdlib only)"""
-import urllib.request, urllib.parse, json, os
+import urllib.request, json, os
 
 from lib.retry import retry
+from lib.http_utils import build_url, urlopen_sanitized
 
 GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
 # Flash-Lite: 요약 태스크에 충분하고 Flash보다 훨씬 빠름
@@ -18,7 +19,7 @@ def _api_key() -> str:
 def generate(prompt: str, model: str = DEFAULT_MODEL, max_output_tokens: int = 512) -> str:
     """Gemini generateContent — 단일 프롬프트 → 텍스트 응답.
     thinking 비활성화로 latency 최소화 (요약 태스크는 reasoning 불필요)."""
-    url = f'{GEMINI_BASE}/models/{model}:generateContent?key={_api_key()}'
+    request_url = build_url(GEMINI_BASE, f'models/{model}:generateContent')
     body = json.dumps({
         'contents': [{'parts': [{'text': prompt}]}],
         'generationConfig': {
@@ -30,9 +31,12 @@ def generate(prompt: str, model: str = DEFAULT_MODEL, max_output_tokens: int = 5
 
     def _call():
         req = urllib.request.Request(
-            url, data=body,
-            headers={'Content-Type': 'application/json'})
-        with urllib.request.urlopen(req, timeout=60) as r:
+            request_url, data=body,
+            headers={
+                'Content-Type': 'application/json',
+                'x-goog-api-key': _api_key(),
+            })
+        with urlopen_sanitized(req, timeout=60) as r:
             return json.loads(r.read().decode('utf-8'))
 
     data = retry(_call)

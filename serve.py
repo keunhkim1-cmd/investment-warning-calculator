@@ -8,16 +8,31 @@ import http.server
 import socketserver
 import os
 import json
-import re
 import urllib.parse
 
 from lib.krx import search_kind
 from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview, caution_search
 from lib.dart import search_disclosure
 from lib.financial_model import build_model
+from lib.financial_api_security import auth_error, client_id, rate_limit_error, validate_params
+from lib.http_utils import (
+    STATIC_CSP,
+    send_json_headers,
+    send_options_response,
+    send_security_headers,
+)
+from lib.validation import (
+    normalize_query,
+    parse_int_range,
+    validate_corp_code,
+    validate_dart_pblntf_ty,
+    validate_date_range,
+    validate_stock_code,
+)
 
 PORT = 5173
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+FINANCIAL_ALLOWED_HEADERS = 'Authorization, X-API-Key, X-Financial-Model-Token, Content-Type'
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -27,100 +42,133 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f'[{self.address_string()}] {fmt % args}')
 
-    def send_json(self, data, status=200):
+    def send_json(self, data, status=200, allow_headers=None, cache_control=None):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        send_json_headers(self, allow_headers=allow_headers, cache_control=cache_control)
         self.send_header('Content-Length', str(len(body)))
-        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(body)
+
+    def send_financial_json(self, data, status=200):
+        self.send_json(
+            data,
+            status,
+            allow_headers=FINANCIAL_ALLOWED_HEADERS,
+            cache_control='no-store',
+        )
+
+    def do_OPTIONS(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == '/api/financial-model':
+            send_options_response(self, allow_headers=FINANCIAL_ALLOWED_HEADERS)
+            return
+        if parsed.path.startswith('/api/'):
+            send_options_response(self)
+            return
+        self.send_error(405, 'Method Not Allowed')
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         qs = urllib.parse.parse_qs(parsed.query)
 
         if parsed.path == '/api/warn-search':
-            name = qs.get('name', [''])[0].strip()
-            if not name:
-                self.send_json({'error': '종목명을 입력하세요.'}, 400); return
             try:
+                name = normalize_query(qs.get('name', [''])[0])
                 results = search_kind(name)
                 self.send_json({'results': results, 'query': name})
+            except ValueError as e:
+                self.send_json({'error': str(e)}, 400)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return
 
         if parsed.path == '/api/caution-search':
-            name = qs.get('name', [''])[0].strip()
             try:
+                name = normalize_query(qs.get('name', [''])[0])
                 self.send_json(caution_search(name))
+            except ValueError as e:
+                self.send_json({'status': 'error', 'errorMessage': str(e)}, 400)
             except Exception as e:
                 self.send_json({'status': 'error', 'errorMessage': str(e)}, 500)
             return
 
         if parsed.path == '/api/stock-code':
-            name = qs.get('name', [''])[0].strip()
-            if not name:
-                self.send_json({'error': '종목명을 입력하세요.'}, 400); return
             try:
+                name = normalize_query(qs.get('name', [''])[0])
                 items = naver_stock_code(name)
                 self.send_json({'items': items})
+            except ValueError as e:
+                self.send_json({'error': str(e)}, 400)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return
 
         if parsed.path == '/api/stock-price':
-            code = qs.get('code', [''])[0].strip()
-            if not re.match(r'^\d{6}$', code):
-                self.send_json({'error': '잘못된 종목코드 형식'}, 400); return
             try:
+                code = validate_stock_code(qs.get('code', [''])[0])
                 prices = fetch_prices(code, count=20)
                 thresholds = calc_thresholds(prices)
                 self.send_json({'prices': prices[:16], 'thresholds': thresholds})
+            except ValueError as e:
+                self.send_json({'error': str(e)}, 400)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return
 
         if parsed.path == '/api/stock-overview':
-            code = qs.get('code', [''])[0].strip()
-            if not re.match(r'^\d{6}$', code):
-                self.send_json({'error': '잘못된 종목코드 형식'}, 400); return
             try:
+                code = validate_stock_code(qs.get('code', [''])[0])
                 data = fetch_stock_overview(code)
                 self.send_json(data)
+            except ValueError as e:
+                self.send_json({'error': str(e)}, 400)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return
 
         if parsed.path == '/api/dart-search':
             try:
+                bgn_de, end_de = validate_date_range(
+                    qs.get('bgn_de', [''])[0],
+                    qs.get('end_de', [''])[0],
+                )
                 data = search_disclosure(
-                    corp_code=qs.get('corp_code', [''])[0],
-                    bgn_de=qs.get('bgn_de', [''])[0].strip(),
-                    end_de=qs.get('end_de', [''])[0].strip(),
-                    page_no=int(qs.get('page_no', ['1'])[0]),
-                    page_count=min(int(qs.get('page_count', ['20'])[0]), 100),
-                    pblntf_ty=qs.get('pblntf_ty', [''])[0].strip(),
+                    corp_code=validate_corp_code(qs.get('corp_code', [''])[0], required=False),
+                    bgn_de=bgn_de,
+                    end_de=end_de,
+                    page_no=parse_int_range(qs.get('page_no', ['1'])[0], 'page_no', 1, 1, 1000),
+                    page_count=parse_int_range(qs.get('page_count', ['20'])[0], 'page_count', 20, 1, 100),
+                    pblntf_ty=validate_dart_pblntf_ty(qs.get('pblntf_ty', [''])[0]),
                 )
                 self.send_json(data)
+            except ValueError as e:
+                self.send_json({'error': str(e)}, 400)
             except Exception as e:
                 self.send_json({'error': str(e)}, 500)
             return
 
         if parsed.path == '/api/financial-model':
-            corp_code = qs.get('corp_code', [''])[0].strip()
-            fs_div = qs.get('fs_div', ['CFS'])[0].strip().upper()
+            auth = auth_error(self.headers)
+            if auth:
+                status, message = auth
+                self.send_financial_json({'error': message}, status); return
+            limited = rate_limit_error(client_id(self.headers, getattr(self, 'client_address', None)))
+            if limited:
+                status, message = limited
+                self.send_financial_json({'error': message}, status); return
             try:
-                years = max(2, min(7, int(qs.get('years', ['5'])[0])))
+                corp_code, fs_div, years = validate_params(
+                    qs.get('corp_code', [''])[0],
+                    qs.get('fs_div', ['CFS'])[0],
+                    qs.get('years', ['5'])[0],
+                )
             except ValueError:
-                years = 5
-            if not re.match(r'^\d{8}$', corp_code) or fs_div not in ('CFS', 'OFS'):
-                self.send_json({'error': '잘못된 파라미터 형식'}, 400); return
+                self.send_financial_json({'error': '잘못된 파라미터 형식'}, 400); return
             try:
-                self.send_json(build_model(corp_code, fs_div=fs_div, years=years))
+                self.send_financial_json(build_model(corp_code, fs_div=fs_div, years=years))
             except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+                self.send_financial_json({'error': str(e)}, 500)
             return
 
         super().do_GET()
@@ -130,6 +178,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path.startswith('/data/') and path.endswith('.json'):
             self.send_header('Cache-Control', 'public, max-age=3600')
+        if not path.startswith('/api/'):
+            send_security_headers(self, csp=STATIC_CSP)
         super().end_headers()
 
 
