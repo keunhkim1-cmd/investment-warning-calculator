@@ -1,4 +1,7 @@
 design_handoff_warning_calculator/
+tests/
+scripts/
+.claude/
 __pycache__/
 **/__pycache__/
 *.pyc
@@ -7,3 +10,4 @@ __pycache__/
 .env
 .env.*
 !.env.example
+*.md

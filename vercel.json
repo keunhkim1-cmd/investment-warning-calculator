@@ -1,6 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "fluid": true,
+  "regions": ["icn1"],
+  "crons": [
+    { "path": "/api/warm-cache", "schedule": "10 7 * * 1-5" }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
@@ -26,52 +30,66 @@
       ]
     },
     {
-      "source": "/data/patchnotes.json",
+      "source": "/data/(.*).json",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=60, stale-while-revalidate=600" }
+        { "key": "Cache-Control", "value": "public, max-age=3600" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=86400" }
       ]
     },
     {
-      "source": "/data/(.*).json",
+      "source": "/data/patchnotes.json",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=86400" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=60, stale-while-revalidate=600" }
       ]
     },
     {
       "source": "/api/stock-code",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=300" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=600, stale-while-revalidate=300" }
       ]
     },
     {
       "source": "/api/stock-price",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=120, stale-while-revalidate=60" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=120, stale-while-revalidate=60" }
+      ]
+    },
+    {
+      "source": "/api/stock-overview",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=120, stale-while-revalidate=60" }
       ]
     },
     {
       "source": "/api/warn-search",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=600, stale-while-revalidate=300" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=600, stale-while-revalidate=300" }
       ]
     },
     {
       "source": "/api/caution-search",
       "headers": [
-        { "key": "Cache-Control", "value": "public, s-maxage=120, stale-while-revalidate=60" }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "public, max-age=120, stale-while-revalidate=60" }
       ]
     }
   ],
   "functions": {
-    "api/debug.py": { "maxDuration": 10 },
-    "api/telegram.py": { "maxDuration": 300 },
-    "api/stock-code.py": { "maxDuration": 20 },
-    "api/stock-overview.py": { "maxDuration": 20 },
-    "api/warn-search.py": { "maxDuration": 20 },
-    "api/caution-search.py": { "maxDuration": 30 },
-    "api/stock-price.py": { "maxDuration": 20 },
-    "api/dart-search.py": { "maxDuration": 20 },
-    "api/financial-model.py": { "maxDuration": 120 },
-    "api/cache-bust.py": { "maxDuration": 10 }
+    "api/debug.py": { "maxDuration": 10, "memory": 1024 },
+    "api/telegram.py": { "maxDuration": 120, "memory": 1024 },
+    "api/stock-code.py": { "maxDuration": 20, "memory": 1024 },
+    "api/stock-overview.py": { "maxDuration": 20, "memory": 1024 },
+    "api/warn-search.py": { "maxDuration": 20, "memory": 1024 },
+    "api/caution-search.py": { "maxDuration": 30, "memory": 1024 },
+    "api/stock-price.py": { "maxDuration": 20, "memory": 1024 },
+    "api/dart-search.py": { "maxDuration": 20, "memory": 1024 },
+    "api/financial-model.py": { "maxDuration": 120, "memory": 1024 },
+    "api/cache-bust.py": { "maxDuration": 10, "memory": 1024 },
+    "api/warm-cache.py": { "maxDuration": 60, "memory": 1024 }
   }
 }

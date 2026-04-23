@@ -10,6 +10,40 @@ from lib.durable_cache import enabled as durable_cache_enabled
 from lib.http_utils import api_success_payload, send_json_headers, send_text_headers
 from lib.provider_rate_limit import DEFAULT_PER_MINUTE, provider_limit
 
+ENV_GROUPS = {
+    'public_market_data': [
+        'DART_API_KEY',
+        'KV_REST_API_URL',
+        'KV_REST_API_TOKEN',
+    ],
+    'telegram': [
+        'TELEGRAM_BOT_TOKEN',
+        'TELEGRAM_WEBHOOK_SECRET',
+    ],
+    'financial_model': [
+        'FINANCIAL_MODEL_API_TOKEN',
+        'SUPABASE_URL',
+        'SUPABASE_SERVICE_ROLE_KEY',
+    ],
+    'cache_admin': [
+        'CACHE_ADMIN_TOKEN',
+    ],
+    'scheduled_jobs': [
+        'CRON_SECRET',
+    ],
+}
+
+
+def _env_status() -> dict:
+    groups = {}
+    missing = []
+    for group, names in ENV_GROUPS.items():
+        values = {name: bool(os.environ.get(name, '').strip()) for name in names}
+        groups[group] = values
+        missing.extend(name for name, present in values.items() if not present)
+    return {'groups': groups, 'missing': sorted(set(missing))}
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if os.environ.get('DEBUG_ENABLED', '') != 'true':
@@ -31,6 +65,7 @@ class handler(BaseHTTPRequestHandler):
                 provider: provider_limit(provider)
                 for provider in sorted(DEFAULT_PER_MINUTE)
             },
+            'environment': _env_status(),
         }
 
         body = json.dumps(api_success_payload(result), ensure_ascii=False, indent=2).encode()

@@ -10,6 +10,37 @@ import os
 import json
 import urllib.parse
 
+DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load_local_env(path: str = '.env') -> None:
+    env_path = os.path.join(DIRECTORY, path)
+    if not os.path.exists(env_path):
+        return
+    with open(env_path, encoding='utf-8') as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            if line.startswith('export '):
+                line = line[len('export '):].strip()
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+
+
+_load_local_env('.env.local')
+_load_local_env('.env')
+
 from lib.krx import search_kind
 from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview, caution_search
 from lib.dart import search_disclosure
@@ -30,9 +61,27 @@ from lib.validation import (
     validate_stock_code,
 )
 
-PORT = 5173
-DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+HOST = os.environ.get('HOST', '127.0.0.1')
+PORT = _env_int('PORT', 5173)
 FINANCIAL_ALLOWED_HEADERS = 'Authorization, X-API-Key, X-Financial-Model-Token, Content-Type'
+FORBIDDEN_PATH_PARTS = {
+    '.env',
+    '.git',
+    '.vercel',
+    '.claude',
+    '__pycache__',
+}
+
+
+def is_forbidden_static_path(request_path: str) -> bool:
+    path = urllib.parse.unquote(urllib.parse.urlparse(request_path).path)
+    parts = [p for p in path.split('/') if p]
+    for part in parts:
+        if part in FORBIDDEN_PATH_PARTS or part.startswith('.'):
+            return True
+        if part.endswith(('.pyc', '.pyo')):
+            return True
+    return False
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -68,7 +117,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         self.send_error(405, 'Method Not Allowed')
 
+    def do_HEAD(self):
+        if is_forbidden_static_path(self.path):
+            self.send_error(404)
+            return
+        super().do_HEAD()
+
     def do_GET(self):
+        if is_forbidden_static_path(self.path):
+            self.send_error(404)
+            return
+
         parsed = urllib.parse.urlparse(self.path)
         qs = urllib.parse.parse_qs(parsed.query)
 
@@ -175,7 +234,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         # 정적 JSON 데이터에 캐시 헤더 추가
-        path = urllib.parse.urlparse(self.path).path
+        path = urllib.parse.urlparse(getattr(self, 'path', '')).path
         if path.startswith('/data/') and path.endswith('.json'):
             self.send_header('Cache-Control', 'public, max-age=3600')
         if not path.startswith('/api/'):
@@ -188,6 +247,6 @@ class ThreadedServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 
 if __name__ == '__main__':
-    with ThreadedServer(('', PORT), Handler) as httpd:
-        print(f'✅ 서버 실행: http://localhost:{PORT}')
+    with ThreadedServer((HOST, PORT), Handler) as httpd:
+        print(f'✅ 서버 실행: http://{HOST}:{PORT}')
         httpd.serve_forever()

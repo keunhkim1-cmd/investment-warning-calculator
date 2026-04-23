@@ -16,10 +16,16 @@ Production and Preview should use separate values for all secrets:
 - `KV_REST_API_URL`
 - `KV_REST_API_TOKEN`
 - `CACHE_ADMIN_TOKEN`
+- `CRON_SECRET`
 
 Do not use the ambiguous legacy `SUPABASE_KEY` name in Vercel. The code only accepts it when
 `SUPABASE_ALLOW_LEGACY_SERVICE_ROLE_KEY=true`, which should be limited to temporary local
 migration work.
+
+Preview deployments should not share production bot, Supabase service-role, or
+cache admin tokens unless the preview deployment is protected. Use separate
+Preview values where practical, and keep Production-only values for anything
+that can mutate data or receive external webhooks.
 
 ## Supabase Cache
 
@@ -59,6 +65,11 @@ The `/api/cache-bust` endpoint deletes a single durable cache key. Protect it
 with `CACHE_ADMIN_TOKEN`; if that token is absent, the endpoint falls back to
 `FINANCIAL_MODEL_API_TOKEN`. It does not purge already-warm in-memory entries
 inside other Vercel function instances, so short local TTLs still apply.
+
+The `/api/warm-cache` cron endpoint is protected with `CRON_SECRET`. Vercel
+automatically sends this value as a bearer token for configured cron jobs. Keep
+`CRON_SECRET` different from user-facing API tokens and set it in Production
+before enabling the cron.
 
 ## External Rate Limits
 
