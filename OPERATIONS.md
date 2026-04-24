@@ -126,6 +126,40 @@ Setup path:
 4. Save the dashboard URL and alert recipients in the team's password manager or
    operations notes, not in the repository.
 
+### Free-Plan Telegram Alerts
+
+If Vercel Log Drains are unavailable on the current plan, enable compact
+Telegram admin alerts instead. This does not replace retained logs or dashboards,
+but it catches the first high-signal failure in each cooldown window.
+
+Production environment variables:
+
+- `ALERT_TELEGRAM_ENABLED=true`
+- `TELEGRAM_BOT_TOKEN=...`
+- `ALERT_TELEGRAM_CHAT_IDS=123456789` or reuse `TELEGRAM_ADMIN_CHAT_IDS`
+- `ALERT_TELEGRAM_MIN_LEVEL=warning`
+- `ALERT_TELEGRAM_COOLDOWN_SECONDS=900`
+- `ALERT_TELEGRAM_EVENTS=` to use the default high-signal event set
+
+Default alerted events:
+
+- `external_api_call` only when `result=failure`
+- `external_api_retry`
+- `provider_rate_limit_exceeded`
+- `cache_stale_returned`, `dart_financial_stale_returned`,
+  `gemini_summary_stale_returned`
+- `financial_dart_fetch_burst`
+- `warm_cache_task_failed`, `warm_cache_lock_failed`
+- `telegram_update_failed`, `telegram_info_summary_failed`
+
+Notes:
+
+- Telegram provider events are skipped to avoid alert loops.
+- Alerts are best-effort and per function instance; cooldown state is in memory.
+- Keep `ALERT_TELEGRAM_ENABLED=false` locally and in CI unless testing alerting.
+- If alerts get noisy, set `ALERT_TELEGRAM_EVENTS` to a comma-separated subset,
+  for example `provider_rate_limit_exceeded,cache_stale_returned,telegram_update_failed`.
+
 ### Monthly QA Maintenance
 
 Dependabot checks Python tooling and GitHub Actions monthly. For each PR:

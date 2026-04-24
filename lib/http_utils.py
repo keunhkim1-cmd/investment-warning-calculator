@@ -293,6 +293,12 @@ def log_event(level: str, event: str, **fields):
     for key, value in fields.items():
         record[key] = redact_text(value)
     print(json.dumps(record, ensure_ascii=False, default=str), flush=True)
+    try:
+        from lib.alerting import notify_from_log_event
+
+        notify_from_log_event(record)
+    except Exception:
+        pass
 
 
 def log_exception(event: str, *, secret_query_keys=(), **fields):
