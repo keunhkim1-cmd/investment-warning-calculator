@@ -1187,7 +1187,7 @@ async function syncTvChartByName(stockName) {
   const items = [
     'ㅅㅅㅅ 금지','가즈아 금지','심상정인데? 금지','오늘 xxx 개쎄다 금지',
     '거래대금 언급 금지','거래량 보소 금지','미쳤다 금지','다행이다 금지',
-    '차 살까? 금지','계좌 고점이다 금지','했제 금지','xxx 왜 안삼? 금지',
+    '차 살까? 금지','계좌 고점이다 금지','나이스! 금지','xxx 왜 안삼? 금지',
     '했제 금지','해외 골프 금지'
   ];
   const track = document.getElementById('tickerTrack');
