@@ -52,7 +52,7 @@
 
 - **기본 카피 = 한글**. 원본 `index.html` 의 톤을 계승.
 - **유지할 영문**: PER · PBR · KRX · KOSDAQ · DART · NAVER · T · T-5 · T-15 · D0 · T+n · AND · Δ · 12.7%
-- **한글화할 것**: HOLD/CLEAR → 유지/이탈 · REL → 해제 · RELEASE NEXT DAY → 다음 거래일 해제 · SRC: → 출처: · RULE: → 규정:
+- **한글화할 것**: HOLD/CLEAR → 유지/이탈 · REL → 해제 · RELEASE NEXT DAY → 해제 예정 · SRC: → 출처: · RULE: → 규정:
 - 숫자 구분자는 **콤마** (`toLocaleString('ko-KR')`). 원 단위는 **생략** (`328,000` 식).
 
 ### 5. 섹션 헤더는 항상 동일 리듬

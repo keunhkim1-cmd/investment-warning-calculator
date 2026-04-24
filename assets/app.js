@@ -851,9 +851,9 @@ function renderVerdict(t, releaseDate) {
   const dEl   = v.querySelector('.side .d');
 
   if (anyClear) {
-    tagEl.textContent = '다음 거래일 해제';
-    hEl.textContent = `다음 거래일(${fmtDate(releaseDate)}) 투자경고 해제`;
-    bEl.textContent = `조건 ${missing.join('·')} 미충족 — KRX §4-2 규정상 세 조건 중 하나라도 미충족이면 다음 거래일에 해제됩니다.`;
+    tagEl.textContent = '해제 예정';
+    hEl.textContent = `${fmtDate(releaseDate)} 투자경고 해제 예정`;
+    bEl.textContent = `조건 ${missing.join('·')} 미충족 — KRX §4-2 기준상 해제 판단일에 세 조건 중 하나라도 미충족이면 해제 대상으로 판정됩니다.`;
     dEl.textContent = fmtDate(releaseDate);
   } else {
     v.classList.add('hold');
@@ -877,7 +877,7 @@ function renderRules(releaseDate) {
 
   box.innerHTML = `
     <div class="r"><span class="k">1</span><span class="v">지정일로부터 10 매매거래일 경과 후 해제 심사 시작</span><span class="m num">${fmtDate(releaseDate)}</span></div>
-    <div class="r"><span class="k">2</span><span class="v">① ② ③ 세 조건 모두 충족 시 경고 유지. 하나라도 미충족이면 다음 거래일 해제.</span><span class="m">3 중 3</span></div>
+    <div class="r"><span class="k">2</span><span class="v">해제 판단일에 ① ② ③ 세 조건 모두 충족 시 경고 유지. 하나라도 미충족이면 해제 대상.</span><span class="m">3 중 3</span></div>
     <div class="r"><span class="k">3</span><span class="v">지정 기간 중 신용융자 금지, 위탁증거금 100% 현금</span><span class="m">—</span></div>
     <div class="r"><span class="k">4</span><span class="v">지정 기간 내 요건 재충족 시 투자위험종목으로 상향 지정</span><span class="m">—</span></div>`;
 }

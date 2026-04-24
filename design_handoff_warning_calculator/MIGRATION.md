@@ -167,8 +167,8 @@ function renderVerdict(result) {
   const anyClear = result.conditions.some(c => !c.met);
   if (anyClear) {
     v.className = 'tm-verdict';
-    v.querySelector('.tag').textContent = '다음 거래일 해제';
-    v.querySelector('.h').textContent = `다음 거래일(${result.releaseDate}) 투자경고 해제`;
+    v.querySelector('.tag').textContent = '해제 예정';
+    v.querySelector('.h').textContent = `${result.releaseDate} 투자경고 해제 예정`;
     /* ... */
   } else {
     v.classList.add('hold');  // amber tone variant
@@ -232,7 +232,7 @@ function renderVerdict(result) {
 - [ ] `toLocaleString('ko-KR')` 콤마 구분자 확인.
 - [ ] 티커 테이프 60s 루프 seamless 확인 (복제 2배 렌더).
 - [ ] 조건 ①②③ 3행이 모두 HOLD일 때·CLEAR일 때·N/A일 때 각각 스냅샷.
-- [ ] Verdict 카드 3 변형(다음 거래일 해제 / 경고 유지 / 위험 상향) 렌더 확인.
+- [ ] Verdict 카드 3 변형(해제 예정 / 경고 유지 / 위험 상향) 렌더 확인.
 - [ ] Lighthouse 성능 점수 기존 대비 -5점 이내.
 
 ---

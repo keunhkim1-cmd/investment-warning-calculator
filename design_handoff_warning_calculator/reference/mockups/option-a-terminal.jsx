@@ -438,10 +438,10 @@ function TerminalMockup({ theme = 'mint' }) {
                   </div>
                   <div className="body">
                     <div className="head">
-                      <span className="tag">다음 거래일 해제</span>
+                      <span className="tag">해제 예정</span>
                     </div>
-                    <div className="h">다음 거래일(4/22) 투자경고 해제</div>
-                    <div className="b">조건 ③ <span className="num">15일 최고가 일치</span> 요건 미충족 · 10 거래일 경과 요건도 수요일에 충족. KRX §4-2 규정상 세 조건 중 하나라도 미충족이면 다음 거래일에 해제됩니다.</div>
+                    <div className="h">04-22 투자경고 해제 예정</div>
+                    <div className="b">조건 ③ <span className="num">15일 최고가 일치</span> 요건 미충족 · KRX §4-2 기준상 해제 판단일에 세 조건 중 하나라도 미충족이면 해제 대상으로 판정됩니다.</div>
                   </div>
                   <div className="side">
                     <div className="d">04-22</div>
@@ -564,7 +564,7 @@ function TerminalMockup({ theme = 'mint' }) {
                   </div>
                   <div className="r">
                     <span className="k">AND</span>
-                    <span className="v">① ② ③ 세 조건 모두 충족 시 경고 유지. 하나라도 미충족이면 다음 거래일 해제.</span>
+                    <span className="v">해제 판단일에 ① ② ③ 세 조건 모두 충족 시 경고 유지. 하나라도 미충족이면 해제 대상.</span>
                     <span className="m">3 중 2</span>
                   </div>
                   <div className="r">

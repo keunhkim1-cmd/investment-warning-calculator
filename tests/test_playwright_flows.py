@@ -191,6 +191,10 @@ def test_warning_search_renders_price_thresholds_and_chart(local_server, page: P
     expect(page.locator('#sym-header .ticker')).to_have_text('005930')
     expect(page.locator('#conditionsTbody')).to_contain_text('T-5 종가')
     expect(page.locator('#sec-verdict')).to_be_visible()
+    expect(page.locator('#sec-verdict .tag')).to_have_text('해제 예정')
+    expect(page.locator('#sec-verdict .h')).to_contain_text('투자경고 해제 예정')
+    expect(page.locator('#sec-verdict .b')).to_contain_text('해제 판단일')
+    expect(page.locator('#sec-verdict')).not_to_contain_text('다음 거래일')
     expect(page.locator('#tvChartWarning svg')).to_be_visible()
 
 
