@@ -710,7 +710,7 @@ body.is-warning-active {
   padding-bottom: 28px;
 }
 body.is-warning-active .ticker-wrap::before {
-  content: "TABOO · 투자금지";
+  content: "금기어 토템";
   position: absolute;
   left: 0; top: 0; bottom: 0;
   z-index: 2;
