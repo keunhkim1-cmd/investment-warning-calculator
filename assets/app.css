@@ -720,7 +720,7 @@ body.is-warning-active .ticker-wrap::before {
   background: #000;
   border-right: 1px solid var(--tm-hairline);
   color: var(--tm-accent);
-  font: 600 9px/1 var(--font-display);
+  font: 700 9px/1 var(--font-display);
   letter-spacing: 1.5px;
 }
 body.is-warning-active .ticker-track {
