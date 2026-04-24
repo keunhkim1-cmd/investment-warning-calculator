@@ -9,9 +9,23 @@ from lib.gemini import generate as gemini_generate
 from lib.http_utils import log_event, safe_exception_text
 from lib.timeouts import DART_DOCUMENT_TIMEOUT, DART_LIST_TIMEOUT
 
-# 사업보고서는 분기당 1회 갱신 — 24시간 캐시
-_summary_cache = TTLCache(ttl=24 * 3600, name='dart-report-summary', durable=True)
-_doc_cache = TTLCache(ttl=24 * 3600, name='dart-report-doc')
+# 최신 보고서 확인은 하루마다 갱신하고, 접수번호별 Gemini 요약은 장기 보관한다.
+LATEST_CACHE_TTL_SECONDS = 24 * 3600
+SUMMARY_CACHE_TTL_SECONDS = 180 * 24 * 3600
+DOCUMENT_CACHE_TTL_SECONDS = 7 * 24 * 3600
+SUMMARY_STALE_SECONDS = 365 * 24 * 3600
+
+_latest_cache = TTLCache(
+    ttl=LATEST_CACHE_TTL_SECONDS,
+    name='dart-report-latest',
+    durable=True,
+)
+_summary_cache = TTLCache(
+    ttl=SUMMARY_CACHE_TTL_SECONDS,
+    name='dart-report-summary',
+    durable=True,
+)
+_doc_cache = TTLCache(ttl=DOCUMENT_CACHE_TTL_SECONDS, name='dart-report-doc')
 SUMMARY_PROMPT_VERSION = 'v1'
 
 def _find_latest_business_report(corp_code: str) -> dict | None:
@@ -116,7 +130,7 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     """종목코드 → 사업보고서 요약 결과.
     반환: {'corp_name', 'rcept_no', 'rcept_dt', 'report_nm', 'summary'} or {'error': ...}"""
     latest_cache_key = f'summary-latest:{stock_code}:{SUMMARY_PROMPT_VERSION}'
-    cached = _summary_cache.get(latest_cache_key)
+    cached = _latest_cache.get(latest_cache_key)
     if cached is not None:
         log_event('info', 'dart_report_summary_cache_hit', stock_code=stock_code)
         return cached
@@ -142,7 +156,7 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
     if cached is not None:
         log_event('info', 'dart_report_summary_cache_hit',
                   stock_code=stock_code, rcept_no=rcept_no)
-        _summary_cache.set(latest_cache_key, cached)
+        _latest_cache.set(latest_cache_key, cached)
         return cached
 
     t0 = time.time()
@@ -238,7 +252,7 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
         stale, state = _summary_cache.get_with_meta(
             summary_cache_key,
             allow_stale=True,
-            max_stale=30 * 24 * 3600,
+            max_stale=SUMMARY_STALE_SECONDS,
         )
         if state == 'stale':
             log_event('warning', 'gemini_summary_stale_returned',
@@ -254,5 +268,5 @@ def summarize_business_report(stock_code: str, stock_name: str) -> dict:
         'summary': summary,
     }
     _summary_cache.set(summary_cache_key, result)
-    _summary_cache.set(latest_cache_key, result)
+    _latest_cache.set(latest_cache_key, result)
     return result

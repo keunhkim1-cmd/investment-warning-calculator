@@ -10,6 +10,7 @@
 import json, os
 from concurrent.futures import ThreadPoolExecutor
 
+from lib.cache import TTLCache
 from lib.dart_full import fetch_all
 from lib.http_utils import log_event, safe_exception_text
 
@@ -59,6 +60,19 @@ def _env_int(name: str, default: int, min_value: int, max_value: int) -> int:
     except ValueError:
         return default
     return max(min_value, min(max_value, value))
+
+
+_RESULT_CACHE_TTL_SECONDS = _env_int(
+    'FINANCIAL_MODEL_RESULT_CACHE_TTL',
+    6 * 3600,
+    60,
+    7 * 24 * 3600,
+)
+_result_cache = TTLCache(
+    ttl=_RESULT_CACHE_TTL_SECONDS,
+    name='financial-model-result',
+    durable=True,
+)
 
 
 def _to_num(s):
@@ -228,6 +242,17 @@ def _save_cache(corp_code: str, fs_div: str, rows: list):
         log_event('warning', 'financial_cache_save_failed', error=safe_exception_text(e))
 
 
+def _cacheable_model_result(result: dict) -> bool:
+    """Avoid pinning a fully empty transient result in the result cache."""
+    for period in result.get('annual', {}).values():
+        if any(value is not None for value in period.values()):
+            return True
+    for period in result.get('quarterly', {}).values():
+        if any(value is not None for value in period.values()):
+            return True
+    return False
+
+
 def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     """
     Args:
@@ -246,6 +271,12 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
     end_year = date.today().year - 1
     start_year = end_year - years + 1
     year_list = [str(y) for y in range(start_year, end_year + 1)]
+    result_cache_key = f'model:{corp_code}:{fs_div}:{years}:{end_year}'
+    cached_result = _result_cache.get(result_cache_key)
+    if cached_result is not None:
+        log_event('info', 'financial_model_result_cache_hit',
+                  corp_code=corp_code, fs_div=fs_div, years=years)
+        return cached_result
 
     # ── Supabase 캐시 로드 ──
     cache = _load_cache(corp_code, fs_div)
@@ -366,7 +397,7 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
                 )
     _save_cache(corp_code, fs_div, to_save)
 
-    return {
+    result = {
         'meta': {
             'corp_code': corp_code,
             'fs_div': fs_div,
@@ -378,3 +409,6 @@ def build_model(corp_code: str, fs_div: str = 'CFS', years: int = 5) -> dict:
         'annual': annual,
         'quarterly': quarterly,
     }
+    if _cacheable_model_result(result):
+        _result_cache.set(result_cache_key, result)
+    return result
