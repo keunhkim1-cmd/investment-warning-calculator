@@ -23,8 +23,8 @@
 {"@context":"https://schema.org","@type":"WebApplication","name":"Shamanism Research","alternateName":"투자경고 계산기","url":"https://shamanism-research.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 점검하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
   <!-- SF Pro: system font on macOS/iOS, fallbacks for other platforms -->
-  <link rel="stylesheet" href="assets/app.css?v=20260424-7" />
-  <script type="module" src="assets/app.js?v=20260424-7"></script>
+  <link rel="stylesheet" href="assets/app.css?v=20260424-10" />
+  <script type="module" src="assets/app.js?v=20260424-10"></script>
 </head>
 <body>
 
@@ -40,26 +40,61 @@
 
 <!-- ═══════════════ ABOUT ═══════════════ -->
 <div id="page-about" class="page-section" role="tabpanel" aria-labelledby="nav-about" aria-hidden="true" hidden>
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="header">
-        <div class="badge">About</div>
-        <h1>Shamanism Research</h1>
-        <p>KRX 상장 종목 분석을 위한 투자 리서치 도구</p>
-      </div>
-    </div>
-  </div>
-  <div class="section-dark">
-    <div class="section-inner">
-      <div class="card about-card">
-        <h2 class="about-card-title">Disclaimer</h2>
-        <p class="about-card-copy">
-          이 도구는 개인적인 투자 리서치 용도로 제작되었으며, 상업적 목적이 아닙니다.
-          AI를 활용하여 제작되었으므로 제공되는 데이터 및 분석 결과에 오류가 있을 수 있습니다.
-          본 도구의 정보는 투자 권유가 아니며, 투자 판단의 최종 책임은 사용자 본인에게 있습니다.
-        </p>
-      </div>
+  <div class="warning-terminal about-terminal">
+    <div class="section-dark">
+      <div class="section-inner">
+        <section class="about-hero" aria-labelledby="aboutTitle">
+          <div class="about-hero-copy">
+            <div class="caps about-kicker">Research Terminal</div>
+            <h1 id="aboutTitle">Shamanism Research</h1>
+            <p>KRX 시장경보와 기업 공시를 한 화면에서 검증하는 개인 리서치 터미널입니다.</p>
+          </div>
+          <div class="about-snapshot" aria-label="서비스 요약">
+            <div class="snap-row"><span class="label">Primary</span><strong>투자경고 계산기</strong></div>
+            <div class="snap-row"><span class="label">Data</span><strong>KRX KIND · NAVER · DART</strong></div>
+            <div class="snap-row"><span class="label">Mode</span><strong>비상업 개인 리서치</strong></div>
+          </div>
+        </section>
 
+        <section class="tm-sec" aria-labelledby="aboutScopeTitle">
+          <div class="tm-sec-head">
+            <span class="t" id="aboutScopeTitle">서비스 범위</span>
+            <span class="src">warning · disclosure · market data</span>
+          </div>
+          <div class="tm-strip about-strip">
+            <div class="tm-cell"><div class="l">시장경보</div><div class="v">투자주의 / 경고 / 위험</div><div class="s">KRX KIND 기준</div></div>
+            <div class="tm-cell"><div class="l">가격 검증</div><div class="v">기준가 · 임계가 · 해제일</div><div class="s">NAVER 일별 시세</div></div>
+            <div class="tm-cell"><div class="l">기업 리서치</div><div class="v">공시 · 재무 데이터</div><div class="s">DART 보조 지표</div></div>
+          </div>
+        </section>
+
+        <section class="tm-sec" aria-labelledby="aboutPrinciplesTitle">
+          <div class="tm-sec-head">
+            <span class="t" id="aboutPrinciplesTitle">운영 원칙</span>
+            <span class="src">research use only</span>
+          </div>
+          <div class="tm-rules about-rules">
+            <div class="r"><span class="k">1</span><span class="v">공식 데이터 출처를 우선 사용하고, 자동 계산은 검증 보조 수단으로 제공합니다.</span><span class="m">VERIFY</span></div>
+            <div class="r"><span class="k">2</span><span class="v">시장경보 조건은 KRX 기준을 기반으로 표시하되, 실제 지정과 해제는 거래소 판단을 따릅니다.</span><span class="m">KRX</span></div>
+            <div class="r"><span class="k">3</span><span class="v">AI 및 자동화된 데이터 수집을 활용하므로 지연, 누락, 해석 오류가 발생할 수 있습니다.</span><span class="m">CHECK</span></div>
+          </div>
+        </section>
+
+        <section class="tm-sec about-disclaimer" aria-labelledby="aboutDisclaimerTitle">
+          <div class="tm-sec-head">
+            <span class="t" id="aboutDisclaimerTitle">Disclaimer</span>
+            <span class="src">not investment advice</span>
+          </div>
+          <div class="tm-verdict risk">
+            <div class="ico" aria-hidden="true">!</div>
+            <div class="body">
+              <div class="head"><span class="tag">주의 고지</span></div>
+              <div class="h">투자 권유가 아닌 개인 리서치 도구입니다.</div>
+              <div class="b">이 도구는 개인적인 투자 리서치 용도로 제작되었으며, 상업적 목적이 아닙니다. 제공되는 데이터 및 분석 결과에는 오류가 있을 수 있고, 최종 투자 판단과 책임은 사용자 본인에게 있습니다.</div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </div><!-- /page-about -->
@@ -108,21 +143,6 @@
       <input type="hidden" id="warningType" value="warning_normal" />
       <input type="hidden" id="tradingStop" value="no" />
       <input type="hidden" id="resumeDate" />
-
-      <!-- §6 Chart (인라인 SVG, NAVER 일별 주가) — independent, follows search/selection -->
-      <section class="tm-sec chart-standalone" id="sec-chart" style="display:none">
-        <div class="tm-sec-head">
-          <span class="t">시세 · 임계가</span>
-          <span class="src">출처: NAVER 금융</span>
-        </div>
-        <div class="tm-chart-wrap">
-          <div class="tm-chart-tabs">
-            <div class="flex"></div>
-            <div class="legend" id="chartLegend"></div>
-          </div>
-          <div class="tm-chart" id="tvChartWarning" role="img" aria-label="시세와 임계가 차트"></div>
-        </div>
-      </section>
 
       <!-- Result — Terminal section stack (warning target only) -->
       <div class="result-card" id="resultCard">
@@ -203,16 +223,22 @@
           </div>
         </section>
 
-        <!-- §7 Basic Price Strip -->
-        <section class="tm-sec" id="sec-price" style="display:none">
+        <!-- §6 Chart (인라인 SVG, NAVER 일별 주가) -->
+        <section class="tm-sec" id="sec-chart" style="display:none">
           <div class="tm-sec-head">
-            <span class="t">기본 시세</span>
+            <span class="t">시세 · 임계가</span>
             <span class="src">출처: NAVER 금융</span>
           </div>
-          <div class="tm-strip" id="priceStrip"></div>
+          <div class="tm-chart-wrap">
+            <div class="tm-chart-tabs">
+              <div class="flex"></div>
+              <div class="legend" id="chartLegend"></div>
+            </div>
+            <div class="tm-chart" id="tvChartWarning" role="img" aria-label="시세와 임계가 차트"></div>
+          </div>
         </section>
 
-        <!-- §8 KRX Rules -->
+        <!-- §7 KRX Rules -->
         <section class="tm-sec" id="sec-rules" style="display:none">
           <div class="tm-sec-head">
             <span class="t">KRX 규정</span>

@@ -20,7 +20,6 @@ INDEX = ROOT / "index.html"
 ALLOWED_INLINE_STYLE_IDS = {
     "sec-chart",
     "sec-verdict",
-    "sec-price",
     "sec-rules",
     "cautionCard",
     "cautionVerdict",

@@ -171,12 +171,13 @@ function switchPage(page, el) {
   });
 
   document.body.classList.toggle('is-warning-active', page === 'warning');
+  document.body.classList.toggle('is-terminal-active', page === 'warning' || page === 'about');
   if (page !== 'warning') hideSearchResults();
   if (page === 'patchnotes') renderPatchNotes();
 }
 
 // 초기 로드 시 경고 탭이 default active 이므로 body 클래스 반영
-document.body.classList.add('is-warning-active');
+document.body.classList.add('is-warning-active', 'is-terminal-active');
 
 // 패치 노트 — data/patchnotes.json 렌더
 async function renderPatchNotes() {
@@ -353,8 +354,8 @@ function hideWarningCards() {
   const rc = document.getElementById('resultCard');
   if (rc) {
     rc.classList.remove('show');
-    // 경고 관련 하위 섹션만 숨김 (sec-chart 는 독립 섹션이므로 유지)
-    ['sec-price','sec-rules'].forEach(id => {
+    // 경고 관련 하위 섹션 숨김
+    ['sec-chart','sec-rules'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -594,8 +595,6 @@ async function checkAndDisplay(r, warningRequestId) {
     renderConditions(t);
     const releaseDate = appState.warning.releaseDate || new Date();
     renderVerdict(t, releaseDate);
-    renderPriceStrip({ ...t, ...priceData });
-    const priceSec = document.getElementById('sec-price'); if (priceSec) priceSec.style.display = '';
     renderChartLegend(t, priceData);
     renderInlineChart(priceData, code, r.stockName);
 
@@ -655,10 +654,6 @@ async function fetchPriceThresholds(stockName, warningRequestId) {
     // Verdict uses release date computed in calculate() — stored on resultCard dataset
     const releaseDate = appState.warning.releaseDate || new Date();
     renderVerdict(t, releaseDate);
-
-    // Price strip
-    renderPriceStrip({ ...t, ...priceData });
-    document.getElementById('sec-price').style.display = '';
 
     // Chart legend + 인라인 SVG 차트 (중복 fetch 없이 priceData 재사용)
     renderChartLegend(t, priceData);
@@ -869,44 +864,7 @@ function renderVerdict(t, releaseDate) {
   }
 }
 
-// §7 Price strip — 종가 / 고가·저가 / 거래량
-function renderPriceStrip(priceData) {
-  const strip = document.getElementById('priceStrip');
-  if (!strip) return;
-
-  const close = priceData.tClose;
-  const prev  = priceData.prevClose || close;
-  const high  = priceData.high || close;
-  const low   = priceData.low || close;
-  const volume = priceData.volume || 0;
-  const prevVolume = priceData.prevVolume || volume;
-
-  const delta = close - prev;
-  const pct = prev ? (delta / prev * 100) : 0;
-  const upDn = delta > 0 ? 'up' : delta < 0 ? 'dn' : '';
-  const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '·';
-
-  const volDelta = prevVolume ? ((volume - prevVolume) / prevVolume * 100) : 0;
-
-  strip.innerHTML = `
-    <div class="tm-cell">
-      <div class="l">종가</div>
-      <div class="v ${upDn}">${fmt(close)}</div>
-      <div class="s ${upDn}">${arrow} ${fmt(Math.abs(delta))} · ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</div>
-    </div>
-    <div class="tm-cell">
-      <div class="l">고가 / 저가</div>
-      <div class="v up">${fmt(high)}</div>
-      <div class="s dn">${fmt(low)}</div>
-    </div>
-    <div class="tm-cell">
-      <div class="l">거래량</div>
-      <div class="v">${fmt(volume)}</div>
-      <div class="s">전일 대비 ${volDelta >= 0 ? '+' : ''}${volDelta.toFixed(1)}%</div>
-    </div>`;
-}
-
-// §8 KRX Rules — static 4 items
+// §7 KRX Rules — static 4 items
 function renderRules(releaseDate) {
   const box = document.getElementById('rulesContent');
   if (!box) return;
