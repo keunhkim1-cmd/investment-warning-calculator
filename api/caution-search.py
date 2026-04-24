@@ -2,8 +2,6 @@ from http.server import BaseHTTPRequestHandler
 import urllib.parse, sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from lib.naver import caution_search
-from lib.validation import normalize_query
 from lib.http_utils import (
     api_success_payload,
     log_exception,
@@ -11,6 +9,7 @@ from lib.http_utils import (
     send_json_response,
     send_options_response,
 )
+from lib.usecases import caution_search_payload
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
@@ -19,9 +18,12 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         qs   = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         try:
-            name = normalize_query(qs.get('name', [''])[0])
-            result = caution_search(name)
-            send_json_response(self, 200, api_success_payload(result))
+            send_json_response(
+                self,
+                200,
+                api_success_payload(
+                    caution_search_payload(qs.get('name', [''])[0])),
+            )
         except ValueError as e:
             send_api_error(
                 self,

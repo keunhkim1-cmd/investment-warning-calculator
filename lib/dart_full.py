@@ -1,14 +1,12 @@
 """DART 전체 재무제표 (fnlttSinglAcntAll) 어댑터"""
 from lib.cache import TTLCache
-from lib.dart_base import fetch_json
+from lib.dart_base import DART_TRANSIENT_STATUSES, fetch_json, raise_for_status
 from lib.http_utils import log_event
-from lib.retry import RetryableError
 from lib.timeouts import DART_FINANCIAL_TIMEOUT, NO_RETRY
 
 # 6시간 캐시 — 사업보고서는 자주 바뀌지 않음
 _cache = TTLCache(ttl=6 * 3600, name='dart-full', durable=True)
 _CACHEABLE_STATUSES = frozenset({'000', '013'})
-_TRANSIENT_STATUSES = frozenset({'020', '800', '900'})
 
 def fetch_all(corp_code: str, bsns_year: str, reprt_code: str, fs_div: str = 'CFS') -> dict:
     """전체 재무제표 조회.
@@ -39,12 +37,14 @@ def fetch_all(corp_code: str, bsns_year: str, reprt_code: str, fs_div: str = 'CF
         status = str(data.get('status', ''))
         if status in _CACHEABLE_STATUSES:
             _cache.set(key, data)
-        elif status in _TRANSIENT_STATUSES:
+        elif status in DART_TRANSIENT_STATUSES:
             log_event('warning', 'dart_financial_transient_status',
                       corp_code=corp_code, bsns_year=bsns_year,
                       reprt_code=reprt_code, status=status,
                       message=data.get('message', ''))
-            raise RetryableError(f'DART transient status {status}')
+            raise_for_status(data, ok_statuses=_CACHEABLE_STATUSES)
+        else:
+            raise_for_status(data, ok_statuses=_CACHEABLE_STATUSES)
         return data
     except Exception:
         stale, state = _cache.get_with_meta(

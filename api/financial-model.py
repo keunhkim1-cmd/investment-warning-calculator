@@ -2,8 +2,7 @@ from http.server import BaseHTTPRequestHandler
 import urllib.parse, sys, os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from lib.financial_model import build_model
-from lib.financial_api_security import auth_error, client_id, rate_limit_error, validate_params
+from lib.financial_api_security import auth_error, client_id, rate_limit_error
 from lib.http_utils import (
     api_error_payload,
     api_success_payload,
@@ -11,6 +10,7 @@ from lib.http_utils import (
     send_json_response,
     send_options_response,
 )
+from lib.usecases import financial_model_payload
 
 ALLOWED_HEADERS = 'Authorization, X-API-Key, X-Financial-Model-Token, Content-Type'
 
@@ -35,21 +35,18 @@ class handler(BaseHTTPRequestHandler):
 
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         try:
-            corp_code, fs_div, years = validate_params(
-                qs.get('corp_code', [''])[0],
-                qs.get('fs_div', ['CFS'])[0],
-                qs.get('years', ['5'])[0],
+            data = financial_model_payload(
+                corp_code=qs.get('corp_code', [''])[0],
+                fs_div=qs.get('fs_div', ['CFS'])[0],
+                years=qs.get('years', ['5'])[0],
             )
+            self._respond(200, api_success_payload(data))
         except ValueError:
             self._respond(
                 400,
                 api_error_payload('VALIDATION_ERROR', '잘못된 파라미터 형식'),
             )
             return
-
-        try:
-            data = build_model(corp_code, fs_div=fs_div, years=years)
-            self._respond(200, api_success_payload(data))
         except Exception:
             log_exception('api_request_failed', endpoint='financial-model')
             self._respond(

@@ -41,24 +41,24 @@ def _env_int(name: str, default: int) -> int:
 _load_local_env('.env.local')
 _load_local_env('.env')
 
-from lib.krx import search_kind
-from lib.naver import stock_code as naver_stock_code, fetch_prices, calc_thresholds, fetch_stock_overview, caution_search
-from lib.dart import search_disclosure
-from lib.financial_model import build_model
-from lib.financial_api_security import auth_error, client_id, rate_limit_error, validate_params
+from lib.errors import DartError
+from lib.financial_api_security import auth_error, client_id, rate_limit_error
 from lib.http_utils import (
     STATIC_CSP,
+    api_error_payload,
+    api_success_payload,
     send_json_headers,
     send_options_response,
     send_security_headers,
 )
-from lib.validation import (
-    normalize_query,
-    parse_int_range,
-    validate_corp_code,
-    validate_dart_pblntf_ty,
-    validate_date_range,
-    validate_stock_code,
+from lib.usecases import (
+    caution_search_payload,
+    dart_search_payload,
+    financial_model_payload,
+    stock_code_payload,
+    stock_overview_payload,
+    stock_price_payload,
+    warning_search_payload,
 )
 
 HOST = os.environ.get('HOST', '127.0.0.1')
@@ -144,101 +144,129 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         if parsed.path == '/api/warn-search':
             try:
-                name = normalize_query(qs.get('name', [''])[0])
-                results = search_kind(name)
-                self.send_json({'results': results, 'query': name})
+                self.send_json(api_success_payload(
+                    warning_search_payload(qs.get('name', [''])[0])))
             except ValueError as e:
-                self.send_json({'error': str(e)}, 400)
-            except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+                self.send_json(api_error_payload('VALIDATION_ERROR', str(e)), 400)
+            except Exception:
+                self.send_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                ), 500)
             return
 
         if parsed.path == '/api/caution-search':
             try:
-                name = normalize_query(qs.get('name', [''])[0])
-                self.send_json(caution_search(name))
+                self.send_json(api_success_payload(
+                    caution_search_payload(qs.get('name', [''])[0])))
             except ValueError as e:
-                self.send_json({'status': 'error', 'errorMessage': str(e)}, 400)
-            except Exception as e:
-                self.send_json({'status': 'error', 'errorMessage': str(e)}, 500)
+                self.send_json(api_error_payload(
+                    'VALIDATION_ERROR',
+                    str(e),
+                    legacy_key='errorMessage',
+                    status_value='error',
+                ), 400)
+            except Exception:
+                self.send_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                    legacy_key='errorMessage',
+                    status_value='error',
+                ), 500)
             return
 
         if parsed.path == '/api/stock-code':
             try:
-                name = normalize_query(qs.get('name', [''])[0])
-                items = naver_stock_code(name)
-                self.send_json({'items': items})
+                self.send_json(api_success_payload(
+                    stock_code_payload(qs.get('name', [''])[0])))
             except ValueError as e:
-                self.send_json({'error': str(e)}, 400)
-            except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+                self.send_json(api_error_payload('VALIDATION_ERROR', str(e)), 400)
+            except Exception:
+                self.send_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                ), 500)
             return
 
         if parsed.path == '/api/stock-price':
             try:
-                code = validate_stock_code(qs.get('code', [''])[0])
-                prices = fetch_prices(code, count=20)
-                thresholds = calc_thresholds(prices)
-                self.send_json({'prices': prices[:16], 'thresholds': thresholds})
+                self.send_json(api_success_payload(
+                    stock_price_payload(qs.get('code', [''])[0])))
             except ValueError as e:
-                self.send_json({'error': str(e)}, 400)
-            except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+                self.send_json(api_error_payload('VALIDATION_ERROR', str(e)), 400)
+            except Exception:
+                self.send_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                ), 500)
             return
 
         if parsed.path == '/api/stock-overview':
             try:
-                code = validate_stock_code(qs.get('code', [''])[0])
-                data = fetch_stock_overview(code)
-                self.send_json(data)
+                self.send_json(api_success_payload(
+                    stock_overview_payload(qs.get('code', [''])[0])))
             except ValueError as e:
-                self.send_json({'error': str(e)}, 400)
-            except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+                self.send_json(api_error_payload('VALIDATION_ERROR', str(e)), 400)
+            except Exception:
+                self.send_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                ), 500)
             return
 
         if parsed.path == '/api/dart-search':
             try:
-                bgn_de, end_de = validate_date_range(
-                    qs.get('bgn_de', [''])[0],
-                    qs.get('end_de', [''])[0],
+                data = dart_search_payload(
+                    corp_code=qs.get('corp_code', [''])[0],
+                    bgn_de=qs.get('bgn_de', [''])[0],
+                    end_de=qs.get('end_de', [''])[0],
+                    page_no=qs.get('page_no', ['1'])[0],
+                    page_count=qs.get('page_count', ['20'])[0],
+                    pblntf_ty=qs.get('pblntf_ty', [''])[0],
                 )
-                data = search_disclosure(
-                    corp_code=validate_corp_code(qs.get('corp_code', [''])[0], required=False),
-                    bgn_de=bgn_de,
-                    end_de=end_de,
-                    page_no=parse_int_range(qs.get('page_no', ['1'])[0], 'page_no', 1, 1, 1000),
-                    page_count=parse_int_range(qs.get('page_count', ['20'])[0], 'page_count', 20, 1, 100),
-                    pblntf_ty=validate_dart_pblntf_ty(qs.get('pblntf_ty', [''])[0]),
-                )
-                self.send_json(data)
+                self.send_json(api_success_payload(data))
             except ValueError as e:
-                self.send_json({'error': str(e)}, 400)
-            except Exception as e:
-                self.send_json({'error': str(e)}, 500)
+                self.send_json(api_error_payload('VALIDATION_ERROR', str(e)), 400)
+            except DartError as e:
+                self.send_json(api_error_payload(
+                    e.code,
+                    e.message,
+                    details=e.details,
+                ), e.http_status)
+            except Exception:
+                self.send_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                ), 500)
             return
 
         if parsed.path == '/api/financial-model':
             auth = auth_error(self.headers)
             if auth:
                 status, message = auth
-                self.send_financial_json({'error': message}, status); return
+                code = 'ENDPOINT_NOT_CONFIGURED' if status == 503 else 'AUTH_REQUIRED'
+                self.send_financial_json(api_error_payload(code, message), status); return
             limited = rate_limit_error(client_id(self.headers, getattr(self, 'client_address', None)))
             if limited:
                 status, message = limited
-                self.send_financial_json({'error': message}, status); return
+                self.send_financial_json(api_error_payload('RATE_LIMITED', message), status); return
             try:
-                corp_code, fs_div, years = validate_params(
-                    qs.get('corp_code', [''])[0],
-                    qs.get('fs_div', ['CFS'])[0],
-                    qs.get('years', ['5'])[0],
+                data = financial_model_payload(
+                    corp_code=qs.get('corp_code', [''])[0],
+                    fs_div=qs.get('fs_div', ['CFS'])[0],
+                    years=qs.get('years', ['5'])[0],
                 )
+                self.send_financial_json(api_success_payload(data))
             except ValueError:
-                self.send_financial_json({'error': '잘못된 파라미터 형식'}, 400); return
-            try:
-                self.send_financial_json(build_model(corp_code, fs_div=fs_div, years=years))
-            except Exception as e:
-                self.send_financial_json({'error': str(e)}, 500)
+                self.send_financial_json(api_error_payload(
+                    'VALIDATION_ERROR',
+                    '잘못된 파라미터 형식',
+                ), 400); return
+            except Exception:
+                self.send_financial_json(api_error_payload(
+                    'INTERNAL_ERROR',
+                    '서버 오류가 발생했습니다.',
+                ), 500)
             return
 
         super().do_GET()

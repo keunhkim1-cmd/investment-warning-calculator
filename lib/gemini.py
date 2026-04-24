@@ -1,6 +1,7 @@
 """Google Gemini API 호출 (stdlib only)"""
 import json, os
 
+from lib.errors import GeminiError
 from lib.http_client import request_json
 from lib.http_utils import build_url
 from lib.provider_rate_limit import throttle
@@ -47,6 +48,11 @@ def generate(prompt: str, model: str = DEFAULT_MODEL, max_output_tokens: int = 5
     )
     candidates = data.get('candidates') or []
     if not candidates:
-        raise RuntimeError(f'Gemini 응답에 candidates 없음: {data}')
+        raise GeminiError(
+            'GEMINI_EMPTY_RESPONSE',
+            'Gemini 응답에 candidates가 없습니다.',
+            provider='gemini',
+            details={'response': data},
+        )
     parts = candidates[0].get('content', {}).get('parts') or []
     return ''.join(p.get('text', '') for p in parts).strip()

@@ -4,13 +4,18 @@ import random
 import time
 
 from lib.http_client import JSON_HEADERS, request_bytes, request_json
+from lib.errors import DartError, RetryableDartError
 from lib.http_utils import build_url, log_event
 from lib.timeouts import DART_DOCUMENT_TIMEOUT, DART_LIST_TIMEOUT
 
 DART_BASE = 'https://opendart.fss.or.kr/api'
 DART_HEADERS = dict(JSON_HEADERS)
 DART_SECRET_PARAMS = ('crtfc_key',)
+DART_OK_STATUSES = frozenset({'000'})
+DART_EMPTY_OK_STATUSES = frozenset({'013'})
+DART_SEARCH_OK_STATUSES = DART_OK_STATUSES | DART_EMPTY_OK_STATUSES
 DART_RETRYABLE_STATUSES = frozenset({'800', '900'})
+DART_TRANSIENT_STATUSES = DART_RETRYABLE_STATUSES | frozenset({'020'})
 
 
 def api_key() -> str:
@@ -57,6 +62,25 @@ def fetch_json(path: str, params: dict | None = None, timeout: float = DART_LIST
             continue
         return data
     return last_data or {}
+
+
+def dart_status_error(status: str, message: str = '') -> DartError:
+    status = str(status or '')
+    message = message or 'DART API 오류가 발생했습니다.'
+    error_cls = RetryableDartError if status in DART_TRANSIENT_STATUSES else DartError
+    return error_cls(
+        'DART_API_ERROR',
+        message,
+        provider='dart',
+        provider_status=status,
+        details={'dartStatus': status},
+    )
+
+
+def raise_for_status(data: dict, *, ok_statuses=DART_OK_STATUSES) -> None:
+    status = str(data.get('status', ''))
+    if status and status not in ok_statuses:
+        raise dart_status_error(status, data.get('message', ''))
 
 
 def fetch_bytes(path: str, params: dict | None = None,
