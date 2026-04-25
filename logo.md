@@ -177,6 +177,12 @@ separator + tag : var(--tm-text-mute) /* #7A7A7E */
 - Don't title-case `Research` — it stays lowercase like the wordmark.
 - Don't use `font-size: inherit` on the lockup container without setting an
   explicit value somewhere — it broke baseline alignment once.
+- Don't let the lockup container be stretched by a parent's
+  `align-items: stretch` — baseline-aligned content lands at the cross-axis
+  start (top), making the smaller tag look top-aligned. Add
+  `align-self: center` on the lockup so it keeps its content height and is
+  centered in the parent. (Bit us in the nav-bar, where `.nav-inner` stretches
+  children to 30px.)
 
 ---
 
