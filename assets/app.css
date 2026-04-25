@@ -116,7 +116,10 @@ body {
   padding: 0 12px;
   display: flex; align-items: stretch; justify-content: flex-start;
   height: 100%;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
 }
 .nav-inner::-webkit-scrollbar { display: none; }
@@ -184,15 +187,6 @@ body {
   color: var(--text);
   border-bottom-color: var(--text);
 }
-.nav-clock {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
 body:is(.is-warning-active, .is-terminal-active) .nav-bar {
   background: var(--tm-bg);
   backdrop-filter: none;
@@ -222,9 +216,6 @@ body:is(.is-warning-active, .is-terminal-active) .nav-item:hover {
 body:is(.is-warning-active, .is-terminal-active) .nav-item.active {
   color: var(--tm-accent);
   border-bottom-color: var(--tm-accent);
-}
-body:is(.is-warning-active, .is-terminal-active) .nav-clock {
-  color: var(--tm-text-mute);
 }
 .page-section { display: none; }
 .page-section.active { display: block; }
