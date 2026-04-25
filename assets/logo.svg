@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 32" role="img" aria-label="toteme / research">
+  <style>
+    .ink { fill: #1d1d1f; }
+    .mute { fill: rgba(0,0,0,0.48); }
+    @media (prefers-color-scheme: dark) {
+      .ink { fill: #ffffff; }
+      .mute { fill: rgba(255,255,255,0.48); }
+    }
+    .wm {
+      font-family: 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-weight: 500;
+      font-size: 26px;
+      letter-spacing: -1px;
+    }
+    .sep {
+      font-family: 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-weight: 300;
+      font-size: 26px;
+    }
+    .tag {
+      font-family: 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-weight: 400;
+      font-size: 14px;
+      letter-spacing: -0.3px;
+    }
+  </style>
+
+  <!-- Bars mark: 4 bars, widths 26/18/26/12, height 4, gap 3, vertically centered -->
+  <g class="ink">
+    <rect x="0"  y="3.5"  width="26" height="4" rx="1.5"/>
+    <rect x="4"  y="10.5" width="18" height="4" rx="1.5"/>
+    <rect x="0"  y="17.5" width="26" height="4" rx="1.5"/>
+    <rect x="7"  y="24.5" width="12" height="4" rx="1.5"/>
+  </g>
+
+  <!-- Wordmark + slash + research (all baseline-aligned at y=24) -->
+  <text x="40" y="24" class="wm ink">toteme</text>
+  <text x="128" y="24" class="sep mute">/</text>
+  <text x="140" y="24" class="tag mute">research</text>
+</svg>

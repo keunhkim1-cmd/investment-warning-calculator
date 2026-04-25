@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    rect { fill: #1d1d1f; }
+    @media (prefers-color-scheme: dark) {
+      rect { fill: #ffffff; }
+    }
+  </style>
+  <!-- 4 horizontal bars, varying widths, vertically + horizontally centered.
+       Bar height 4, gap 3, total 25 → top padding 3.5. -->
+  <rect x="3"  y="3.5"  width="26" height="4" rx="1.5"/>
+  <rect x="7"  y="10.5" width="18" height="4" rx="1.5"/>
+  <rect x="3"  y="17.5" width="26" height="4" rx="1.5"/>
+  <rect x="10" y="24.5" width="12" height="4" rx="1.5"/>
+</svg>

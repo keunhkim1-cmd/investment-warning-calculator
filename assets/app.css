@@ -122,21 +122,41 @@ body {
 .nav-inner::-webkit-scrollbar { display: none; }
 .nav-title {
   font-family: var(--font-display);
-  font-size: 10px;
-  font-weight: 600;
   color: var(--text);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
   white-space: nowrap;
   margin-right: 16px;
+  padding: 0;
   border: none; background: none; cursor: pointer;
-  display: flex; align-items: center;
+  display: inline-flex; align-items: baseline; gap: 4px;
   transition: color 0.2s;
 }
-.nav-title:hover { color: var(--text-secondary); }
-.nav-title.active {
+.nav-title .brand-mark {
+  height: 14px;
+  width: auto;
+  fill: currentColor;
+  display: block;
+  margin-right: 4px;
+  align-self: center;
+}
+.nav-title .brand-text {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
   color: var(--text);
 }
+.nav-title .brand-sep {
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--text-muted);
+}
+.nav-title .brand-tag {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: -0.1px;
+  color: var(--text-muted);
+}
+.nav-title:hover .brand-text { color: var(--text-secondary); }
+.nav-title.active .brand-text { color: var(--text); }
 .nav-item {
   flex: none;
   height: 30px;
@@ -176,8 +196,15 @@ body:is(.is-warning-active, .is-terminal-active) .nav-bar {
 body:is(.is-warning-active, .is-terminal-active) .nav-title {
   color: var(--tm-accent);
 }
-body:is(.is-warning-active, .is-terminal-active) .nav-title:hover,
-body:is(.is-warning-active, .is-terminal-active) .nav-title.active {
+body:is(.is-warning-active, .is-terminal-active) .nav-title .brand-text {
+  color: var(--tm-accent);
+}
+body:is(.is-warning-active, .is-terminal-active) .nav-title .brand-sep,
+body:is(.is-warning-active, .is-terminal-active) .nav-title .brand-tag {
+  color: var(--tm-text-mute);
+}
+body:is(.is-warning-active, .is-terminal-active) .nav-title:hover .brand-text,
+body:is(.is-warning-active, .is-terminal-active) .nav-title.active .brand-text {
   color: var(--tm-accent);
 }
 body:is(.is-warning-active, .is-terminal-active) .nav-item {
@@ -1771,7 +1798,7 @@ body:is(.is-warning-active, .is-terminal-active) .ticker-item::before {
   color: var(--tm-text-mute);
 }
 
-/* ─── Shamanism Research — Terminal About Page ─── */
+/* ─── TOTEME — Terminal About Page ─── */
 #page-about .about-terminal {
   min-height: calc(100vh - 58px);
   background: var(--tm-bg);
@@ -1799,6 +1826,39 @@ body:is(.is-warning-active, .is-terminal-active) .ticker-item::before {
   color: var(--tm-text);
   margin: 6px 0 8px;
   overflow-wrap: anywhere;
+}
+#page-about .about-hero h1.about-brand {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: inherit;
+  margin: 6px 0 8px;
+}
+#page-about .about-brand-mark {
+  height: 28px;
+  width: auto;
+  fill: currentColor;
+  align-self: center;
+  flex: none;
+  margin-right: 6px;
+}
+#page-about .about-brand-text {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  color: var(--tm-text);
+}
+#page-about .about-brand-sep {
+  font-size: 32px;
+  font-weight: 300;
+  color: var(--tm-text-mute);
+}
+#page-about .about-brand-tag {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  color: var(--tm-text-dim);
 }
 #page-about .about-hero p {
   max-width: 620px;
