@@ -23,7 +23,7 @@
     {
       "source": "/:path((?!api/).*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://shamanism-research.vercel.app" },
+        { "key": "Access-Control-Allow-Origin", "value": "https://totem-research.vercel.app" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
         { "key": "Vary", "value": "Origin" }

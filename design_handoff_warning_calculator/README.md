@@ -1,6 +1,6 @@
 # Handoff: 투자경고 계산기 재디자인 (Terminal × 모노크롬)
 
-> 기존 `shamanism-research/index.html` 의 **투자경고 계산기** 탭을 Bloomberg × TradingView × Toss 베이스의 흑백 모노크롬 터미널 톤으로 재디자인한 결과물의 핸드오프 문서입니다.
+> 기존 `totem-research/index.html` 의 **투자경고 계산기** 탭을 Bloomberg × TradingView × Toss 베이스의 흑백 모노크롬 터미널 톤으로 재디자인한 결과물의 핸드오프 문서입니다.
 
 ---
 
@@ -23,7 +23,7 @@
 **이 번들의 파일은 디자인 레퍼런스입니다. 프로덕션 코드로 그대로 복사하지 마세요.**
 
 - `reference/Redesign Options.html` 와 그 안의 `mockups/*.jsx` 는 HTML + React(Babel in-browser)로 짜인 **의도를 보여주는 목업**입니다.
-- 실제 포팅 대상은 기존 `shamanism-research/index.html` (vanilla JS · 단일 파일) 입니다. 기존 구조(페이지 전환, 검색 플로우, API 호출, 전역 상태)를 유지하면서 **CSS 토큰·컴포넌트 마크업만 이 디자인 톤으로 교체**하세요.
+- 실제 포팅 대상은 기존 `totem-research/index.html` (vanilla JS · 단일 파일) 입니다. 기존 구조(페이지 전환, 검색 플로우, API 호출, 전역 상태)를 유지하면서 **CSS 토큰·컴포넌트 마크업만 이 디자인 톤으로 교체**하세요.
 - 목업에 쓰인 `IBM Plex Mono / IBM Plex Sans` 는 **무시**하세요. 원본 `index.html` 이 이미 쓰고 있는 `SF Pro Display / SF Pro Text / SF Mono` 를 **그대로 유지**합니다. (이 핸드오프의 모든 문서에서 폰트는 SF Pro 체계로 기술되어 있습니다.)
 - 목업의 mock 데이터(`mockups/mock-data.jsx`) 는 에코프로 스냅샷입니다. 실제 바인딩은 기존 `/api/caution-search`, `/api/warn-search`, `/api/stock-price`, `/api/stock-overview` 응답을 사용하세요.
 

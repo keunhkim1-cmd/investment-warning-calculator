@@ -40,7 +40,7 @@ _TELEGRAM_BOT_TOKEN_RE = re.compile(r'(/bot)([^/?#]+)')
 _ORIGIN_RE = re.compile(r'^https?://[A-Za-z0-9.-]+(?::\d{1,5})?$')
 
 DEFAULT_ALLOWED_ORIGINS = (
-    'https://shamanism-research.vercel.app',
+    'https://totem-research.vercel.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 )

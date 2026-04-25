@@ -1,12 +1,12 @@
 # MIGRATION
 
-기존 `shamanism-research/index.html` (vanilla JS · 단일 파일) 을 이 시안 톤으로 포팅하는 **순서**. 각 단계는 **독립적으로 머지 가능**하게 쪼개져 있습니다.
+기존 `totem-research/index.html` (vanilla JS · 단일 파일) 을 이 시안 톤으로 포팅하는 **순서**. 각 단계는 **독립적으로 머지 가능**하게 쪼개져 있습니다.
 
 ---
 
 ## 전제
 
-- 기존 파일: `shamanism-research/index.html` (약 2,100 라인, 단일 HTML)
+- 기존 파일: `totem-research/index.html` (약 2,100 라인, 단일 HTML)
 - 기존 페이지 전환: `switchPage(name, btn)` 전역 함수 (유지)
 - 기존 API: `/api/warn-search` · `/api/caution-search` · `/api/stock-price` · `/api/stock-overview` · `/api/dart-list` (유지)
 - 기존 글로벌: `currentStock`, `warningResult`, `priceSnapshot` 등 (유지)

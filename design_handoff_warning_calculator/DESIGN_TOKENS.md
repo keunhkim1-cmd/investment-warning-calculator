@@ -1,6 +1,6 @@
 # DESIGN TOKENS
 
-> 모든 값은 **기존 `shamanism-research/index.html` 의 `:root` 에 merge** 하는 형태로 주입합니다. 기존 토큰(`--bg`, `--text`, `--blue` 등)은 **유지**하고, `--tm-*` 네임스페이스로 신규 값만 추가한 뒤 투자경고 계산기 섹션에서만 참조하세요.
+> 모든 값은 **기존 `totem-research/index.html` 의 `:root` 에 merge** 하는 형태로 주입합니다. 기존 토큰(`--bg`, `--text`, `--blue` 등)은 **유지**하고, `--tm-*` 네임스페이스로 신규 값만 추가한 뒤 투자경고 계산기 섹션에서만 참조하세요.
 
 ---
 
