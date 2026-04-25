@@ -339,7 +339,7 @@ async function doSearch() {
 
   btn.disabled = true;
   btn.textContent = '조회 중...';
-  showSearchLoading('KRX KIND에서 데이터를 가져오는 중...');
+  showSearchLoading('조회 중...');
 
   try {
     const url = `/api/warn-search?name=${encodeURIComponent(query)}`;
@@ -451,7 +451,7 @@ function selectResult(r) {
 }
 
 async function checkCautionFallback(query, searchRequestId) {
-  showSearchLoading('투자주의 여부 확인 중...');
+  showSearchLoading('조회 중...');
   try {
     const d = await fetchJson(`/api/caution-search?name=${encodeURIComponent(query)}`);
     if (!isCurrentSearch(searchRequestId)) return;
@@ -671,7 +671,7 @@ async function checkAndDisplay(r, warningRequestId) {
 // ────────────────────────────────────────────────
 async function fetchPriceThresholds(stockName, warningRequestId) {
   const requestId = warningRequestId || ++appState.warning.requestId;
-  setConditionsTableState('네이버 금융에서 주가 데이터를 조회 중입니다.', 'loading');
+  setConditionsTableState('조회 중...', 'loading');
 
   try {
     // 1. 종목코드 검색
