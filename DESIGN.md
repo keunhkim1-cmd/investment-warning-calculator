@@ -216,9 +216,10 @@ border: 1px solid var(--tm-up);    /* 1px 풀 색 보더 */
 3. **종목명, 결과 항목명, 강조 식별자?** → `14px / text / 500 / 0 / left`
 4. **그 외 본문, 테이블 셀, 일반 텍스트?** → `12px / text / 400 / -0.12px / left` ← **기본값**
 5. **대문자 섹션 라벨, 카드 타이틀?** → `12px / display / 500 / 1.5px / uppercase / left` (좌측 액센트 바 2px 권장)
-   - **마크업 분기** (시각 룰은 동일, 컨테이너 계층에 따라 마크업만 다름):
-     - 페이지 직속 카드(`.card` / `.info-card` 등 최상위 컨테이너)의 타이틀 → `<h2>` 또는 `<h3>` + 컨테이너 헤딩 룰
-     - 카드 *내부* sub-section (한 카드 안에 여러 섹션이 쌓일 때) → `<section class="tm-sec"><div class="tm-sec-head"><span class="t">…</span></div></section>`
+   - **마크업 (기본)**: `<section class="tm-sec ..."><div class="tm-sec-head"><span class="t">…</span></div>...</section>`. 페이지 직속 단독 카드든 결과 카드 *내부* sub-section이든 동일하게 적용. 컨테이너 박스 스타일(border, margin, padding)은 별도 클래스(`.stage-section` 등)로 부여.
+   - **`.src` 사용 금지 (장식·출처 라벨)**: 헤더 우측 `<span class="src">`에 `research use only`, `not investment advice`, `warning · disclosure · market data` 같은 *정적 영문 디스크립터·출처 표기*를 붙이지 말 것. 새 카드는 `.t` 하나만 두는 것이 기본. `.src` 슬롯은 **동적으로 데이터를 담을 때만** 허용 (예: 타임라인 상태 `T · 5거래일 경과 · D-5`, `해제 심사 가능`처럼 사용자가 그 줄을 읽고 새로운 정보를 얻는 경우). 의심스러우면 빼고 `.t`만 둘 것.
+   - **예외**: 검색 입력 그룹처럼 시맨틱 헤딩이 필요한 카드만 `<h2>/<h3>` + 컨테이너 룰(`.card h2` 등)을 유지. 시각 사양은 위와 동일.
+   - **헤더 → 첫 컨텐츠 분리**: `.tm-sec-head` 패턴은 헤더 자체에 `border-bottom: 1px solid var(--tm-hairline)` **필수** (운영 원칙·KRX 규정·시장경보 안내 등 일관) + 헤더 `padding-bottom`(9px) + 첫 sibling `padding-top`(예: `.tm-rules .r { padding: 9px 16px }`)으로 분리. 예외 패턴(`<h2>/<h3>`)은 `margin: 0 0 10px` 명시, 브라우저 default 의존 금지.
 6. **칩, 배지, 작은 대문자 라벨, 테이블 th?** → `10px / display / 500~600 / 0.8px / uppercase`
 7. **숫자 정렬, 날짜, 출처 표기?** → `mono / 본문과 같은 사이즈 / 0 또는 0.3px`
 

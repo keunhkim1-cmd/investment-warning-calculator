@@ -56,7 +56,7 @@
 .warning-terminal .overall-status,
 .warning-terminal .warning-box,
 .warning-terminal .server-notice,
-.warning-terminal .info-card,
+.warning-terminal .stage-section,
 .warning-terminal .date-item,
 .warning-terminal .search-btn,
 .warning-terminal .dday-badge,
@@ -71,7 +71,7 @@
   background: var(--tm-panel);
   border: 1px solid var(--tm-hairline);
 }
-.warning-terminal .info-card {
+.warning-terminal .stage-section {
   background: var(--tm-panel);
   border: 1px solid var(--tm-hairline);
 }
@@ -143,21 +143,12 @@
   color: var(--tm-text-mute);
   font-family: var(--mono);
 }
-/* 시장경보 단계 안내 (info-card) 터미널 스킨 */
-.warning-terminal .info-card h3 {
-  font-family: var(--font-display);
-  font-size: var(--fs-b2);
-  font-weight: 500;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--tm-text);
-  border-left: 2px solid var(--tm-accent);
-  padding-left: 10px;
-}
+/* 시장경보 단계 안내 (stage-section) 터미널 스킨 */
 .warning-terminal .stage-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 12px 16px;
 }
 .warning-terminal .stage-item {
   display: flex;
@@ -239,8 +230,7 @@
   border: none;
   margin-left: 8px;
 }
-.warning-terminal .info-card {
-  padding: 14px 16px;
+.warning-terminal .stage-section {
   margin: 0 16px 16px;
 }
 .warning-terminal .result-card {
@@ -260,6 +250,7 @@
   font-size: var(--fs-b2);
   letter-spacing: 1.5px;
   text-transform: uppercase;
+  border-bottom: 1px solid var(--tm-hairline);
 }
 #page-warning .tm-sec-head .t {
   color: var(--tm-text);

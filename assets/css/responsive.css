@@ -136,7 +136,7 @@
   }
   .warning-terminal .header { padding: 24px 12px 18px; }
   .warning-terminal .card,
-  .warning-terminal .info-card,
+  .warning-terminal .stage-section,
   .warning-terminal .result-card {
     margin-left: 12px;
     margin-right: 12px;
