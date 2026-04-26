@@ -21,6 +21,27 @@
   max-width: 1380px;
   padding: 0;
 }
+/* Fill viewport on the warning page so the footnote sits at the bottom */
+#page-warning .warning-terminal {
+  min-height: calc(100vh - 58px);
+  display: flex;
+  flex-direction: column;
+}
+#page-warning .warning-terminal > .section-dark:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+#page-warning .warning-terminal > .section-dark:last-child > .section-inner {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+#page-warning .warning-terminal .footnote {
+  margin-top: auto;
+  margin-bottom: 26px;
+}
 /* Helpers */
 .warning-terminal .num {
   font-variant-numeric: tabular-nums;
@@ -179,7 +200,7 @@
 .warning-terminal .footnote {
   color: var(--tm-text-mute);
   font-size: var(--fs-b2);
-  text-align: left;
+  text-align: center;
   margin-top: 32px;
   letter-spacing: -0.12px;
 }
