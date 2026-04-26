@@ -55,8 +55,27 @@ export function createSecondaryPageRenderers({
     const [, month, day] = dateInfo.key.split('-');
     if (titleEl) titleEl.textContent = `${month}월 ${day}일 운세`;
     container.innerHTML = `
-      <p class="fortune-message">${escHtml(message)}</p>`;
+      <button type="button" class="fortune-cookie" aria-label="오늘의 운세 열기">🥠</button>`;
     appState.fortune.dateKey = dateInfo.key;
+
+    const cookieBtn = container.querySelector('.fortune-cookie');
+    if (!cookieBtn) return;
+    cookieBtn.addEventListener('click', () => {
+      const dots = ['.', '..', '...'];
+      container.innerHTML = `<p class="fortune-message fortune-message--loading">${dots[0]}</p>`;
+      let step = 0;
+      const stepMs = 400;
+      const timer = setInterval(() => {
+        step += 1;
+        if (step < dots.length) {
+          const el = container.querySelector('.fortune-message');
+          if (el) el.textContent = dots[step];
+        } else {
+          clearInterval(timer);
+          container.innerHTML = `<p class="fortune-message">${escHtml(message)}</p>`;
+        }
+      }, stepMs);
+    }, { once: true });
   }
 
   async function renderPatchNotes() {

@@ -228,3 +228,32 @@
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
+#page-fortune .fortune-message--loading {
+  color: var(--tm-text-mute);
+  font-family: var(--mono);
+  letter-spacing: 2px;
+}
+#page-fortune .fortune-cookie {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 28px 16px;
+  background: transparent;
+  border: 0;
+  font-size: 56px;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+  color: inherit;
+  transition: transform 120ms ease;
+}
+#page-fortune .fortune-cookie:hover {
+  transform: scale(1.06);
+}
+#page-fortune .fortune-cookie:active {
+  transform: scale(0.94);
+}
+#page-fortune .fortune-cookie:focus-visible {
+  outline: 2px solid var(--tm-accent);
+  outline-offset: -4px;
+}
