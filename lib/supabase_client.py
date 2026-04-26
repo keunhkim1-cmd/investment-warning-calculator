@@ -53,7 +53,7 @@ def cache_writes_enabled() -> bool:
 
 
 def get_client() -> Client:
-    """Return a server-only Supabase client for the financial_data cache.
+    """Return a server-only Supabase client.
 
     Use SUPABASE_SERVICE_ROLE_KEY in Vercel serverless envs. The legacy
     SUPABASE_KEY name is ignored unless SUPABASE_ALLOW_LEGACY_SERVICE_ROLE_KEY
