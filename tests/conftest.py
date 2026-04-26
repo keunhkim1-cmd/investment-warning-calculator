@@ -15,7 +15,6 @@ SECRET_HEADERS = (
     'authorization',
     'cookie',
     'x-api-key',
-    'x-financial-model-token',
     'x-goog-api-key',
 )
 

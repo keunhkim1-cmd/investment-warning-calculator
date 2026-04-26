@@ -57,7 +57,6 @@ FORBIDDEN_PATH_PARTS = {
     '__pycache__',
 }
 SERVER_ONLY_STATIC_PATHS = {
-    '/data/account-mapping.json',
     '/data/dart-corps.json',
 }
 SERVER_ONLY_PATH_PREFIXES = (

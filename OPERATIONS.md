@@ -16,7 +16,6 @@ Recommended flow:
 3. Keep Production and Preview values separate for:
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_WEBHOOK_SECRET`
-   - `FINANCIAL_MODEL_API_TOKEN`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `CACHE_ADMIN_TOKEN`
    - `CRON_SECRET`
@@ -24,7 +23,6 @@ Recommended flow:
 Required production checks:
 
 - `/api/telegram` should report `configured`.
-- `/api/financial-model` should return 401 without a token, not 503.
 - `/api/warm-cache` should return 401 without Vercel's cron bearer token, not 503.
 
 ### Required Checks After Deploy
@@ -67,7 +65,6 @@ Useful events:
 
 - `cache_access`: cache name, key, state (`hit`, `miss`, `stale`, `durable_hit`)
 - `cache_stale_returned`: stale fallback was used after an upstream failure
-- `dart_financial_stale_returned`: DART financial stale data was returned
 - `gemini_summary_stale_returned`: Gemini summary stale data was returned
 
 ### Rate Limit Audit
@@ -78,8 +75,6 @@ Useful events:
 - `external_api_retry`: retry attempt and delay
 - `provider_rate_limit_wait`: request waited locally before calling provider
 - `provider_rate_limit_exceeded`: provider budget exhausted beyond max wait
-- `financial_dart_fetch_plan`: planned DART financial calls for one model build
-- `financial_dart_fetch_burst`: one financial request is likely too expensive
 
 Suggested first production limits:
 
@@ -89,7 +84,6 @@ Suggested first production limits:
 - `EXTERNAL_RATE_GEMINI_PER_MINUTE=10`
 - `EXTERNAL_RATE_GEMINI_TOKENS_PER_MINUTE=0`
 - `EXTERNAL_RATE_TELEGRAM_PER_MINUTE=900`
-- `DART_FINANCIAL_MAX_WORKERS=2`
 
 Set `EXTERNAL_RATE_GEMINI_TOKENS_PER_MINUTE` only after you know your Gemini
 project TPM limit. The value is measured in estimated 1K-token units per minute.
@@ -103,8 +97,7 @@ JSON-like events through `log_event`, so the first dashboard should stay narrow:
 - Error stream: `level:error`, grouped by `event`, `provider`, and endpoint.
 - External API health: `external_api_call`, `external_api_retry`,
   `provider_rate_limit_wait`, and `provider_rate_limit_exceeded`.
-- Fallback quality: `cache_stale_returned`, `dart_financial_stale_returned`,
-  and `gemini_summary_stale_returned`.
+- Fallback quality: `cache_stale_returned` and `gemini_summary_stale_returned`.
 - Telegram delivery: webhook 5xx logs, `telegram_duplicate_update`, and
   `telegram_info_unhandled`.
 
@@ -112,7 +105,7 @@ First alert rules:
 
 - Any `level:error` spike above the normal baseline for 5 minutes.
 - More than 3 `provider_rate_limit_exceeded` events in 10 minutes.
-- Any `cache_stale_returned` event for DART financial data during market hours.
+- Any `cache_stale_returned` event during market hours.
 - Telegram webhook 5xx or timeout events.
 
 Setup path:
@@ -146,9 +139,7 @@ Default alerted events:
 - `external_api_call` only when `result=failure`
 - `external_api_retry`
 - `provider_rate_limit_exceeded`
-- `cache_stale_returned`, `dart_financial_stale_returned`,
-  `gemini_summary_stale_returned`
-- `financial_dart_fetch_burst`
+- `cache_stale_returned`, `gemini_summary_stale_returned`
 - `warm_cache_task_failed`, `warm_cache_lock_failed`
 - `telegram_update_failed`, `telegram_info_summary_failed`
 
@@ -174,15 +165,14 @@ Dependabot checks Python tooling and GitHub Actions monthly. For each PR:
 
 ### Manual Cache Bust
 
-Use `/api/cache-bust` only with `CACHE_ADMIN_TOKEN` or `FINANCIAL_MODEL_API_TOKEN`.
-It deletes one durable cache key from Upstash. Warm in-memory entries inside
-already-running function instances may remain until their local TTL expires.
+Use `/api/cache-bust` only with `CACHE_ADMIN_TOKEN`. It deletes one durable
+cache key from Upstash. Warm in-memory entries inside already-running function
+instances may remain until their local TTL expires.
 
 Example durable keys:
 
 - `krx-kind:kind:1:1:21:1000:YYYY-MM-DD`
 - `naver-code:code:삼성전자`
-- `dart-full:all:00126380:2024:11011:CFS`
 - `dart-report-summary:summary:005930:RCEPT_NO:v1`
 
 ### Scheduled Cache Warm
@@ -203,9 +193,9 @@ job uses a Redis lock to avoid overlapping runs.
 
 ### DART Corp Registry Refresh
 
-`data/dart-corps.json` is the bundled fallback for DART company lookup and the
-financial-model corp-code allowlist. Refresh it after meaningful listing changes,
-or schedule it in a trusted maintenance environment:
+`data/dart-corps.json` is the bundled fallback for DART company lookup. Refresh
+it after meaningful listing changes, or schedule it in a trusted maintenance
+environment:
 
 ```bash
 DART_API_KEY=... python3 scripts/update_dart_corps.py

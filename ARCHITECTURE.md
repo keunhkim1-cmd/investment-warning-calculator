@@ -15,7 +15,7 @@ retry, and message-building code. Provider adapters should call
 `lib/http_client.py` instead of opening URLs directly.
 
 `data/` contains packaged fallback/reference data. Treat `data/dart-corps.json`
-and `data/account-mapping.json` as server-side inputs, not public UI payloads.
+as a server-side input, not a public UI payload.
 
 `scripts/` contains trusted maintenance utilities. Scripts may write generated
 data when explicitly run by an operator.
@@ -64,7 +64,6 @@ fetches, retryable DART statuses, and `raise_for_status()`.
 Existing modules keep domain-specific responsibilities:
 
 - `lib/dart.py`: disclosure list search
-- `lib/dart_full.py`: full financial statement endpoint
 - `lib/dart_registry.py`: corp-code registry
 - `lib/dart_report.py`: business-report document extraction
 

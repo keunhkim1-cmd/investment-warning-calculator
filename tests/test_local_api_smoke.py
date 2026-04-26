@@ -95,27 +95,3 @@ def test_public_api_validation_errors_use_error_envelope(monkeypatch, local_api_
     assert payload['ok'] is False
     assert payload['errorInfo']['code'] == 'VALIDATION_ERROR'
     assert payload['error'] == '종목명을 입력하세요.'
-
-
-def test_financial_model_requires_token_and_accepts_configured_token(monkeypatch, local_api_server):
-    monkeypatch.setenv('FINANCIAL_MODEL_API_TOKEN', 'test-token')
-    monkeypatch.setattr(
-        usecases,
-        'financial_model_payload',
-        lambda **kwargs: {'corp_code': kwargs['corp_code'], 'annual': [], 'quarterly': {}},
-    )
-
-    unauthorized_status, unauthorized_payload = _get_json(
-        local_api_server + '/api/financial-model?corp_code=00126380'
-    )
-    assert unauthorized_status == 401
-    assert unauthorized_payload['ok'] is False
-    assert unauthorized_payload['errorInfo']['code'] == 'AUTH_REQUIRED'
-
-    ok_status, ok_payload = _get_json(
-        local_api_server + '/api/financial-model?corp_code=00126380',
-        headers={'X-Financial-Model-Token': 'test-token'},
-    )
-    assert ok_status == 200
-    assert ok_payload['ok'] is True
-    assert ok_payload['corp_code'] == '00126380'

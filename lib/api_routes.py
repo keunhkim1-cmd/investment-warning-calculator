@@ -15,7 +15,6 @@ import urllib.parse
 
 from lib import usecases
 from lib.errors import DartError
-from lib.financial_api_security import auth_error, client_id, rate_limit_error
 from lib.http_utils import (
     api_success_payload,
     log_exception,
@@ -34,11 +33,6 @@ class ApiRoute:
     legacy_key: str = 'error'
     status_value: str | None = None
     dart_errors: bool = False
-    auth_required: bool = False
-    allow_headers: str | None = None
-    cache_control: str | None = None
-    # 검증 오류 메시지를 가릴지 여부 — 고비용 엔드포인트는 입력 형식만 노출.
-    generic_validation_message: str | None = None
 
 
 def _q(qs: dict, key: str, default: str = '') -> str:
@@ -86,19 +80,6 @@ ROUTES: tuple[ApiRoute, ...] = (
         ),
         dart_errors=True,
     ),
-    ApiRoute(
-        path='/api/financial-model',
-        endpoint='financial-model',
-        payload=lambda qs: usecases.financial_model_payload(
-            corp_code=_q(qs, 'corp_code'),
-            fs_div=_q(qs, 'fs_div', 'CFS'),
-            years=_q(qs, 'years', '5'),
-        ),
-        auth_required=True,
-        allow_headers='Authorization, X-API-Key, X-Financial-Model-Token, Content-Type',
-        cache_control='no-store',
-        generic_validation_message='잘못된 파라미터 형식',
-    ),
 )
 
 ROUTES_BY_PATH: dict[str, ApiRoute] = {r.path: r for r in ROUTES}
@@ -112,33 +93,16 @@ def _send_error(handler, route: ApiRoute, status: int, code: str, message: str, 
         message,
         legacy_key=route.legacy_key,
         status_value=route.status_value,
-        allow_headers=route.allow_headers,
-        cache_control=route.cache_control,
         **extra,
     )
 
 
 def dispatch(handler, route: ApiRoute, qs: dict) -> None:
-    """공통 디스패치 — 인증/속도제한/payload/에러 매핑."""
-    if route.auth_required:
-        auth = auth_error(handler.headers)
-        if auth:
-            status, message = auth
-            code = 'ENDPOINT_NOT_CONFIGURED' if status == 503 else 'AUTH_REQUIRED'
-            _send_error(handler, route, status, code, message)
-            return
-        client = client_id(handler.headers, getattr(handler, 'client_address', None))
-        limited = rate_limit_error(client)
-        if limited:
-            status, message = limited
-            _send_error(handler, route, status, 'RATE_LIMITED', message)
-            return
-
+    """공통 디스패치 — payload 실행과 에러 매핑."""
     try:
         data = route.payload(qs)
     except ValueError as e:
-        message = route.generic_validation_message or str(e)
-        _send_error(handler, route, 400, 'VALIDATION_ERROR', message)
+        _send_error(handler, route, 400, 'VALIDATION_ERROR', str(e))
         return
     except DartError as e:
         if route.dart_errors:
@@ -152,13 +116,7 @@ def dispatch(handler, route: ApiRoute, qs: dict) -> None:
         _send_error(handler, route, 500, 'INTERNAL_ERROR', '서버 오류가 발생했습니다.')
         return
 
-    send_json_response(
-        handler,
-        200,
-        api_success_payload(data),
-        allow_headers=route.allow_headers,
-        cache_control=route.cache_control,
-    )
+    send_json_response(handler, 200, api_success_payload(data))
 
 
 class RouteHandler(BaseHTTPRequestHandler):
@@ -172,7 +130,7 @@ class RouteHandler(BaseHTTPRequestHandler):
     route: ApiRoute  # 서브클래스가 반드시 설정
 
     def do_OPTIONS(self):
-        send_options_response(self, allow_headers=self.route.allow_headers)
+        send_options_response(self)
 
     def do_GET(self):
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)

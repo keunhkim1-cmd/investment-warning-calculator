@@ -97,13 +97,3 @@ def corp_map_by_stock_code() -> dict:
         allow_stale_on_error=True,
         max_stale=7 * 24 * 3600,
     )
-
-
-def known_corp_codes() -> set[str]:
-    """Return valid 8-digit DART corp codes using the shared registry."""
-    return _registry_cache.get_or_set(
-        'corp-codes',
-        lambda: {row['c'] for row in load_corp_rows() if CORP_CODE_RE.fullmatch(row.get('c', ''))},
-        allow_stale_on_error=True,
-        max_stale=7 * 24 * 3600,
-    )

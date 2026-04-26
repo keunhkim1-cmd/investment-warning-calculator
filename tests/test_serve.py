@@ -12,7 +12,6 @@ class ServeSecurityTests(unittest.TestCase):
             '/.vercel/project.json',
             '/lib/__pycache__/x.pyc',
             '/data/dart-corps.json',
-            '/data/account-mapping.json',
             '/supabase/migrations/20260424000000_create_runtime_cache_tables.sql',
         ]
         for path in blocked:

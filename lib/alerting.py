@@ -21,10 +21,8 @@ LEVELS = {
 DEFAULT_ALERT_EVENTS = frozenset(
     {
         'cache_stale_returned',
-        'dart_financial_stale_returned',
         'external_api_call',
         'external_api_retry',
-        'financial_dart_fetch_burst',
         'gemini_summary_stale_returned',
         'provider_rate_limit_exceeded',
         'telegram_info_summary_failed',

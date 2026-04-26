@@ -123,7 +123,6 @@
     "api/caution-search.py": { "maxDuration": 30 },
     "api/stock-price.py": { "maxDuration": 20 },
     "api/dart-search.py": { "maxDuration": 20 },
-    "api/financial-model.py": { "maxDuration": 120 },
     "api/cache-bust.py": { "maxDuration": 10 },
     "api/warm-cache.py": { "maxDuration": 60 }
   }

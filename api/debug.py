@@ -20,11 +20,6 @@ ENV_GROUPS = {
         'TELEGRAM_BOT_TOKEN',
         'TELEGRAM_WEBHOOK_SECRET',
     ],
-    'financial_model': [
-        'FINANCIAL_MODEL_API_TOKEN',
-        'SUPABASE_URL',
-        'SUPABASE_SERVICE_ROLE_KEY',
-    ],
     'cache_admin': [
         'CACHE_ADMIN_TOKEN',
     ],

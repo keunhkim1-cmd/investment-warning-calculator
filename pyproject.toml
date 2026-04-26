@@ -51,7 +51,6 @@ files = [
     "lib/cache.py",
     "lib/dart_registry.py",
     "lib/errors.py",
-    "lib/financial_api_security.py",
     "lib/http_client.py",
     "lib/http_utils.py",
     "lib/krx.py",

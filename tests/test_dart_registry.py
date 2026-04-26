@@ -1,10 +1,8 @@
 import io
 import unittest
 import zipfile
-from unittest.mock import patch
 
 from lib import dart_registry
-from lib import financial_api_security
 
 
 class DartRegistryTests(unittest.TestCase):
@@ -29,13 +27,6 @@ class DartRegistryTests(unittest.TestCase):
         rows = dart_registry.parse_corp_code_zip(buf.getvalue())
 
         self.assertEqual(rows, [{'c': '00126380', 'n': '삼성전자', 's': '005930'}])
-
-    def test_known_corp_code_uses_shared_registry(self):
-        rows = [{'c': '00126380', 'n': '삼성전자', 's': '005930'}]
-        with patch('lib.financial_api_security.known_corp_codes',
-                   return_value={row['c'] for row in rows}):
-            self.assertTrue(financial_api_security.is_known_corp_code('00126380'))
-            self.assertFalse(financial_api_security.is_known_corp_code('99999999'))
 
 
 if __name__ == '__main__':

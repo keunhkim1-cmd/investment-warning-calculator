@@ -17,10 +17,7 @@ KEY_RE = re.compile(r'^[A-Za-z0-9:_./|~-]{1,512}$')
 
 
 def _expected_token() -> str:
-    return (
-        os.environ.get('CACHE_ADMIN_TOKEN', '').strip()
-        or os.environ.get('FINANCIAL_MODEL_API_TOKEN', '').strip()
-    )
+    return os.environ.get('CACHE_ADMIN_TOKEN', '').strip()
 
 
 def _presented_token(headers) -> str:

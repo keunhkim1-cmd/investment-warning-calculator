@@ -8,7 +8,6 @@ from datetime import date, datetime, timedelta, timezone
 
 from lib.dart import search_disclosure
 from lib.dart_base import DART_SEARCH_OK_STATUSES, raise_for_status
-from lib.financial_api_security import validate_params
 from lib.holidays import add_trading_days, count_trading_days
 from lib.krx import search_kind, search_kind_caution
 from lib.naver import (
@@ -215,19 +214,3 @@ def dart_search_payload(
     )
     raise_for_status(data, ok_statuses=DART_SEARCH_OK_STATUSES)
     return data
-
-
-def financial_model_payload(
-    *,
-    corp_code: str,
-    fs_div: str = 'CFS',
-    years: str = '5',
-) -> dict:
-    valid_corp_code, valid_fs_div, valid_years = validate_params(
-        corp_code,
-        fs_div,
-        years,
-    )
-    from lib.financial_model import build_model
-
-    return build_model(valid_corp_code, fs_div=valid_fs_div, years=valid_years)

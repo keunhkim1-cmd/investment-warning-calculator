@@ -8,7 +8,6 @@ Production and Preview should use separate values for all secrets:
 - `GEMINI_API_KEY`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_WEBHOOK_SECRET`
-- `FINANCIAL_MODEL_API_TOKEN`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `UPSTASH_REDIS_REST_URL`
@@ -27,30 +26,13 @@ cache admin tokens unless the preview deployment is protected. Use separate
 Preview values where practical, and keep Production-only values for anything
 that can mutate data or receive external webhooks.
 
-## Supabase Cache
+## Supabase
 
-The `financial_data` table is a server-side cache used by the authenticated
-`/api/financial-model` endpoint. Keep the Supabase service-role key in serverless
-environment variables only. Never expose it to browser JavaScript.
-
-Recommended cache behavior:
-
-- `SUPABASE_SERVICE_ROLE_KEY`: set only in server environments that need cache reads.
-- `SUPABASE_CACHE_WRITES=false`: default. The API reads existing cache but does not write.
-- `SUPABASE_CACHE_WRITES=true`: enable only after confirming the endpoint auth token,
-  rate limit, and logging redaction are active in the same environment.
-
-Recommended table hardening:
-
-```sql
--- See supabase/migrations/20260424000000_create_runtime_cache_tables.sql
--- for the version-controlled table, index, and RLS setup.
-alter table public.financial_data enable row level security;
-
--- Do not create anon/authenticated policies for this cache table.
--- Serverless functions use SUPABASE_SERVICE_ROLE_KEY and endpoint-level auth.
-revoke all on table public.financial_data from anon, authenticated;
-```
+Supabase is optional and currently used only by the Telegram webhook idempotency
+store (`telegram_updates`). Keep the service-role key in serverless environment
+variables only — never expose it to browser JavaScript. See
+`supabase/migrations/20260424000000_create_runtime_cache_tables.sql` for the
+table, index, and RLS setup.
 
 ## Dependency Audit
 
@@ -64,8 +46,7 @@ When `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` or Vercel Marketplace's
 Upstash Redis as a cross-instance TTL cache. Keep those variables server-only.
 
 The `/api/cache-bust` endpoint deletes a single durable cache key. Protect it
-with `CACHE_ADMIN_TOKEN`; if that token is absent, the endpoint falls back to
-`FINANCIAL_MODEL_API_TOKEN`. It does not purge already-warm in-memory entries
+with `CACHE_ADMIN_TOKEN`. It does not purge already-warm in-memory entries
 inside other Vercel function instances, so short local TTLs still apply.
 
 The `/api/warm-cache` cron endpoint is protected with `CRON_SECRET`. Vercel
@@ -89,10 +70,6 @@ Tune these values after looking at `external_api_call`,
 - `EXTERNAL_RATE_GEMINI_TOKENS_PER_MINUTE`
 - `EXTERNAL_RATE_TELEGRAM_PER_MINUTE`
 - `EXTERNAL_RATE_LIMIT_MAX_WAIT`
-
-For `/api/financial-model`, `DART_FINANCIAL_MAX_WORKERS` defaults to 2 to avoid
-bursting DART with 20 concurrent-ish calls on a cold cache. Raise it only after
-the durable cache hit rate is healthy.
 
 Set `CACHE_ACCESS_LOGS_ENABLED=true` temporarily when you need hit/miss/stale
 ratios from Vercel Logs. Leave it off during normal operation if log volume

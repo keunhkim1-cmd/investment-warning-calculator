@@ -1,7 +1,7 @@
 # TOTEM
 
 Korean market-data utility for investment-warning lookup, price thresholds,
-DART disclosure search, financial-model JSON, and a Telegram bot webhook.
+DART disclosure search, and a Telegram bot webhook.
 
 ## Local Development
 

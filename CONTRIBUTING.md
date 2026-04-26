@@ -63,5 +63,5 @@ Python files, but do not mix broad repo-wide formatting with behavioral changes.
 ## Deploy Notes
 
 Use `OPERATIONS.md` for deployment checks and `SECURITY.md` for env/secret
-rules. Production and Preview should not share webhook, cache admin, Supabase
-service-role, or financial-model tokens unless the Preview is protected.
+rules. Production and Preview should not share webhook, cache admin, or
+Supabase service-role tokens unless the Preview is protected.
