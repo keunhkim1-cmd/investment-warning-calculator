@@ -161,19 +161,6 @@ body {
   line-height: 1;
   color: var(--text);
 }
-.nav-title .brand-sep {
-  font-size: 18px;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--text-muted);
-}
-.nav-title .brand-tag {
-  font-size: var(--fs-b1);
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1;
-  color: var(--text-muted);
-}
 .nav-title:hover .brand-text { color: var(--text-secondary); }
 .nav-title.active .brand-text { color: var(--text); }
 .nav-item {
@@ -209,10 +196,6 @@ body:is(.is-warning-active, .is-terminal-active) .nav-title {
 }
 body:is(.is-warning-active, .is-terminal-active) .nav-title .brand-text {
   color: var(--tm-accent);
-}
-body:is(.is-warning-active, .is-terminal-active) .nav-title .brand-sep,
-body:is(.is-warning-active, .is-terminal-active) .nav-title .brand-tag {
-  color: var(--tm-text-mute);
 }
 body:is(.is-warning-active, .is-terminal-active) .nav-title:hover .brand-text,
 body:is(.is-warning-active, .is-terminal-active) .nav-title.active .brand-text {
