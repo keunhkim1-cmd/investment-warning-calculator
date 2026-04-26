@@ -19,26 +19,6 @@ const fortuneDeck = [
   '미국 시장을 보면 생각이 정리됩니다.',
 ];
 
-function getKstDateInfo(now = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Seoul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now).reduce((acc, part) => {
-    if (part.type !== 'literal') acc[part.type] = part.value;
-    return acc;
-  }, {});
-  const key = `${parts.year}-${parts.month}-${parts.day}`;
-  return { key, label: `${parts.year}.${parts.month}.${parts.day}` };
-}
-
-function fortuneIndex(dateKey, size) {
-  const [year, month, day] = dateKey.split('-').map(Number);
-  const utcDays = Math.floor(Date.UTC(year, month - 1, day) / 86400000);
-  return ((utcDays % size) + size) % size;
-}
-
 export function createSecondaryPageRenderers({
   appState,
   escHtml,
@@ -49,17 +29,14 @@ export function createSecondaryPageRenderers({
     const container = document.getElementById('fortuneContent');
     const titleEl = document.getElementById('fortunePanelTitle');
     if (!container) return;
-    const dateInfo = getKstDateInfo();
-    if (appState.fortune.dateKey === dateInfo.key && container.innerHTML) return;
-    const message = fortuneDeck[fortuneIndex(dateInfo.key, fortuneDeck.length)];
     if (titleEl) titleEl.textContent = '행운이 함께하기를!';
     container.innerHTML = `
       <button type="button" class="fortune-cookie" aria-label="오늘의 운세 열기">🥠</button>`;
-    appState.fortune.dateKey = dateInfo.key;
 
     const cookieBtn = container.querySelector('.fortune-cookie');
     if (!cookieBtn) return;
     cookieBtn.addEventListener('click', () => {
+      const message = fortuneDeck[Math.floor(Math.random() * fortuneDeck.length)];
       const dots = ['.', '..', '...'];
       container.innerHTML = `<p class="fortune-message fortune-message--loading">${dots[0]}</p>`;
       let step = 0;

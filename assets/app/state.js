@@ -19,9 +19,6 @@ export const appState = {
   patchNotes: {
     loaded: false,
   },
-  fortune: {
-    dateKey: '',
-  },
   holidays: new Set(),
   // 부트스트랩(app.js)이 실제 fetch 프라미스로 덮어쓴다.
   holidaysReady: Promise.resolve(),
