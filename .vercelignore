@@ -12,5 +12,4 @@ __pycache__/
 .env.*
 !.env.example
 *.md
-data/account-mapping.json
 data/dart-corps.json

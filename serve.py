@@ -90,7 +90,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         route = ROUTES_BY_PATH.get(parsed.path)
         if route:
-            send_options_response(self, allow_headers=route.allow_headers)
+            send_options_response(self)
             return
         if parsed.path.startswith('/api/'):
             send_options_response(self)

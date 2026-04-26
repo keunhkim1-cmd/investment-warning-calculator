@@ -30,9 +30,11 @@ that can mutate data or receive external webhooks.
 
 Supabase is optional and currently used only by the Telegram webhook idempotency
 store (`telegram_updates`). Keep the service-role key in serverless environment
-variables only — never expose it to browser JavaScript. See
-`supabase/migrations/20260424000000_create_runtime_cache_tables.sql` for the
-table, index, and RLS setup.
+variables only — never expose it to browser JavaScript. The original runtime
+cache migration also created the removed `financial_data` table; apply
+`supabase/migrations/20260426000000_drop_financial_data_cache.sql` after
+`supabase/migrations/20260424000000_create_runtime_cache_tables.sql` so only the
+Telegram idempotency store remains.
 
 ## Dependency Audit
 

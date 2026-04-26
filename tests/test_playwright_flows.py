@@ -176,8 +176,9 @@ def test_secondary_tabs_render_from_split_modules(local_server, page: Page):
     page.goto(local_server)
 
     page.get_by_role('tab', name='오늘의 운세').click()
+    page.get_by_role('button', name='오늘의 운세 열기').click()
     expect(page.locator('#fortuneContent .fortune-message')).to_be_visible()
-    expect(page.locator('#fortunePanelTitle')).to_contain_text('운세')
+    expect(page.locator('#fortunePanelTitle')).to_contain_text('행운')
 
     page.get_by_role('tab', name='패치 노트').click()
     expect(page.locator('#patchnotesContent .patch-entry').first).to_be_visible()

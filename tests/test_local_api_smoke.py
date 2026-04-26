@@ -95,3 +95,17 @@ def test_public_api_validation_errors_use_error_envelope(monkeypatch, local_api_
     assert payload['ok'] is False
     assert payload['errorInfo']['code'] == 'VALIDATION_ERROR'
     assert payload['error'] == '종목명을 입력하세요.'
+
+
+def test_public_api_options_preflight_returns_no_content(local_api_server):
+    req = urllib.request.Request(
+        local_api_server + '/api/stock-code?name=%EC%82%BC%EC%84%B1%EC%A0%84%EC%9E%90',
+        headers={'Origin': 'http://127.0.0.1:5173'},
+        method='OPTIONS',
+    )
+
+    with urllib.request.urlopen(req, timeout=3) as resp:
+        assert resp.status == 204
+        assert resp.headers['Access-Control-Allow-Methods'] == 'GET, OPTIONS'
+        assert resp.headers['Access-Control-Allow-Origin'] == 'http://127.0.0.1:5173'
+        assert resp.read() == b''
