@@ -485,7 +485,7 @@ def market_alert_forecast_payload() -> dict:
 
     level_rank = {'alert': 0, 'near': 1, 'watch': 2, 'review': 3}
     items.sort(key=lambda item: (
-        level_rank.get(item.get('level'), 9),
+        level_rank.get(item.get('level', ''), 9),
         -int(item.get('riskScore', 0) or 0),
         item.get('lastJudgmentDate', ''),
         item.get('stockName', ''),
