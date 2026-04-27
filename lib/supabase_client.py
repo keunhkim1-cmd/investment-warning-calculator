@@ -48,10 +48,6 @@ def cache_enabled() -> bool:
     return bool(os.environ.get('SUPABASE_URL', '').strip() and _service_key())
 
 
-def cache_writes_enabled() -> bool:
-    return _env_bool('SUPABASE_CACHE_WRITES')
-
-
 def get_client() -> Client:
     """Return a server-only Supabase client.
 
