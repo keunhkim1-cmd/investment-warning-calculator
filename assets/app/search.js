@@ -197,16 +197,33 @@ function releaseConditionMap(status) {
   return map;
 }
 
+function investmentWarningUnavailableReason(status, conditions) {
+  const reasons = conditions.map(condition => condition.statusReason).filter(Boolean);
+  const reasonSet = new Set(reasons);
+  const judgmentText = status.nextJudgmentDate ? `(${status.nextJudgmentDate})` : '';
+  if (reasonSet.has('future_judgment_date')) {
+    return `최초 판단일${judgmentText} 전이라 KIND 기준 해제 조건을 아직 확정할 수 없습니다.`;
+  }
+  if (reasonSet.has('missing_evaluation_price')) {
+    return `판단일${judgmentText} 종가가 아직 확인되지 않아 해제 조건 산정을 보류합니다.`;
+  }
+  if (reasonSet.has('missing_basis_price')) {
+    return '기준일 종가를 확인할 수 없어 해제 조건 산정을 보류합니다.';
+  }
+  return status.calculationBasis || '가격 또는 거래정지 상태를 확인할 수 없어 해제 조건을 산정하지 못했습니다.';
+}
+
 function investmentWarningThresholds(status) {
   const conditions = releaseConditionMap(status);
   const five = conditions.five_day_gain || {};
   const fifteen = conditions.fifteen_day_gain || {};
   const high = conditions.fifteen_day_high || {};
+  const conditionList = [five, fifteen, high];
   const firstEvaluation = [five, fifteen, high].find(c => c && c.evaluationPrice != null) || {};
   const fiveRate = five.thresholdRate ?? status.releaseCriteria?.fiveDayThresholdRate ?? 0.6;
   const fifteenRate = fifteen.thresholdRate ?? status.releaseCriteria?.fifteenDayThresholdRate ?? 1;
-  const allMet = [five, fifteen, high].every(c => c.status === 'exceeded');
-  const unavailable = [five, fifteen, high].some(c => c.status === 'unavailable');
+  const allMet = conditionList.every(c => c.status === 'exceeded');
+  const unavailable = conditionList.some(c => c.status === 'unavailable');
 
   return {
     tClose: firstEvaluation.evaluationPrice ?? null,
@@ -216,19 +233,22 @@ function investmentWarningThresholds(status) {
     thresh1: five.thresholdPrice ?? null,
     cond1: five.status === 'exceeded',
     cond1Status: five.status || 'unavailable',
+    cond1StatusReason: five.statusReason || '',
     t15Close: fifteen.basisPrice ?? null,
     t15Date: fifteen.basisDate ?? null,
     thresh2: fifteen.thresholdPrice ?? null,
     cond2: fifteen.status === 'exceeded',
     cond2Status: fifteen.status || 'unavailable',
+    cond2StatusReason: fifteen.statusReason || '',
     max15: high.basisPrice ?? null,
     max15Date: high.basisDate ?? null,
     thresh3: high.thresholdPrice ?? high.basisPrice ?? null,
     cond3: high.status === 'exceeded',
     cond3Status: high.status || 'unavailable',
+    cond3StatusReason: high.statusReason || '',
     allMet,
     unavailable,
-    unavailableReason: unavailable ? status.calculationBasis : '',
+    unavailableReason: unavailable ? investmentWarningUnavailableReason(status, conditionList) : '',
     policy: {
       t5Lookback: 5,
       t5Multiplier: Number((1 + fiveRate).toFixed(4)),

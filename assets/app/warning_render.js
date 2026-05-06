@@ -227,8 +227,15 @@ export function renderConditions(t) {
   if (!tbody) return;
   const p = t.policy || { t5Lookback: 5, t5Multiplier: 1.6, t15Lookback: 15, t15Multiplier: 2, maxWindowDays: 15 };
 
-  function statusLabel(met, status) {
-    if (status === 'unavailable') return { cls: 'clear', flag: '보류' };
+  function statusReasonLabel(reason) {
+    if (reason === 'future_judgment_date') return '판단일 전';
+    if (reason === 'missing_basis_price') return '기준가 대기';
+    if (reason === 'missing_evaluation_price') return '판단가 대기';
+    return '보류';
+  }
+
+  function statusLabel(met, status, statusReason) {
+    if (status === 'unavailable') return { cls: 'clear', flag: statusReasonLabel(statusReason) };
     return met ? { cls: 'hold', flag: '유지' } : { cls: 'clear', flag: '이탈' };
   }
 
@@ -240,8 +247,8 @@ export function renderConditions(t) {
     return { text: `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`, cls: pct >= 0 ? 'up' : 'dn' };
   }
 
-  function row(num, formula, desc, baseDate, baseClose, ratio, thresh, tClose, met, status) {
-    const { cls: statusCls, flag } = statusLabel(met, status);
+  function row(num, formula, desc, baseDate, baseClose, ratio, thresh, tClose, met, status, statusReason) {
+    const { cls: statusCls, flag } = statusLabel(met, status, statusReason);
     const pct = pctText(tClose, thresh);
     return `
       <tr class="${statusCls}">
@@ -265,7 +272,7 @@ export function renderConditions(t) {
   }
 
   function row3(t, windowDays) {
-    const { cls: statusCls, flag } = statusLabel(t.cond3, t.cond3Status);
+    const { cls: statusCls, flag } = statusLabel(t.cond3, t.cond3Status, t.cond3StatusReason);
     const pct = pctText(t.tClose, t.max15);
     return `
       <tr class="${statusCls}">
@@ -298,8 +305,8 @@ export function renderConditions(t) {
   const ratio2 = `${p.t15Multiplier}×`;
 
   tbody.innerHTML =
-    row(1, formula1, desc1, t.t5Date, t.t5Close, ratio1, t.thresh1, t.tClose, t.cond1, t.cond1Status) +
-    row(2, formula2, desc2, t.t15Date, t.t15Close, ratio2, t.thresh2, t.tClose, t.cond2, t.cond2Status) +
+    row(1, formula1, desc1, t.t5Date, t.t5Close, ratio1, t.thresh1, t.tClose, t.cond1, t.cond1Status, t.cond1StatusReason) +
+    row(2, formula2, desc2, t.t15Date, t.t15Close, ratio2, t.thresh2, t.tClose, t.cond2, t.cond2Status, t.cond2StatusReason) +
     row3(t, p.maxWindowDays);
 }
 

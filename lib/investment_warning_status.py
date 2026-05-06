@@ -252,14 +252,20 @@ def resolve_investment_warning_release_conditions(
     basis_dates = resolve_release_basis_dates(judgment_date, release_criteria)
     recent_high_start_date = subtract_krx_trading_days(judgment_date, 14)
     today = format_kst_date(now)
+    if today < judgment_date:
+        return create_future_judgment_release_conditions(
+            basis_dates,
+            release_criteria,
+            judgment_date,
+        )
 
     try:
         prices = fetch_daily_close_prices(
             stock_code,
             min(basis_dates['fifteenDayBasisDate'], recent_high_start_date),
-            max(judgment_date, today),
+            judgment_date,
         )
-        evaluation = find_latest_price_on_or_before(prices, today)
+        evaluation = find_close_price(prices, judgment_date)
         five_day_basis = find_close_price(prices, basis_dates['fiveDayBasisDate'])
         fifteen_day_basis = find_close_price(prices, basis_dates['fifteenDayBasisDate'])
         recent_high = find_prior_recent_high(prices, recent_high_start_date, judgment_date)
@@ -489,18 +495,47 @@ def parse_naver_daily_close_prices(text: str) -> list[dict]:
     return sorted(prices, key=lambda item: item['date'])
 
 
+def create_future_judgment_release_conditions(
+    basis_dates: dict,
+    release_criteria: dict,
+    judgment_date: str,
+) -> list[dict]:
+    return [
+        create_unavailable_release_condition(
+            'five_day_gain',
+            basis_date=basis_dates['fiveDayBasisDate'],
+            threshold_rate=release_criteria['fiveDayThresholdRate'],
+            evaluation_date=judgment_date,
+            status_reason='future_judgment_date',
+        ),
+        create_unavailable_release_condition(
+            'fifteen_day_gain',
+            basis_date=basis_dates['fifteenDayBasisDate'],
+            threshold_rate=release_criteria['fifteenDayThresholdRate'],
+            evaluation_date=judgment_date,
+            status_reason='future_judgment_date',
+        ),
+        create_unavailable_release_condition(
+            'fifteen_day_high',
+            evaluation_date=judgment_date,
+            status_reason='future_judgment_date',
+        ),
+    ]
+
+
 def create_rate_release_condition(
     condition_type: str,
     basis_date: str,
     basis_price: int | float | None,
     evaluation: dict | None,
     threshold_rate: float,
+    status_reason: str | None = None,
 ) -> dict:
     threshold_price = None if basis_price is None else clean_number(round(basis_price * (1 + threshold_rate), 2))
     status = 'unavailable'
     if threshold_price is not None and evaluation is not None and evaluation.get('close', 0) > 0:
         status = 'exceeded' if evaluation['close'] >= threshold_price else 'safe'
-    return {
+    condition = {
         'type': condition_type,
         'status': status,
         'basisDate': basis_date,
@@ -510,18 +545,25 @@ def create_rate_release_condition(
         'evaluationDate': evaluation['date'] if evaluation else None,
         'evaluationPrice': evaluation['close'] if evaluation else None,
     }
+    if status == 'unavailable':
+        condition['statusReason'] = status_reason or infer_unavailable_status_reason(
+            basis_price,
+            evaluation,
+        )
+    return condition
 
 
 def create_high_release_condition(
     basis_date: str | None,
     basis_price: int | float | None,
     evaluation: dict | None,
+    status_reason: str | None = None,
 ) -> dict:
     threshold_price = basis_price
     status = 'unavailable'
     if threshold_price is not None and evaluation is not None and evaluation.get('close', 0) > 0:
         status = 'exceeded' if evaluation['close'] >= threshold_price else 'safe'
-    return {
+    condition = {
         'type': 'fifteen_day_high',
         'status': status,
         'basisDate': basis_date,
@@ -531,6 +573,23 @@ def create_high_release_condition(
         'evaluationDate': evaluation['date'] if evaluation else None,
         'evaluationPrice': evaluation['close'] if evaluation else None,
     }
+    if status == 'unavailable':
+        condition['statusReason'] = status_reason or infer_unavailable_status_reason(
+            basis_price,
+            evaluation,
+        )
+    return condition
+
+
+def infer_unavailable_status_reason(
+    basis_price: int | float | None,
+    evaluation: dict | None,
+) -> str:
+    if evaluation is None or evaluation.get('close', 0) <= 0:
+        return 'missing_evaluation_price'
+    if basis_price is None:
+        return 'missing_basis_price'
+    return 'missing_evaluation_price'
 
 
 def create_unavailable_release_conditions() -> list[dict]:
@@ -541,17 +600,27 @@ def create_unavailable_release_conditions() -> list[dict]:
     ]
 
 
-def create_unavailable_release_condition(condition_type: str) -> dict:
-    return {
+def create_unavailable_release_condition(
+    condition_type: str,
+    *,
+    basis_date: str | None = None,
+    threshold_rate: float | None = None,
+    evaluation_date: str | None = None,
+    status_reason: str | None = None,
+) -> dict:
+    condition = {
         'type': condition_type,
         'status': 'unavailable',
-        'basisDate': None,
+        'basisDate': basis_date,
         'basisPrice': None,
-        'thresholdRate': None,
+        'thresholdRate': threshold_rate,
         'thresholdPrice': None,
-        'evaluationDate': None,
+        'evaluationDate': evaluation_date,
         'evaluationPrice': None,
     }
+    if status_reason:
+        condition['statusReason'] = status_reason
+    return condition
 
 
 def create_fallback_release_criteria(

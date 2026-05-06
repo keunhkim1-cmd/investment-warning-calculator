@@ -91,6 +91,64 @@ def daily_prices(latest_close=46_000):
     return [{'date': day, 'close': close} for day, close in rows]
 
 
+def lycom_disclosure_html():
+    return investment_warning_disclosure_html(
+        company_name='라이콤',
+        designation_date_text='2026년 05월 04일',
+        five_day_rate=60,
+        fifteen_day_rate=100,
+        first_judgment_text='05월 18일',
+        t_minus_five_text='05월 11일',
+        t_minus_fifteen_text='04월 23일',
+    )
+
+
+def lycom_warning_rows():
+    return [{
+        'companyName': '라이콤',
+        'stockCode': '388790',
+        'disclosureDate': '2026-04-30',
+        'designationDate': '2026-05-04',
+        'releaseDate': None,
+    }]
+
+
+def lycom_prices_until_may6():
+    rows = [
+        ('2026-04-23', 5570),
+        ('2026-04-24', 5400),
+        ('2026-04-27', 5560),
+        ('2026-04-28', 5190),
+        ('2026-04-29', 5250),
+        ('2026-04-30', 5210),
+        ('2026-05-04', 5470),
+        ('2026-05-06', 5220),
+    ]
+    return [{'date': day, 'close': close} for day, close in rows]
+
+
+def lycom_prices_through_judgment():
+    rows = [
+        ('2026-04-23', 4600),
+        ('2026-04-24', 5200),
+        ('2026-04-27', 5300),
+        ('2026-04-28', 5400),
+        ('2026-04-29', 5500),
+        ('2026-04-30', 5600),
+        ('2026-05-04', 5700),
+        ('2026-05-06', 5800),
+        ('2026-05-07', 5900),
+        ('2026-05-08', 6000),
+        ('2026-05-11', 5000),
+        ('2026-05-12', 6100),
+        ('2026-05-13', 6200),
+        ('2026-05-14', 6300),
+        ('2026-05-15', 7000),
+        ('2026-05-18', 9000),
+    ]
+    return [{'date': day, 'close': close} for day, close in rows]
+
+
 def test_parses_kind_investment_warning_rows():
     rows = iws.parse_kind_investment_warning_rows(
         investment_warning_download_html(company_name='THE E&amp;M', stock_code='089230')
@@ -147,6 +205,25 @@ def test_parses_release_criteria_from_kind_disclosure_euc_kr():
     }
 
 
+def test_parses_lycom_release_criteria_from_kind_disclosure():
+    html = iws.decode_kind_text(lycom_disclosure_html().encode('euc-kr'))
+
+    assert iws.parse_kind_investment_warning_release_criteria(
+        html,
+        designation_date='2026-05-04',
+        disclosure_url='https://kind.krx.co.kr/external/2026/04/30/001702/20260430003898/70804.htm',
+    ) == {
+        'source': 'kind_disclosure',
+        'fiveDayThresholdRate': 0.6,
+        'fifteenDayThresholdRate': 1.0,
+        'firstJudgmentDate': '2026-05-18',
+        'tMinusFiveDate': '2026-05-11',
+        'tMinusFifteenDate': '2026-04-23',
+        'disclosureUrl': 'https://kind.krx.co.kr/external/2026/04/30/001702/20260430003898/70804.htm',
+        'fallbackReason': None,
+    }
+
+
 def install_status_stubs(monkeypatch, *, prices=None, halt_status=None, rows=None):
     warning_row = {
         'companyName': 'Daewoo E&C',
@@ -162,11 +239,14 @@ def install_status_stubs(monkeypatch, *, prices=None, halt_status=None, rows=Non
 
 
 def test_returns_investment_warning_forecast_from_current_rows(monkeypatch):
-    install_status_stubs(monkeypatch)
+    install_status_stubs(monkeypatch, prices=[
+        *daily_prices(),
+        {'date': '2026-05-04', 'close': 46_000},
+    ])
 
     status = iws.get_investment_warning_status(
         '047040',
-        datetime.fromisoformat('2026-05-03T00:00:00+09:00'),
+        datetime.fromisoformat('2026-05-04T00:00:00+09:00'),
     )
 
     assert status['status'] == 'investment_warning'
@@ -182,7 +262,7 @@ def test_returns_investment_warning_forecast_from_current_rows(monkeypatch):
             'basisPrice': 30000,
             'thresholdRate': 0.6,
             'thresholdPrice': 48000,
-            'evaluationDate': '2026-04-30',
+            'evaluationDate': '2026-05-04',
             'evaluationPrice': 46000,
         },
         {
@@ -192,7 +272,7 @@ def test_returns_investment_warning_forecast_from_current_rows(monkeypatch):
             'basisPrice': 25000,
             'thresholdRate': 1.0,
             'thresholdPrice': 50000,
-            'evaluationDate': '2026-04-30',
+            'evaluationDate': '2026-05-04',
             'evaluationPrice': 46000,
         },
         {
@@ -202,7 +282,7 @@ def test_returns_investment_warning_forecast_from_current_rows(monkeypatch):
             'basisPrice': 47000,
             'thresholdRate': None,
             'thresholdPrice': 47000,
-            'evaluationDate': '2026-04-30',
+            'evaluationDate': '2026-05-04',
             'evaluationPrice': 46000,
         },
     ]
@@ -251,11 +331,14 @@ def test_uses_disclosure_criteria_instead_of_standard_rates(monkeypatch):
 
 
 def test_marks_release_conditions_as_exceeded(monkeypatch):
-    install_status_stubs(monkeypatch, prices=daily_prices(latest_close=51_000))
+    install_status_stubs(monkeypatch, prices=[
+        *daily_prices(latest_close=51_000),
+        {'date': '2026-05-04', 'close': 51_000},
+    ])
 
     status = iws.get_investment_warning_status(
         '047040',
-        datetime.fromisoformat('2026-05-03T00:00:00+09:00'),
+        datetime.fromisoformat('2026-05-04T00:00:00+09:00'),
     )
 
     assert [condition['status'] for condition in status['releaseConditions']] == [
@@ -263,6 +346,122 @@ def test_marks_release_conditions_as_exceeded(monkeypatch):
         'exceeded',
         'exceeded',
     ]
+
+
+def test_keeps_lycom_conditions_pending_before_kind_judgment_date(monkeypatch):
+    install_status_stubs(
+        monkeypatch,
+        prices=lycom_prices_until_may6(),
+        rows=lycom_warning_rows(),
+    )
+    monkeypatch.setattr(iws, 'fetch_investment_warning_designation_disclosure', lambda row: {
+        'url': 'https://kind.krx.co.kr/external/2026/04/30/001702/20260430003898/70804.htm',
+        'html': lycom_disclosure_html(),
+    })
+
+    status = iws.get_investment_warning_status(
+        '388790',
+        datetime.fromisoformat('2026-05-07T00:00:00+09:00'),
+    )
+
+    assert status['firstJudgmentDate'] == '2026-05-18'
+    assert status['nextJudgmentDate'] == '2026-05-18'
+    assert status['releaseConditions'] == [
+        {
+            'type': 'five_day_gain',
+            'status': 'unavailable',
+            'basisDate': '2026-05-11',
+            'basisPrice': None,
+            'thresholdRate': 0.6,
+            'thresholdPrice': None,
+            'evaluationDate': '2026-05-18',
+            'evaluationPrice': None,
+            'statusReason': 'future_judgment_date',
+        },
+        {
+            'type': 'fifteen_day_gain',
+            'status': 'unavailable',
+            'basisDate': '2026-04-23',
+            'basisPrice': None,
+            'thresholdRate': 1.0,
+            'thresholdPrice': None,
+            'evaluationDate': '2026-05-18',
+            'evaluationPrice': None,
+            'statusReason': 'future_judgment_date',
+        },
+        {
+            'type': 'fifteen_day_high',
+            'status': 'unavailable',
+            'basisDate': None,
+            'basisPrice': None,
+            'thresholdRate': None,
+            'thresholdPrice': None,
+            'evaluationDate': '2026-05-18',
+            'evaluationPrice': None,
+            'statusReason': 'future_judgment_date',
+        },
+    ]
+
+
+def test_waits_for_judgment_date_close_on_lycom_judgment_date(monkeypatch):
+    install_status_stubs(
+        monkeypatch,
+        prices=lycom_prices_through_judgment()[:-1],
+        rows=lycom_warning_rows(),
+    )
+    monkeypatch.setattr(iws, 'fetch_investment_warning_designation_disclosure', lambda row: {
+        'url': 'https://kind.krx.co.kr/external/2026/04/30/001702/20260430003898/70804.htm',
+        'html': lycom_disclosure_html(),
+    })
+
+    status = iws.get_investment_warning_status(
+        '388790',
+        datetime.fromisoformat('2026-05-18T00:00:00+09:00'),
+    )
+
+    assert [condition['status'] for condition in status['releaseConditions']] == [
+        'unavailable',
+        'unavailable',
+        'unavailable',
+    ]
+    assert {condition.get('statusReason') for condition in status['releaseConditions']} == {
+        'missing_evaluation_price',
+    }
+    assert status['releaseConditions'][0]['thresholdPrice'] == 8000
+    assert status['releaseConditions'][1]['thresholdPrice'] == 9200
+    assert status['releaseConditions'][2]['thresholdPrice'] == 7000
+
+
+def test_evaluates_lycom_conditions_with_judgment_date_close(monkeypatch):
+    install_status_stubs(
+        monkeypatch,
+        prices=lycom_prices_through_judgment(),
+        rows=lycom_warning_rows(),
+    )
+    monkeypatch.setattr(iws, 'fetch_investment_warning_designation_disclosure', lambda row: {
+        'url': 'https://kind.krx.co.kr/external/2026/04/30/001702/20260430003898/70804.htm',
+        'html': lycom_disclosure_html(),
+    })
+
+    status = iws.get_investment_warning_status(
+        '388790',
+        datetime.fromisoformat('2026-05-18T00:00:00+09:00'),
+    )
+
+    assert [condition['status'] for condition in status['releaseConditions']] == [
+        'exceeded',
+        'safe',
+        'exceeded',
+    ]
+    assert [condition['thresholdPrice'] for condition in status['releaseConditions']] == [
+        8000,
+        9200,
+        7000,
+    ]
+    assert {condition['evaluationDate'] for condition in status['releaseConditions']} == {
+        '2026-05-18',
+    }
+    assert {condition['evaluationPrice'] for condition in status['releaseConditions']} == {9000}
 
 
 def test_holds_release_forecast_when_currently_halted(monkeypatch):
