@@ -17,7 +17,18 @@
 
 @media (max-width: 767px) {
   .nav-bar {
-    height: 50px;
+    height: 52px;
+  }
+
+  .nav-inner {
+    height: 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .nav-tabs-wrap {
+    height: 100%;
+    flex: 1 1 auto;
   }
 
   .nav-item {
@@ -28,6 +39,24 @@
 
   .brand-text {
     font-size: var(--text-t6);
+  }
+
+  .nav-search {
+    min-width: 0;
+    flex: 0 1 min(62vw, 270px);
+  }
+
+  .nav-search-field,
+  .nav-search .search-btn {
+    min-height: 38px;
+  }
+
+  .warning-terminal,
+  .about-terminal,
+  .forecast-terminal,
+  .fortune-terminal,
+  .patchnotes-terminal {
+    min-height: calc(100vh - 52px);
   }
 
   .brand-logo-mark {
@@ -67,8 +96,18 @@
     gap: 4px;
   }
 
-  .nav-title {
-    margin-right: 2px;
+  .nav-search {
+    flex-basis: min(66vw, 252px);
+    gap: 6px;
+  }
+
+  .nav-search #searchInput {
+    font-size: var(--text-t8);
+  }
+
+  .nav-search .search-btn {
+    padding: 0 10px;
+    font-size: var(--text-t8);
   }
 
   .tm-sec-head,

@@ -185,6 +185,38 @@ def test_secondary_tabs_render_from_split_modules(local_server, page: Page):
 
 
 @pytest.mark.e2e
+def test_navbar_search_activates_warning_page(local_server, page: Page):
+    page.goto(local_server)
+
+    page.get_by_role('tab', name='패치 노트').click()
+    expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
+
+    page.get_by_role('searchbox', name='투자경고 종목 검색').click()
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#searchInput')).to_be_focused()
+
+    page.get_by_role('tab', name='오늘의 운세').click()
+    page.keyboard.press('/')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#searchInput')).to_be_focused()
+
+
+@pytest.mark.e2e
+def test_navbar_scroll_hint_stays_on_one_line(local_server, page: Page):
+    page.set_viewport_size({'width': 590, 'height': 760})
+    page.goto(local_server)
+
+    expect(page.locator('#navScrollHint')).to_be_visible()
+    expect(page.locator('#navScrollHintLeft')).to_be_hidden()
+    nav_box = page.locator('.nav-bar').bounding_box()
+    assert nav_box is not None
+    assert nav_box['height'] <= 54
+
+    page.locator('#navScrollHint').click()
+    expect(page.locator('#navScrollHintLeft')).to_be_visible()
+
+
+@pytest.mark.e2e
 def test_market_alert_forecast_tab_renders_and_checks_stock(local_server, page: Page):
     page.route(
         '**/api/market-alert-forecast',
@@ -256,7 +288,7 @@ def test_market_alert_forecast_tab_renders_and_checks_stock(local_server, page: 
     expect(page.locator('#forecastContent')).to_contain_text('확인 필요')
 
     page.locator('#forecastContent .forecast-check').first.click()
-    expect(page.locator('#nav-warning')).to_have_attribute('aria-selected', 'true')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
     expect(page.locator('#searchInput')).to_have_value('테스트전자')
     expect(page.locator('#searchResults')).to_contain_text('현재 투자경고/투자주의가 아님')
 
