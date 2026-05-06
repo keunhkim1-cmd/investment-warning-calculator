@@ -20,6 +20,13 @@
 - 로그인, 주문, 잔고, 관심종목, 개인화 피드는 제품 범위가 아니다.
 - 즐거움 요소는 독립 탭에 작고 조용하게 둔다. 전역 장식 ticker, glow, blob, glass, 과한 hero는 금지한다.
 
+### Copy And Headings
+
+- 사용자가 보는 page title, section title, hero, kicker, eyebrow, badge성 보조 헤더는 한국어를 기본으로 한다.
+- `Warning Check`, `Research Terminal`, `Market Alert Forecast`, `Daily Fortune`, `Release Log`처럼 장식용 영어 헤더를 새로 만들지 않는다.
+- 기능명이나 상태명도 가능한 한 한국어로 쓰고, KRX/DART/NAVER/AI처럼 공식 약어나 고유 서비스명은 출처·데이터명·명령 설명에만 제한적으로 허용한다.
+- 프론트엔드 변경 후 `scripts/check_frontend_smoke.py`로 영어-only 헤더가 다시 들어오지 않았는지 확인한다.
+
 ## 2. Tokens
 
 모든 새 스타일은 token first로 작성한다. 임의 hex, 임의 font-size, 임의 radius를 feature code에 추가하지 않는다.
@@ -180,5 +187,6 @@ python -m pytest tests/test_playwright_flows.py --disable-socket --allow-hosts=1
 - 배경이 dark가 아니다.
 - 카드 radius는 8px, control radius는 12px다.
 - 텍스트와 버튼이 겹치지 않는다.
+- 장식용 영어 헤더나 영어-only 제목이 보이지 않는다.
 - 주요 표는 horizontal scroll 또는 충분한 min-width로 읽힌다.
 - 검색, 예보 점검, 운세, 패치 노트 탭이 모두 동작한다.

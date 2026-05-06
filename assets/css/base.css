@@ -323,22 +323,11 @@ button:disabled {
   padding: 28px 0 16px;
 }
 
-.caps,
-.about-kicker,
-.warning-kicker,
-.patch-kicker {
-  color: var(--color-text-tertiary);
-  font-size: var(--text-t8);
-  line-height: var(--leading-t8);
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
 .header h1,
 .about-hero h1,
 .patch-hero h1,
 .forecast-hero h1 {
-  margin: 4px 0 6px;
+  margin: 0 0 6px;
   color: var(--color-text-primary);
   font-size: var(--text-t2);
   line-height: var(--leading-t2);

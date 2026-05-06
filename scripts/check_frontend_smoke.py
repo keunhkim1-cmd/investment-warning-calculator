@@ -17,6 +17,27 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
 
+BANNED_UI_HEADER_TEXT = (
+    "Research Terminal",
+    "About",
+    "Disclaimer",
+    "Warning Check",
+    "Market Alert Forecast",
+    "Daily Fortune",
+    "Release Log",
+)
+BANNED_DYNAMIC_UI_LABELS = ("NEW", "FIX", "IMPROVE", "CHORE", "UPDATE")
+ENGLISH_ONLY_HEADER_RE = re.compile(
+    r"<(?P<tag>h[1-6]|div|span)\b(?P<attrs>[^>]*)>\s*"
+    r"(?P<text>[A-Za-z][A-Za-z ]{1,60})"
+    r"\s*</(?P=tag)>",
+    flags=re.IGNORECASE,
+)
+HEADER_CONTEXT_RE = re.compile(
+    r"""(?:class|id)=["'][^"']*(?:caps|kicker|heading|title|hero)[^"']*["']""",
+    flags=re.IGNORECASE,
+)
+
 ALLOWED_INLINE_STYLE_IDS = {
     "sec-chart",
     "sec-verdict",
@@ -58,6 +79,21 @@ def hash_json_ld(html: str) -> str:
 
 def css_imports(css: str) -> list[tuple[str, str]]:
     return re.findall(r'@import url\("\./css/([^"]+?\.css)\?([^"]+)"\);', css)
+
+
+def english_only_static_headers(html: str) -> list[str]:
+    matches: set[str] = set()
+    for match in ENGLISH_ONLY_HEADER_RE.finditer(html):
+        tag = match.group("tag").lower()
+        attrs = match.group("attrs")
+        text = " ".join(match.group("text").split())
+        if tag.startswith("h") or HEADER_CONTEXT_RE.search(attrs):
+            matches.add(text)
+    return sorted(matches)
+
+
+def visible_text_contains(html: str, phrase: str) -> bool:
+    return re.search(r">\s*" + re.escape(phrase) + r"\s*<", html) is not None
 
 
 def check() -> tuple[list[str], dict[str, object]]:
@@ -164,6 +200,15 @@ def check() -> tuple[list[str], dict[str, object]]:
         'id="searchResults" aria-label="검색 결과" aria-live="polite" aria-busy="false"' in html,
         "searchResults must remain a polite live region",
     )
+    for phrase in BANNED_UI_HEADER_TEXT:
+        add(failures, not visible_text_contains(html, phrase), f"banned English UI header remains: {phrase}")
+    english_headers = english_only_static_headers(html)
+    add(
+        failures,
+        not english_headers,
+        "user-facing headers must be Korean-first; English-only header(s): "
+        + ", ".join(english_headers),
+    )
 
     json_ld_hash = hash_json_ld(html)
     add(failures, bool(json_ld_hash), "missing JSON-LD hash source")
@@ -191,6 +236,8 @@ def check() -> tuple[list[str], dict[str, object]]:
     add(failures, trading_calendar.is_file(), "trading calendar module is missing")
     secondary_js = secondary_pages.read_text(encoding="utf-8") if secondary_pages.is_file() else ""
     calendar_js = trading_calendar.read_text(encoding="utf-8") if trading_calendar.is_file() else ""
+    for label in BANNED_DYNAMIC_UI_LABELS:
+        add(failures, label not in secondary_js, f"banned English dynamic UI label remains: {label}")
 
     # 분할된 sub-modules (assets/app/*.js)
     state_path = ROOT / "assets/app/state.js"

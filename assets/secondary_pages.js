@@ -224,7 +224,7 @@ export function createSecondaryPageRenderers({
     if (!container || appState.patchNotes.loaded) return;
     try {
       const entries = await fetchJson('/data/patchnotes.json', { cache: 'no-cache' });
-      const tagLabel = { feat: 'NEW', fix: 'FIX', improve: 'IMPROVE', chore: 'CHORE' };
+      const tagLabel = { feat: '신규', fix: '수정', improve: '개선', chore: '정리' };
       if (!Array.isArray(entries) || entries.length === 0) {
         setElementState(container, '기록된 패치 노트가 없습니다.', 'empty');
         return;
@@ -232,7 +232,7 @@ export function createSecondaryPageRenderers({
       container.innerHTML = entries.map(e => {
         const rawTag = String(e.tag || 'feat').toLowerCase();
         const tag = Object.prototype.hasOwnProperty.call(tagLabel, rawTag) ? rawTag : 'chore';
-        const label = tagLabel[tag] || 'UPDATE';
+        const label = tagLabel[tag] || '업데이트';
         const items = Array.isArray(e.items) ? e.items : [];
         return `
           <article class="patch-entry">
