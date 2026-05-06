@@ -177,7 +177,7 @@ export function createSecondaryPageRenderers({
   function bindForecastChecks(container) {
     container.querySelectorAll('.forecast-check').forEach(button => {
       button.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('totem:forecast-check', {
+        window.dispatchEvent(new CustomEvent('geunhyeongbot:forecast-check', {
           detail: { stockName: button.dataset.stock || '' },
         }));
       });

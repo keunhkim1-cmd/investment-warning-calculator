@@ -161,7 +161,7 @@ def _process_update_body(update: dict):
     if text.startswith('/web'):
         tg_send(chat_id,
             '🌐 *투자경고 계산기 웹버전*\n'
-            'https://totem-research.vercel.app/')
+            'https://kh-bot.vercel.app/')
         return
 
     if text.startswith('/'):

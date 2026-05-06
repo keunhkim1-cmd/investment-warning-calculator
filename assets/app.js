@@ -1,6 +1,6 @@
 // 앱 부트스트랩 — 모듈 결합 + 이벤트 와이어 + 초기화.
-import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260506-1';
-import { appState } from './app/state.js?v=20260506-1';
+import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260506-2';
+import { appState } from './app/state.js?v=20260506-2';
 import {
   apiErrorMessage,
   escHtml,
@@ -8,9 +8,9 @@ import {
   hideSearchResults,
   setElementState,
   showRuntimeError,
-} from './app/dom_utils.js?v=20260506-1';
-import { toDateStr } from './app/calendar.js?v=20260506-1';
-import { doSearch, selectResult } from './app/search.js?v=20260506-1';
+} from './app/dom_utils.js?v=20260506-2';
+import { toDateStr } from './app/calendar.js?v=20260506-2';
+import { doSearch, selectResult } from './app/search.js?v=20260506-2';
 
 // ────────────────────────────────────────────────
 // 전역 에러 핸들러
@@ -138,7 +138,7 @@ if (forecastRefreshBtn) {
   forecastRefreshBtn.addEventListener('click', () => renderMarketForecast({ force: true }));
 }
 
-window.addEventListener('totem:forecast-check', event => {
+window.addEventListener('geunhyeongbot:forecast-check', event => {
   const stockName = event.detail?.stockName || '';
   if (!stockName) return;
   const input = document.getElementById('searchInput');

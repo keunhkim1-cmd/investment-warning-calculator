@@ -11,8 +11,8 @@ import {
   showSearchError,
   showSearchLoading,
   showSearchMessage,
-} from './dom_utils.js?v=20260506-1';
-import { appState, isCurrentSearch, isCurrentWarning } from './state.js?v=20260506-1';
+} from './dom_utils.js?v=20260506-2';
+import { appState, isCurrentSearch, isCurrentWarning } from './state.js?v=20260506-2';
 import {
   hideCautionCard,
   hideWarningCards,
@@ -26,9 +26,9 @@ import {
   renderTimeline,
   renderVerdict,
   showNotWarning,
-} from './warning_render.js?v=20260506-1';
-import { renderInlineChart, syncTvChartByName } from './chart.js?v=20260506-1';
-import { addTradingDays, countTradingDays } from './calendar.js?v=20260506-1';
+} from './warning_render.js?v=20260506-2';
+import { renderInlineChart, syncTvChartByName } from './chart.js?v=20260506-2';
+import { addTradingDays, countTradingDays } from './calendar.js?v=20260506-2';
 
 // ────────────────────────────────────────────────
 // KRX KIND 검색

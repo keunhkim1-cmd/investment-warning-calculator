@@ -171,7 +171,7 @@ def _claim_cooldown(record: Mapping[str, object]) -> bool:
 def _format_alert(record: Mapping[str, object]) -> str:
     level = str(record.get('level', 'warning')).upper()
     event = str(record.get('event', 'unknown'))
-    lines = [f'[totem alert] {level} {event}']
+    lines = [f'[근형봇 alert] {level} {event}']
     for field in MESSAGE_FIELDS:
         value = record.get(field)
         if value not in (None, ''):

@@ -39,14 +39,14 @@ _TELEGRAM_BOT_TOKEN_RE = re.compile(r'(/bot)([^/?#]+)')
 _ORIGIN_RE = re.compile(r'^https?://[A-Za-z0-9.-]+(?::\d{1,5})?$')
 
 DEFAULT_ALLOWED_ORIGINS = (
-    'https://totem-research.vercel.app',
+    'https://kh-bot.vercel.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 )
 
 STATIC_CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'sha256-6PoeIMeJGmQIsGhuN0VMh0tTvCXwAh47k1WUILwhmxg='; "
+    "script-src 'self' 'sha256-b7rFCCgDQhWhmdewQWjtm0aTJEpBd1jn2y5JZPUzb6A='; "
     "script-src-attr 'none'; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data:; "

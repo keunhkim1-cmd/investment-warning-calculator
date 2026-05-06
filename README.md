@@ -1,4 +1,4 @@
-# TOTEM
+# 근형봇
 
 Korean market-data utility for investment-warning lookup, price thresholds,
 DART disclosure search, and a Telegram bot webhook.

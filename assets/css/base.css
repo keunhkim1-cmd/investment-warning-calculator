@@ -261,7 +261,7 @@ button:disabled {
 }
 
 .nav-title {
-  padding: 0 10px 0 0;
+  padding: 0 12px;
   margin-right: 6px;
   color: var(--color-text-primary);
 }
@@ -285,17 +285,10 @@ button:disabled {
   color: var(--color-text-primary);
 }
 
-.brand-mark {
-  width: 26px;
-  height: 25px;
-  fill: currentColor;
-}
-
 .brand-text {
   font-size: var(--text-t5);
   line-height: var(--leading-t5);
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .forecast-dev-tag {
