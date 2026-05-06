@@ -11,8 +11,8 @@ import {
   showSearchError,
   showSearchLoading,
   showSearchMessage,
-} from './dom_utils.js?v=20260506-9';
-import { appState, isCurrentSearch, isCurrentWarning } from './state.js?v=20260506-9';
+} from './dom_utils.js?v=20260506-13';
+import { appState, isCurrentSearch, isCurrentWarning } from './state.js?v=20260506-13';
 import {
   hideCautionCard,
   hideWarningCards,
@@ -26,13 +26,17 @@ import {
   renderTimeline,
   renderVerdict,
   showNotWarning,
-} from './warning_render.js?v=20260506-9';
-import { renderInlineChart, syncTvChartByName } from './chart.js?v=20260506-9';
-import { addTradingDays, countTradingDays } from './calendar.js?v=20260506-9';
+} from './warning_render.js?v=20260506-13';
+import { renderInlineChart, syncTvChartByName } from './chart.js?v=20260506-13';
+import { addTradingDays, countTradingDays } from './calendar.js?v=20260506-13';
 
 // ────────────────────────────────────────────────
 // KRX KIND 검색
 // ────────────────────────────────────────────────
+function showWarningPage() {
+  window.dispatchEvent(new CustomEvent('geunhyeongbot:show-warning-page'));
+}
+
 export async function doSearch() {
   const inputEl = document.getElementById('searchInput');
   const query = inputEl.value.trim();
@@ -129,6 +133,7 @@ export function selectResult(r) {
   document.getElementById('designationDate').value = r.designationDate;
   document.getElementById('warningType').value = r.level === '투자위험' ? 'risk' : 'warning_normal';
   hideSearchResults();
+  showWarningPage();
 
   // 사용자가 클릭한 종목으로 TV 차트 즉시 동기화
   syncTvChartByName(name);
@@ -152,15 +157,18 @@ async function checkCautionFallback(query, searchRequestId) {
       case 'ok':
         hideSearchResults();
         renderCaution(d);
+        showWarningPage();
         return;
       case 'non_price_reason':
         hideSearchResults();
         renderCautionNonPrice(d);
+        showWarningPage();
         return;
       case 'code_not_found':
       case 'price_error':
         hideSearchResults();
         renderCautionPartial(d);
+        showWarningPage();
         return;
       case 'not_caution':
       default:
@@ -175,11 +183,151 @@ async function checkCautionFallback(query, searchRequestId) {
   }
 }
 
+function parseIsoDate(value) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function releaseConditionMap(status) {
+  const map = {};
+  (status.releaseConditions || []).forEach(condition => {
+    map[condition.type] = condition;
+  });
+  return map;
+}
+
+function investmentWarningThresholds(status) {
+  const conditions = releaseConditionMap(status);
+  const five = conditions.five_day_gain || {};
+  const fifteen = conditions.fifteen_day_gain || {};
+  const high = conditions.fifteen_day_high || {};
+  const firstEvaluation = [five, fifteen, high].find(c => c && c.evaluationPrice != null) || {};
+  const fiveRate = five.thresholdRate ?? status.releaseCriteria?.fiveDayThresholdRate ?? 0.6;
+  const fifteenRate = fifteen.thresholdRate ?? status.releaseCriteria?.fifteenDayThresholdRate ?? 1;
+  const allMet = [five, fifteen, high].every(c => c.status === 'exceeded');
+  const unavailable = [five, fifteen, high].some(c => c.status === 'unavailable');
+
+  return {
+    tClose: firstEvaluation.evaluationPrice ?? null,
+    tDate: firstEvaluation.evaluationDate ?? status.nextJudgmentDate ?? null,
+    t5Close: five.basisPrice ?? null,
+    t5Date: five.basisDate ?? null,
+    thresh1: five.thresholdPrice ?? null,
+    cond1: five.status === 'exceeded',
+    cond1Status: five.status || 'unavailable',
+    t15Close: fifteen.basisPrice ?? null,
+    t15Date: fifteen.basisDate ?? null,
+    thresh2: fifteen.thresholdPrice ?? null,
+    cond2: fifteen.status === 'exceeded',
+    cond2Status: fifteen.status || 'unavailable',
+    max15: high.basisPrice ?? null,
+    max15Date: high.basisDate ?? null,
+    thresh3: high.thresholdPrice ?? high.basisPrice ?? null,
+    cond3: high.status === 'exceeded',
+    cond3Status: high.status || 'unavailable',
+    allMet,
+    unavailable,
+    unavailableReason: unavailable ? status.calculationBasis : '',
+    policy: {
+      t5Lookback: 5,
+      t5Multiplier: Number((1 + fiveRate).toFixed(4)),
+      t15Lookback: 15,
+      t15Multiplier: Number((1 + fifteenRate).toFixed(4)),
+      maxWindowDays: 15,
+    },
+  };
+}
+
+async function resolveWarningStockCode(r) {
+  const directCode = safeStockCode(r.stockCode);
+  if (directCode) return { code: directCode, market: r.market || '' };
+
+  const codeData = await fetchJson(`/api/stock-code?name=${encodeURIComponent(r.stockName)}`);
+  if (apiErrorMessage(codeData) || codeData.error || !codeData.items || codeData.items.length === 0) {
+    return { code: '', market: '' };
+  }
+  const item = codeData.items[0];
+  return { code: safeStockCode(item.code), market: item.market || '' };
+}
+
+async function renderInvestmentWarningStatus(r, status, stockCode, market, requestId) {
+  const thresholds = investmentWarningThresholds(status);
+  const stockName = status.companyName || r.stockName;
+  const designationDate = parseIsoDate(status.designationDate || r.designationDate) || new Date();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const releaseDate = parseIsoDate(status.expectedReleaseDate);
+
+  document.getElementById('stockName').value = stockName;
+  document.getElementById('designationDate').value = status.designationDate || r.designationDate || '';
+  renderSymHeader(stockName, stockCode, market, status.designationDate, thresholds);
+  renderTimeline(designationDate, today, releaseDate);
+  renderConditions(thresholds);
+  renderVerdict(thresholds, releaseDate);
+  renderRules(releaseDate);
+  document.getElementById('sec-rules').style.display = '';
+
+  const rc = document.getElementById('resultCard');
+  appState.warning.releaseDate = releaseDate;
+  rc.dataset.releaseDate = status.expectedReleaseDate || '';
+  rc.classList.add('show');
+  showWarningPage();
+
+  try {
+    const priceData = await fetchJson(`/api/stock-price?code=${encodeURIComponent(stockCode)}`);
+    if (!isCurrentWarning(requestId)) return;
+    const chartData = { ...priceData, thresholds };
+    renderChartLegend(thresholds, chartData);
+    renderInlineChart(chartData, stockCode, stockName);
+  } catch (e) {
+    renderChartLegend(thresholds, { prices: [], thresholds });
+  }
+
+  rc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 async function checkAndDisplay(r, warningRequestId) {
   const requestId = warningRequestId || ++appState.warning.requestId;
   await appState.holidaysReady;
   if (!isCurrentWarning(requestId)) return;
 
+  if (r.level !== '투자경고') {
+    await checkLegacyAndDisplay(r, requestId);
+    return;
+  }
+
+  await calculate();
+  if (!isCurrentWarning(requestId)) return;
+  fetchPriceThresholds(r.stockName, requestId);
+
+  try {
+    const { code, market } = await resolveWarningStockCode(r);
+    if (!isCurrentWarning(requestId)) return;
+    if (!code) {
+      setConditionsTableState(`종목코드를 찾을 수 없습니다: ${r.stockName}`, 'error');
+      return;
+    }
+
+    const status = await fetchJson(`/api/market-alerts/investment-warning?stockCode=${encodeURIComponent(code)}`, { cache: 'no-store' });
+    if (!isCurrentWarning(requestId)) return;
+    const statusError = apiErrorMessage(status);
+    if (statusError) {
+      return;
+    }
+
+    if (status.status === 'not_warning') {
+      showNotWarning();
+      return;
+    }
+
+    await renderInvestmentWarningStatus(r, status, code, market, requestId);
+  } catch (e) {
+    if (!isCurrentWarning(requestId)) return;
+    // Status API is an enhancement; the legacy price view above remains usable.
+  }
+}
+
+async function checkLegacyAndDisplay(r, requestId) {
   const designationDate = new Date(r.designationDate + 'T00:00:00');
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const elapsed = countTradingDays(designationDate, today) - 1;
@@ -192,7 +340,7 @@ async function checkAndDisplay(r, warningRequestId) {
     return;
   }
 
-  // 10거래일 경과 → 가격 조건으로 해제 여부 판별
+  // 10거래일 경과 → 투자위험 legacy 흐름은 기존 가격 조건으로 유지
   try {
     const codeData = await fetchJson(`/api/stock-code?name=${encodeURIComponent(r.stockName)}`);
     if (!isCurrentWarning(requestId)) return;
@@ -223,12 +371,10 @@ async function checkAndDisplay(r, warningRequestId) {
     const allMet = t.cond1 && t.cond2 && t.cond3;
 
     if (!allMet) {
-      // 10거래일 경과 + 조건 미충족 → 해제된 상태
       showNotWarning();
       return;
     }
 
-    // 조건 모두 충족 → 아직 경고 유지 중, 전체 표시
     await calculate();
     if (!isCurrentWarning(requestId)) return;
     const item = codeData.items[0];
@@ -341,5 +487,6 @@ export async function calculate() {
   document.getElementById('sec-rules').style.display = '';
 
   rc.classList.add('show');
+  showWarningPage();
   rc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

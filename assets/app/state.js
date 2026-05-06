@@ -2,7 +2,7 @@
 // 부수효과 없음 — DOM/네트워크에 닿지 않는다.
 export const appState = {
   ui: {
-    activePage: 'warning',
+    activePage: 'about',
   },
   search: {
     requestId: 0,

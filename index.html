@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>근형봇 | 투자경고 계산기</title>
-  <meta name="description" content="KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 점검하는 한국 주식 리서치 도구입니다." />
+  <title>근형봇 | 소개</title>
+  <meta name="description" content="근형봇은 KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다." />
   <meta name="robots" content="index, follow" />
   <meta name="application-name" content="근형봇" />
   <meta name="theme-color" content="#f2f4f6" />
@@ -13,17 +13,17 @@
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:site_name" content="근형봇" />
-  <meta property="og:title" content="근형봇 | 투자경고 계산기" />
-  <meta property="og:description" content="KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 자동 점검합니다." />
+  <meta property="og:title" content="근형봇 | 소개" />
+  <meta property="og:description" content="KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다." />
   <meta property="og:url" content="https://kh-bot.vercel.app/" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="근형봇 | 투자경고 계산기" />
-  <meta name="twitter:description" content="KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 자동 점검합니다." />
+  <meta name="twitter:title" content="근형봇 | 소개" />
+  <meta name="twitter:description" content="KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다." />
   <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 점검하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
-  <link rel="stylesheet" href="assets/app.css?v=20260506-9" />
-  <script type="module" src="assets/app.js?v=20260506-9"></script>
+  <link rel="stylesheet" href="assets/app.css?v=20260506-13" />
+  <script type="module" src="assets/app.js?v=20260506-13"></script>
 </head>
 <body>
 
@@ -32,7 +32,7 @@
     <div class="nav-tabs-wrap">
       <button class="nav-scroll-hint nav-scroll-hint-left" id="navScrollHintLeft" type="button" aria-label="메뉴 왼쪽으로 스크롤" hidden>&lt;</button>
       <div class="nav-tabs" role="tablist" aria-label="페이지 전환">
-        <button class="nav-title" id="nav-about" type="button" role="tab" data-page="about" aria-controls="page-about" aria-selected="false" tabindex="0" aria-label="근형봇">
+        <button class="nav-title active" id="nav-about" type="button" role="tab" data-page="about" aria-controls="page-about" aria-selected="true" tabindex="0" aria-current="page" aria-label="근형봇">
           <span class="brand-logo-mark" aria-hidden="true">
             <img class="brand-logo" src="eye-logo.png" width="24" height="24" alt="" decoding="async" />
           </span>
@@ -67,7 +67,7 @@
   </div>
 </nav>
 
-<div id="page-about" class="page-section" role="tabpanel" aria-labelledby="nav-about" aria-hidden="true" hidden>
+<div id="page-about" class="page-section active" role="tabpanel" aria-labelledby="nav-about" aria-hidden="false">
   <div class="warning-terminal about-terminal">
     <div class="section-dark">
       <div class="section-inner">
@@ -116,15 +116,12 @@
   </div>
 </div>
 
-<div id="page-warning" class="page-section active" role="main" aria-labelledby="warningTitle" aria-hidden="false">
+<div id="page-warning" class="page-section" role="main" aria-labelledby="warningTitle" aria-hidden="true" hidden>
   <div class="warning-terminal">
 
   <div class="section-dark">
     <div class="section-inner">
-      <div class="header">
-        <h1 id="warningTitle">투자경고 계산기</h1>
-        <p>투자경고/위험 종목의 지정 여부·기준가·해제일을 자동 점검합니다</p>
-      </div>
+      <h1 class="sr-only" id="warningTitle">투자경고 계산기 결과</h1>
 
       <div class="server-notice" id="serverNotice" role="status">
         <strong>자동검색 기능</strong>을 사용하려면 로컬 서버가 필요합니다.<br/>
@@ -243,35 +240,6 @@
     </div>
   </div>
 
-  <div class="section-dark">
-    <div class="section-inner">
-      <section class="tm-sec stage-section" aria-labelledby="stageGuideTitle">
-        <div class="tm-sec-head">
-          <span class="t" id="stageGuideTitle">시장경보 단계 안내</span>
-        </div>
-        <div class="stage-list">
-          <div class="stage-item">
-            <div class="stage-dot dot-attention"></div>
-            <div class="stage-text"><strong>투자주의</strong> — 단기 급등 초기 단계, 15일 내 5일 이상 지정 시 경고로 격상 가능</div>
-          </div>
-          <div class="stage-item">
-            <div class="stage-dot dot-warning"></div>
-            <div class="stage-text"><strong>투자경고</strong> — 신용융자 금지, 위탁증거금 100% 현금, 지정 후 10 거래일 이후 해제 심사</div>
-          </div>
-          <div class="stage-item">
-            <div class="stage-dot dot-risk"></div>
-            <div class="stage-text"><strong>투자위험</strong> — 가장 높은 단계, 지정 당일 거래 정지, 해제 후 투자경고로 하향</div>
-          </div>
-        </div>
-      </section>
-
-      <div class="footnote">
-        본 계산기는 참고용이며, 실제 해제일은 KRX 시장감시위원회 판단에 따릅니다.<br />
-        공식 현황: <strong>KIND (kind.krx.co.kr)</strong> · <strong>DART (dart.fss.or.kr)</strong> · <strong>KRX 시장감시위원회 (moc.krx.co.kr)</strong>
-      </div>
-    </div>
-  </div>
-
   </div>
 </div>
 
@@ -339,6 +307,9 @@
       </div>
     </div>
   </div>
+</div>
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack"></div>
 </div>
 </body>
 </html>

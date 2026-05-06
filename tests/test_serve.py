@@ -25,6 +25,7 @@ class ServeSecurityTests(unittest.TestCase):
             '/data/holidays.json',
             '/data/patchnotes.json',
             '/api/stock-price?code=005930',
+            '/api/market-alerts/investment-warning?stockCode=005930',
         ]
         for path in allowed:
             with self.subTest(path=path):

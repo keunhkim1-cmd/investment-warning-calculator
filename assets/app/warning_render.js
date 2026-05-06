@@ -4,8 +4,8 @@ import {
   fmt,
   stateMessageHtml,
   showSearchMessage,
-} from './dom_utils.js?v=20260506-9';
-import { countTradingDays } from './calendar.js?v=20260506-9';
+} from './dom_utils.js?v=20260506-13';
+import { countTradingDays } from './calendar.js?v=20260506-13';
 
 export function hideWarningCards() {
   const rc = document.getElementById('resultCard');
@@ -186,6 +186,7 @@ export function renderTimeline(designationDate, today, releaseDate) {
   const foot = document.querySelector('#sec-timeline .tm-tl-foot');
   if (!track || !foot) return;
 
+  const hasReleaseDate = releaseDate instanceof Date && !Number.isNaN(releaseDate.getTime());
   let daysPassed;
   if (today < designationDate) {
     daysPassed = 0;
@@ -194,7 +195,7 @@ export function renderTimeline(designationDate, today, releaseDate) {
     daysPassed = Math.max(0, Math.min(10, count - 1));
   }
 
-  const labels = ['D0', 'T+1', 'T+2', 'T+3', 'T+4', 'T+5', 'T+6', 'T+7', 'T+8', 'T+9', '해제'];
+  const labels = ['D0', 'T+1', 'T+2', 'T+3', 'T+4', 'T+5', 'T+6', 'T+7', 'T+8', 'T+9', hasReleaseDate ? '해제' : '보류'];
   track.innerHTML = labels.map((lbl, i) => {
     let cls = 'future';
     if (i === 10) cls = 'release';
@@ -205,17 +206,18 @@ export function renderTimeline(designationDate, today, releaseDate) {
   }).join('');
 
   const fmtDate = d => {
+    if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '—';
     const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${dd}`;
   };
   foot.querySelector('.d1').textContent = fmtDate(designationDate);
   foot.querySelector('.d2').textContent = fmtDate(today) + ` · ${Math.min(daysPassed, 10)}거래일 경과`;
-  foot.querySelector('.d3').textContent = fmtDate(releaseDate);
+  foot.querySelector('.d3').textContent = hasReleaseDate ? fmtDate(releaseDate) : '산정 보류';
 
   const src = document.querySelector('#sec-timeline .tm-sec-head .src');
   if (src) {
     const dDay = Math.max(0, 10 - daysPassed);
-    src.textContent = daysPassed >= 10 ? '해제 심사 가능' : `T · ${daysPassed}거래일 경과 · D-${dDay}`;
+    src.textContent = !hasReleaseDate ? '산정 보류' : (daysPassed >= 10 ? '해제 심사 가능' : `T · ${daysPassed}거래일 경과 · D-${dDay}`);
   }
 }
 
@@ -223,15 +225,24 @@ export function renderTimeline(designationDate, today, releaseDate) {
 export function renderConditions(t) {
   const tbody = document.getElementById('conditionsTbody');
   if (!tbody) return;
-  const p = t.policy;
+  const p = t.policy || { t5Lookback: 5, t5Multiplier: 1.6, t15Lookback: 15, t15Multiplier: 2, maxWindowDays: 15 };
 
-  function row(num, formula, desc, baseDate, baseClose, ratio, thresh, tClose, met) {
-    const statusCls = met ? 'hold' : 'clear';
-    const flag = met ? '유지' : '이탈';
-    const delta = tClose - thresh;
-    const pct = thresh ? (delta / thresh * 100) : 0;
-    const deltaCls = delta >= 0 ? 'up' : 'dn';
-    const sign = pct >= 0 ? '+' : '';
+  function statusLabel(met, status) {
+    if (status === 'unavailable') return { cls: 'clear', flag: '보류' };
+    return met ? { cls: 'hold', flag: '유지' } : { cls: 'clear', flag: '이탈' };
+  }
+
+  function pctText(tClose, thresh) {
+    const close = Number(tClose);
+    const threshold = Number(thresh);
+    if (!Number.isFinite(close) || !Number.isFinite(threshold) || threshold === 0) return { text: '—', cls: '' };
+    const pct = (close - threshold) / threshold * 100;
+    return { text: `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`, cls: pct >= 0 ? 'up' : 'dn' };
+  }
+
+  function row(num, formula, desc, baseDate, baseClose, ratio, thresh, tClose, met, status) {
+    const { cls: statusCls, flag } = statusLabel(met, status);
+    const pct = pctText(tClose, thresh);
     return `
       <tr class="${statusCls}">
         <td>
@@ -247,20 +258,15 @@ export function renderConditions(t) {
         <td class="num">${fmt(baseClose)}</td>
         <td>${ratio}</td>
         <td class="num accent">${fmt(thresh)}</td>
-        <td class="num ${deltaCls}">${fmt(tClose)}</td>
-        <td class="num ${deltaCls}">${sign}${pct.toFixed(2)}%</td>
+        <td class="num ${pct.cls}">${fmt(tClose)}</td>
+        <td class="num ${pct.cls}">${pct.text}</td>
         <td><span class="flag ${statusCls}">${flag}</span></td>
       </tr>`;
   }
 
   function row3(t, windowDays) {
-    const met = t.cond3;
-    const statusCls = met ? 'hold' : 'clear';
-    const flag = met ? '유지' : '이탈';
-    const delta = t.tClose - t.max15;
-    const pct = t.max15 ? (delta / t.max15 * 100) : 0;
-    const deltaCls = delta >= 0 ? 'up' : 'dn';
-    const sign = pct >= 0 ? '+' : '';
+    const { cls: statusCls, flag } = statusLabel(t.cond3, t.cond3Status);
+    const pct = pctText(t.tClose, t.max15);
     return `
       <tr class="${statusCls}">
         <td>
@@ -276,8 +282,8 @@ export function renderConditions(t) {
         <td class="num">${fmt(t.max15)}</td>
         <td>—</td>
         <td class="num accent">${fmt(t.max15)}</td>
-        <td class="num ${deltaCls}">${fmt(t.tClose)}</td>
-        <td class="num ${deltaCls}">${sign}${pct.toFixed(2)}%</td>
+        <td class="num ${pct.cls}">${fmt(t.tClose)}</td>
+        <td class="num ${pct.cls}">${pct.text}</td>
         <td><span class="flag ${statusCls}">${flag}</span></td>
       </tr>`;
   }
@@ -292,8 +298,8 @@ export function renderConditions(t) {
   const ratio2 = `${p.t15Multiplier}×`;
 
   tbody.innerHTML =
-    row(1, formula1, desc1, t.t5Date, t.t5Close, ratio1, t.thresh1, t.tClose, t.cond1) +
-    row(2, formula2, desc2, t.t15Date, t.t15Close, ratio2, t.thresh2, t.tClose, t.cond2) +
+    row(1, formula1, desc1, t.t5Date, t.t5Close, ratio1, t.thresh1, t.tClose, t.cond1, t.cond1Status) +
+    row(2, formula2, desc2, t.t15Date, t.t15Close, ratio2, t.thresh2, t.tClose, t.cond2, t.cond2Status) +
     row3(t, p.maxWindowDays);
 }
 
@@ -302,6 +308,7 @@ export function renderVerdict(t, releaseDate) {
   const v = document.getElementById('sec-verdict');
   if (!v) return;
 
+  const hasReleaseDate = releaseDate instanceof Date && !Number.isNaN(releaseDate.getTime());
   const anyClear = !t.cond1 || !t.cond2 || !t.cond3;
   const missing = [];
   if (!t.cond1) missing.push('①');
@@ -312,7 +319,8 @@ export function renderVerdict(t, releaseDate) {
   v.style.display = 'flex';
 
   const fmtDate = d => {
-    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
+    if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '—';
+    const m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
     return `${m}-${dd}`;
   };
 
@@ -321,11 +329,19 @@ export function renderVerdict(t, releaseDate) {
   const bEl = v.querySelector('.b');
   const dEl = v.querySelector('.side .d');
 
+  if (t.unavailable) {
+    tagEl.textContent = '산정 보류';
+    hEl.textContent = '투자경고 해제 가능일 산정 보류';
+    bEl.textContent = t.unavailableReason || '가격 또는 거래정지 상태를 확인할 수 없어 해제 조건을 산정하지 못했습니다.';
+    dEl.textContent = '—';
+    return;
+  }
+
   if (anyClear) {
     tagEl.textContent = '해제 예정';
     hEl.textContent = `${fmtDate(releaseDate)} 투자경고 해제 예정`;
     bEl.textContent = `조건 ${missing.join('·')} 미충족 — KRX §4-2 기준상 해제 판단일에 세 조건 중 하나라도 미충족이면 해제 대상으로 판정됩니다.`;
-    dEl.textContent = fmtDate(releaseDate);
+    dEl.textContent = hasReleaseDate ? fmtDate(releaseDate) : '—';
   } else {
     v.classList.add('hold');
     const p = t.policy;

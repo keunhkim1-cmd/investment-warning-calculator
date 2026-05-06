@@ -1,16 +1,18 @@
 """Telegram command use cases."""
-from concurrent.futures import ThreadPoolExecutor
-
 from lib.http_utils import log_event, log_exception, safe_exception_text
-from lib.krx import search_kind
+from lib.investment_warning_status import get_investment_warning_status
 from lib.naver import (
     calc_thresholds,
     fetch_prices,
     stock_code as naver_stock_code,
 )
-from lib.telegram_messages import build_caution_message, build_warning_message
+from lib.telegram_messages import (
+    build_caution_message,
+    build_investment_warning_status_message,
+    build_warning_message,
+)
 from lib.telegram_transport import send_markdown as tg_send, send_plain as tg_send_plain
-from lib.usecases import caution_search_payload
+from lib.usecases import caution_search_payload, warning_search_payload
 from lib.validation import normalize_query
 
 
@@ -28,7 +30,8 @@ def do_search(chat_id: int, query: str):
                   error=safe_exception_text(e))
 
     try:
-        results = search_kind(query)
+        payload = warning_search_payload(query)
+        results = payload.get('results', [])
     except Exception as e:
         tg_send_plain(chat_id, f'❌ KRX 조회 오류: {safe_exception_text(e)}')
         return
@@ -37,7 +40,7 @@ def do_search(chat_id: int, query: str):
         tg_send_plain(chat_id, f'"{query}" — 현재 투자경고가 아님.')
         return
 
-    def _fetch_thresholds(warn):
+    def _legacy_thresholds(warn):
         try:
             codes = naver_stock_code(warn['stockName'])
             if codes:
@@ -51,14 +54,17 @@ def do_search(chat_id: int, query: str):
             return {'error': f'주가 조회 실패: {message}'}
 
     targets = results[:3]
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        threshold_list = list(pool.map(_fetch_thresholds, targets))
-
-    for warn, thresholds in zip(targets, threshold_list):
+    for warn in targets:
         try:
-            tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
+            if warn.get('level') == '투자경고' and warn.get('stockCode'):
+                status = get_investment_warning_status(warn['stockCode'])
+                tg_send(chat_id, build_investment_warning_status_message(status))
+            else:
+                thresholds = _legacy_thresholds(warn)
+                tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
         except Exception:
             try:
+                thresholds = _legacy_thresholds(warn)
                 tg_send_plain(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
             except Exception as e:
                 tg_send_plain(chat_id, f'⚠️ 결과 전송 오류: {safe_exception_text(e)}')

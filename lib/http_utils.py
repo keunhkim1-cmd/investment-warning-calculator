@@ -46,7 +46,7 @@ DEFAULT_ALLOWED_ORIGINS = (
 
 STATIC_CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'sha256-b7rFCCgDQhWhmdewQWjtm0aTJEpBd1jn2y5JZPUzb6A='; "
+    "script-src 'self' 'sha256-57Q2Efu0nF0IynMzcMwhTIvi8OXLrXwzqCWrrikyMv4='; "
     "script-src-attr 'none'; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data:; "

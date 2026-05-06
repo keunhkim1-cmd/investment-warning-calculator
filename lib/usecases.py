@@ -13,6 +13,7 @@ from lib.holidays import count_trading_days, is_trading_day
 from lib.http_utils import safe_exception_text
 from lib.krx import search_kind, search_kind_caution
 from lib.http_client import ExternalAPIError
+from lib.investment_warning_status import get_investment_warning_status
 from lib.naver import (
     calc_official_escalation,
     calc_thresholds,
@@ -125,9 +126,35 @@ def _notice_requires_internal_review(active_notice: dict) -> bool:
     return any(keyword in text for keyword in INTERNAL_REVIEW_REASON_KEYWORDS)
 
 
+def _with_warning_stock_codes(rows: list[dict]) -> list[dict]:
+    enriched = []
+    code_cache: dict[str, str] = {}
+    for row in rows:
+        item = dict(row)
+        stock_code_value = str(item.get('stockCode', '') or '')
+        if not stock_code_value and item.get('level') == '투자경고':
+            stock_name = str(item.get('stockName', '') or '')
+            if stock_name not in code_cache:
+                try:
+                    matches = stock_code(stock_name)
+                    code_cache[stock_name] = str(matches[0].get('code', '')) if matches else ''
+                except Exception:
+                    code_cache[stock_name] = ''
+            stock_code_value = code_cache.get(stock_name, '')
+        if stock_code_value:
+            item['stockCode'] = stock_code_value
+        enriched.append(item)
+    return enriched
+
+
 def warning_search_payload(raw_name: str) -> dict:
     name = normalize_query(raw_name)
-    return {'results': search_kind(name), 'query': name}
+    return {'results': _with_warning_stock_codes(search_kind(name)), 'query': name}
+
+
+def investment_warning_status_payload(raw_stock_code: str) -> dict:
+    code = validate_stock_code(raw_stock_code)
+    return get_investment_warning_status(code)
 
 
 def caution_search_payload(raw_name: str) -> dict:

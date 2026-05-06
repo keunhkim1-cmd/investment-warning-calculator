@@ -157,18 +157,83 @@ def _stock_price_payload() -> dict[str, Any]:
     }
 
 
+def _investment_warning_payload() -> dict[str, Any]:
+    return {
+        'ok': True,
+        'status': 'investment_warning',
+        'stockCode': '005930',
+        'companyName': '삼성전자',
+        'disclosureDate': '2026-04-21',
+        'designationDate': '2026-04-22',
+        'firstJudgmentDate': '2026-05-08',
+        'nextJudgmentDate': '2026-05-08',
+        'expectedReleaseDate': '2026-05-11',
+        'releaseCriteria': {
+            'source': 'kind_disclosure',
+            'fiveDayThresholdRate': 0.45,
+            'fifteenDayThresholdRate': 0.75,
+            'firstJudgmentDate': '2026-05-08',
+            'tMinusFiveDate': '2026-04-29',
+            'tMinusFifteenDate': '2026-04-15',
+            'disclosureUrl': None,
+            'fallbackReason': None,
+        },
+        'releaseConditions': [
+            {
+                'type': 'five_day_gain',
+                'status': 'safe',
+                'basisDate': '2026-04-11',
+                'basisPrice': 75000,
+                'thresholdRate': 0.45,
+                'thresholdPrice': 108750,
+                'evaluationDate': '2026-04-16',
+                'evaluationPrice': 84000,
+            },
+            {
+                'type': 'fifteen_day_gain',
+                'status': 'safe',
+                'basisDate': '2026-04-02',
+                'basisPrice': 66000,
+                'thresholdRate': 0.75,
+                'thresholdPrice': 115500,
+                'evaluationDate': '2026-04-16',
+                'evaluationPrice': 84000,
+            },
+            {
+                'type': 'fifteen_day_high',
+                'status': 'exceeded',
+                'basisDate': '2026-04-16',
+                'basisPrice': 84000,
+                'thresholdRate': None,
+                'thresholdPrice': 84000,
+                'evaluationDate': '2026-04-16',
+                'evaluationPrice': 84000,
+            },
+        ],
+        'calculationBasis': 'KIND 지정 공시 원문 해제요건 기준입니다.',
+        'tradingHaltReason': None,
+        'sourceUrl': 'https://kind.krx.co.kr/investwarn/investattentwarnrisky.do?method=investattentwarnriskyMain',
+        'fetchedAt': '2026-05-06T00:00:00.000Z',
+    }
+
+
 def _route_stock_dependencies(page: Page) -> None:
     page.route('**/api/stock-code?*', lambda route: _fulfill_json(route, _stock_code_payload()))
     page.route('**/api/stock-price?*', lambda route: _fulfill_json(route, _stock_price_payload()))
+    page.route('**/api/market-alerts/investment-warning?*', lambda route: _fulfill_json(route, _investment_warning_payload()))
 
 
 @pytest.mark.e2e
 def test_empty_search_shows_inline_validation(local_server, page: Page):
     page.goto(local_server)
+    expect(page.locator('#page-about')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
+
     page.get_by_role('button', name='검색', exact=True).click()
 
     expect(page.locator('#searchResults')).to_contain_text('종목명을 입력하세요')
     expect(page.locator('#searchInput')).to_be_focused()
+    expect(page.locator('#page-about')).to_have_attribute('aria-hidden', 'false')
 
 
 @pytest.mark.e2e
@@ -185,19 +250,21 @@ def test_secondary_tabs_render_from_split_modules(local_server, page: Page):
 
 
 @pytest.mark.e2e
-def test_navbar_search_activates_warning_page(local_server, page: Page):
+def test_navbar_search_keeps_current_page_until_result(local_server, page: Page):
     page.goto(local_server)
 
     page.get_by_role('tab', name='패치 노트').click()
     expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
 
     page.get_by_role('searchbox', name='투자경고 종목 검색').click()
-    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
     expect(page.locator('#searchInput')).to_be_focused()
 
     page.get_by_role('tab', name='오늘의 운세').click()
     page.keyboard.press('/')
-    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-fortune')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
     expect(page.locator('#searchInput')).to_be_focused()
 
 
@@ -214,6 +281,15 @@ def test_navbar_scroll_hint_stays_on_one_line(local_server, page: Page):
 
     page.locator('#navScrollHint').click()
     expect(page.locator('#navScrollHintLeft')).to_be_visible()
+
+
+@pytest.mark.e2e
+def test_bottom_ticker_tape_is_present_and_populated(local_server, page: Page):
+    page.goto(local_server)
+
+    expect(page.locator('.ticker-wrap')).to_be_visible()
+    expect(page.locator('#tickerTrack')).to_contain_text('가즈아 금지')
+    expect(page.locator('#tickerTrack .ticker-item')).to_have_count(28)
 
 
 @pytest.mark.e2e
@@ -288,7 +364,8 @@ def test_market_alert_forecast_tab_renders_and_checks_stock(local_server, page: 
     expect(page.locator('#forecastContent')).to_contain_text('확인 필요')
 
     page.locator('#forecastContent .forecast-check').first.click()
-    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-forecast')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
     expect(page.locator('#searchInput')).to_have_value('테스트전자')
     expect(page.locator('#searchResults')).to_contain_text('현재 투자경고/투자주의가 아님')
 
@@ -345,6 +422,7 @@ def test_warning_search_renders_price_thresholds_and_chart(local_server, page: P
                         'level': '투자경고',
                         'stockName': '삼성전자',
                         'designationDate': '2026-04-22',
+                        'stockCode': '005930',
                     }
                 ],
             },
@@ -355,6 +433,7 @@ def test_warning_search_renders_price_thresholds_and_chart(local_server, page: P
     page.locator('#searchInput').fill('삼성전자')
     page.get_by_role('button', name='검색', exact=True).click()
 
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
     expect(page.locator('#sym-header .ticker')).to_have_text('005930')
     expect(page.locator('#conditionsTbody')).to_contain_text('T-5 종가')
     expect(page.locator('#sec-verdict')).to_be_visible()
@@ -414,5 +493,6 @@ def test_caution_fallback_renders_escalation_verdict(local_server, page: Page):
     page.locator('#searchInput').fill('테스트전자')
     page.get_by_role('button', name='검색', exact=True).click()
 
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
     expect(page.locator('#cautionCard')).to_be_visible()
     expect(page.locator('#cautionVerdict')).to_contain_text('투자경고 지정 예상')

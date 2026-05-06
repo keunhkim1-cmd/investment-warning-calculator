@@ -1,6 +1,6 @@
 // 앱 부트스트랩 — 모듈 결합 + 이벤트 와이어 + 초기화.
-import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260506-9';
-import { appState } from './app/state.js?v=20260506-9';
+import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260506-13';
+import { appState } from './app/state.js?v=20260506-13';
 import {
   apiErrorMessage,
   escHtml,
@@ -8,9 +8,9 @@ import {
   hideSearchResults,
   setElementState,
   showRuntimeError,
-} from './app/dom_utils.js?v=20260506-9';
-import { toDateStr } from './app/calendar.js?v=20260506-9';
-import { doSearch, selectResult } from './app/search.js?v=20260506-9';
+} from './app/dom_utils.js?v=20260506-13';
+import { toDateStr } from './app/calendar.js?v=20260506-13';
+import { doSearch, selectResult } from './app/search.js?v=20260506-13';
 
 // ────────────────────────────────────────────────
 // 전역 에러 핸들러
@@ -71,8 +71,8 @@ function switchPage(page, el) {
   if (page === 'patchnotes') renderPatchNotes();
 }
 
-// 초기 로드 시 투자경고 화면이 default active 이므로 body 클래스 반영
-document.body.classList.add('is-warning-active', 'is-terminal-active');
+// 초기 로드 시 소개 화면이 default active 이므로 body 클래스 반영
+document.body.classList.add('is-terminal-active');
 
 // 로컬 서버 상태 확인 (file:// 직접 열기일 때 검색 기능 비활성)
 function checkServer() {
@@ -113,8 +113,7 @@ pageNavButtons.forEach((btn, idx) => {
   });
 });
 
-function focusWarningSearch() {
-  switchPage('warning');
+function focusNavSearch() {
   searchInputEl.focus();
 }
 
@@ -124,11 +123,8 @@ function syncSearchClear() {
   searchClearBtn.hidden = !hasQuery;
 }
 
-navSearchForm.addEventListener('focusin', () => switchPage('warning'));
-navSearchForm.addEventListener('click', () => switchPage('warning'));
 navSearchForm.addEventListener('submit', (event) => {
   event.preventDefault();
-  switchPage('warning');
   doSearch();
 });
 
@@ -191,7 +187,7 @@ document.addEventListener('keydown', (event) => {
   if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
   if (isTextEntryTarget(event.target)) return;
   event.preventDefault();
-  focusWarningSearch();
+  focusNavSearch();
 });
 
 const forecastRefreshBtn = document.getElementById('forecastRefreshBtn');
@@ -205,9 +201,12 @@ window.addEventListener('geunhyeongbot:forecast-check', event => {
   const input = document.getElementById('searchInput');
   input.value = stockName;
   syncSearchClear();
-  switchPage('warning');
   input.focus();
   doSearch();
+});
+
+window.addEventListener('geunhyeongbot:show-warning-page', () => {
+  switchPage('warning');
 });
 
 // 외부 클릭 시 검색 결과 닫기
@@ -219,5 +218,30 @@ document.addEventListener('click', (e) => {
 
 // 지정일 기본값(오늘)
 document.getElementById('designationDate').value = toDateStr(new Date());
+
+function initTickerTape() {
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  const items = [
+    'ㅅㅅㅅ 금지',
+    '가즈아 금지',
+    '심상정인데? 금지',
+    '오늘 xxx 개쎄다 금지',
+    '거래대금 언급 금지',
+    '거래량 보소 금지',
+    '미쳤다 금지',
+    '다행이다 금지',
+    '차 살까? 금지',
+    '계좌 고점이다 금지',
+    '나이스! 금지',
+    'xxx 왜 안삼? 금지',
+    '했제 금지',
+    '해외 골프 금지',
+  ];
+  const segment = items.map(item => `<span class="ticker-item">${escHtml(item)}</span>`).join('');
+  track.innerHTML = segment + segment;
+}
+
+initTickerTape();
 syncSearchClear();
 syncNavScrollHint();

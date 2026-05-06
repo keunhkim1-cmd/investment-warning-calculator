@@ -8,14 +8,42 @@ from lib import usecases
 
 class UsecaseTests(unittest.TestCase):
     def test_warning_search_normalizes_query_and_returns_contract(self):
-        with patch.object(usecases, 'search_kind', return_value=[{'stockName': '삼성전자'}]) as search:
+        with (
+            patch.object(usecases, 'search_kind', return_value=[{
+                'stockName': '삼성전자',
+                'level': '투자경고',
+            }]) as search,
+            patch.object(usecases, 'stock_code', return_value=[{
+                'code': '005930',
+                'name': '삼성전자',
+            }]),
+        ):
             payload = usecases.warning_search_payload(' 삼성전자 ')
 
         search.assert_called_once_with('삼성전자')
         self.assertEqual(payload, {
-            'results': [{'stockName': '삼성전자'}],
+            'results': [{
+                'stockName': '삼성전자',
+                'level': '투자경고',
+                'stockCode': '005930',
+            }],
             'query': '삼성전자',
         })
+
+    def test_investment_warning_status_payload_validates_stock_code(self):
+        with self.assertRaises(ValueError):
+            usecases.investment_warning_status_payload('00593')
+
+    def test_investment_warning_status_payload_delegates(self):
+        with patch.object(
+            usecases,
+            'get_investment_warning_status',
+            return_value={'status': 'not_warning', 'stockCode': '005930'},
+        ) as get_status:
+            payload = usecases.investment_warning_status_payload('005930')
+
+        get_status.assert_called_once_with('005930')
+        self.assertEqual(payload, {'status': 'not_warning', 'stockCode': '005930'})
 
     def test_stock_price_returns_latest_sixteen_prices(self):
         prices = [

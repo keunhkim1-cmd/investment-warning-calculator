@@ -75,14 +75,21 @@ def parse_kind_html(html: str, level_name: str) -> list:
         dates = re.findall(
             r'<td[^>]*class="[^"]*txc[^"]*"[^>]*>\s*(\d{4}-\d{2}-\d{2})\s*</td>', row
         )
-        if dates:
-            results.append(
-                {
-                    'level': level_name,
-                    'stockName': name_m.group(1).strip(),
-                    'designationDate': dates[-1],
-                }
-            )
+        if not dates:
+            continue
+        item = {
+            'level': level_name,
+            'stockName': name_m.group(1).strip(),
+            'designationDate': dates[-1],
+        }
+        code_m = re.search(r"companysummary_open\('(\d{5,6})'\)", row)
+        if code_m:
+            code = code_m.group(1)
+            if len(code) == 5:
+                code = f'{code}0'
+            if re.fullmatch(r'\d{6}', code):
+                item['stockCode'] = code
+        results.append(item)
     return results
 
 

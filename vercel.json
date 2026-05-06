@@ -13,7 +13,7 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-b7rFCCgDQhWhmdewQWjtm0aTJEpBd1jn2y5JZPUzb6A='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-57Q2Efu0nF0IynMzcMwhTIvi8OXLrXwzqCWrrikyMv4='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
@@ -108,6 +108,13 @@
       ]
     },
     {
+      "source": "/api/market-alerts/investment-warning",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
       "source": "/api/caution-search",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
@@ -128,6 +135,7 @@
     "api/stock-code.py": { "maxDuration": 20 },
     "api/stock-overview.py": { "maxDuration": 20 },
     "api/warn-search.py": { "maxDuration": 20 },
+    "api/market-alerts/investment-warning.py": { "maxDuration": 20 },
     "api/caution-search.py": { "maxDuration": 30 },
     "api/market-alert-forecast.py": { "maxDuration": 60 },
     "api/stock-price.py": { "maxDuration": 20 },

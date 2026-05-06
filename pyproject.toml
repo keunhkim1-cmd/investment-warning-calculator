@@ -62,6 +62,7 @@ files = [
     "lib/holidays.py",
     "lib/http_client.py",
     "lib/http_utils.py",
+    "lib/investment_warning_status.py",
     "lib/krx.py",
     "lib/naver.py",
     "lib/provider_rate_limit.py",

@@ -60,6 +60,12 @@ ROUTES: tuple[ApiRoute, ...] = (
         cache_control='no-store',
     ),
     ApiRoute(
+        path='/api/market-alerts/investment-warning',
+        endpoint='investment-warning',
+        payload=lambda qs: usecases.investment_warning_status_payload(_q(qs, 'stockCode')),
+        cache_control='no-store',
+    ),
+    ApiRoute(
         path='/api/stock-code',
         endpoint='stock-code',
         payload=lambda qs: usecases.stock_code_payload(_q(qs, 'name')),

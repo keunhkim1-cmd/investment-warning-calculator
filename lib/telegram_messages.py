@@ -96,6 +96,66 @@ def build_warning_message(stock_name: str, warn: dict, thresholds: dict | None) 
     return '\n'.join(lines)
 
 
+def build_investment_warning_status_message(status: dict) -> str:
+    """Build a Telegram message from the shared InvestmentWarningStatus contract."""
+    if status.get('status') == 'not_warning':
+        return f'"{status.get("stockCode", "")}" — 현재 투자경고가 아님.'
+
+    name = status.get('companyName') or status.get('stockCode', '')
+    d_date = date.fromisoformat(status['designationDate'])
+    expected = status.get('expectedReleaseDate')
+    judgment = status.get('nextJudgmentDate') or status.get('firstJudgmentDate')
+    basis = status.get('calculationBasis', '')
+    lines = [f'🟠 {name} 투자경고  |  지정 {sd(d_date)}', '']
+
+    if expected:
+        lines.append(f'해제 예상일  {sd(date.fromisoformat(expected))}')
+    elif judgment:
+        lines.append(f'다음 판단일  {sd(date.fromisoformat(judgment))}')
+    else:
+        lines.append('해제 예상일  산정 보류')
+    if basis:
+        lines.append(basis)
+    if status.get('tradingHaltReason'):
+        lines.append(f'사유: {status["tradingHaltReason"]}')
+    lines.append('')
+
+    label_by_type = {
+        'five_day_gain': '① T-5',
+        'fifteen_day_gain': '② T-15',
+        'fifteen_day_high': '③ 고점',
+    }
+    status_icon = {
+        'safe': '🟢 해제 가능',
+        'exceeded': '🔴 유지 조건',
+        'unavailable': '⚠️ 보류',
+    }
+    condition_lines = []
+    for condition in status.get('releaseConditions', []):
+        label = label_by_type.get(condition.get('type'), condition.get('type', '조건'))
+        icon = status_icon.get(condition.get('status'), '⚠️ 보류')
+        threshold = condition.get('thresholdPrice')
+        evaluation = condition.get('evaluationPrice')
+        threshold_text = f'{threshold:,}원' if isinstance(threshold, (int, float)) else '-'
+        evaluation_text = f'{evaluation:,}원' if isinstance(evaluation, (int, float)) else '-'
+        condition_lines.append(f'{label}  기준 {threshold_text} / 현재 {evaluation_text}  {icon}')
+
+    if condition_lines:
+        lines.append('```\n' + '\n'.join(condition_lines) + '\n```')
+        lines.append('')
+
+    statuses = [c.get('status') for c in status.get('releaseConditions', [])]
+    if statuses and all(value == 'exceeded' for value in statuses):
+        lines.append('→ 3가지 모두 해당 · 경고 유지 중 🔴')
+    elif statuses and all(value != 'unavailable' for value in statuses):
+        safe_count = sum(1 for value in statuses if value == 'safe')
+        release_text = sd(date.fromisoformat(expected)) if expected else '다음 매매일'
+        lines.append(f'→ {safe_count}가지 해제 기준 충족 · {release_text} 해제 가능 🟢')
+    else:
+        lines.append('→ 거래정지 또는 가격 데이터 문제로 산정 보류 ⚠️')
+    return '\n'.join(lines)
+
+
 def build_caution_message(d: dict) -> str:
     """Build a caution/escalation Telegram message from lib.usecases.caution_search_payload."""
     status = d.get('status')

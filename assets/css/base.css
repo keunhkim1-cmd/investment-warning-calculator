@@ -150,6 +150,7 @@ html {
 
 body {
   min-height: 100vh;
+  padding-bottom: 32px;
   background: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-ui);
@@ -966,6 +967,100 @@ input[type="search"]:focus {
   font-weight: 700;
 }
 
+.ticker-wrap {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  height: 32px;
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--color-text-secondary);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 -8px 24px rgba(25, 31, 40, 0.06);
+  backdrop-filter: saturate(170%) blur(14px);
+  -webkit-backdrop-filter: saturate(170%) blur(14px);
+}
+
+.ticker-wrap::before {
+  content: "금기어";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--text-t9);
+  line-height: var(--leading-t9);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ticker-track {
+  --ticker-label-width: 76px;
+  width: max-content;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-left: var(--ticker-label-width);
+  white-space: nowrap;
+  animation: ticker-scroll 54s linear infinite;
+  will-change: transform;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+.ticker-item {
+  flex: none;
+  padding: 0 22px;
+  color: rgba(78, 89, 104, 0.82);
+  font-size: var(--text-t8);
+  line-height: var(--leading-t8);
+  font-weight: 600;
+}
+
+.ticker-item::before {
+  content: "·";
+  margin-right: 10px;
+  color: var(--color-warning);
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(calc((var(--ticker-label-width) - 100%) / 2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ticker-wrap {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .ticker-wrap::before {
+    background: rgba(255, 255, 255, 0.96);
+  }
+}
+
 @media (max-width: 767px) {
   .header,
   .about-hero,
@@ -989,5 +1084,17 @@ input[type="search"]:focus {
   .search-row > .search-btn {
     grid-column: 1 / -1;
     width: 100%;
+  }
+
+  .ticker-wrap::before {
+    padding: 0 10px;
+  }
+
+  .ticker-item {
+    padding: 0 14px;
+  }
+
+  .ticker-track {
+    --ticker-label-width: 62px;
   }
 }
