@@ -4,8 +4,8 @@ import {
   fmt,
   stateMessageHtml,
   showSearchMessage,
-} from './dom_utils.js?v=20260427-5';
-import { countTradingDays } from './calendar.js?v=20260427-5';
+} from './dom_utils.js?v=20260506-1';
+import { countTradingDays } from './calendar.js?v=20260506-1';
 
 export function hideWarningCards() {
   const rc = document.getElementById('resultCard');
@@ -361,17 +361,17 @@ export function renderChartLegend(t, priceData) {
   if (!legend) return;
   let tEntry = '';
   if (typeof t.tClose === 'number') {
-    let lastColor = 'var(--tm-text)';
+    let lastColor = 'var(--color-text-primary)';
     const prices = priceData && Array.isArray(priceData.prices) ? priceData.prices : null;
     if (prices && prices.length >= 2) {
       const delta = prices[prices.length - 1].close - prices[prices.length - 2].close;
-      lastColor = delta >= 0 ? 'var(--tm-up)' : 'var(--tm-dn)';
+      lastColor = delta >= 0 ? 'var(--color-danger)' : 'var(--color-blue)';
     }
     tEntry = `<span class="t-mark">T ${escHtml(t.tDate || '')} · 종가 <b style="color:${lastColor}">${fmt(t.tClose)}</b></span>`;
   }
   legend.innerHTML = `
     ${tEntry}
-    <span><span class="sw" style="background:#FFFFFF"></span>① ${fmt(t.thresh1)}</span>
-    <span><span class="sw" style="background:#F04452"></span>② ${fmt(t.thresh2)}</span>
-    <span><span class="sw" style="background:#4ADE80"></span>③ ${fmt(t.max15)}</span>`;
+    <span><span class="sw" style="background:var(--color-primary)"></span>① ${fmt(t.thresh1)}</span>
+    <span><span class="sw" style="background:var(--color-danger)"></span>② ${fmt(t.thresh2)}</span>
+    <span><span class="sw" style="background:var(--color-success)"></span>③ ${fmt(t.max15)}</span>`;
 }

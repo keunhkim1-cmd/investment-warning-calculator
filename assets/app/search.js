@@ -11,8 +11,8 @@ import {
   showSearchError,
   showSearchLoading,
   showSearchMessage,
-} from './dom_utils.js?v=20260427-5';
-import { appState, isCurrentSearch, isCurrentWarning } from './state.js?v=20260427-5';
+} from './dom_utils.js?v=20260506-1';
+import { appState, isCurrentSearch, isCurrentWarning } from './state.js?v=20260506-1';
 import {
   hideCautionCard,
   hideWarningCards,
@@ -26,9 +26,9 @@ import {
   renderTimeline,
   renderVerdict,
   showNotWarning,
-} from './warning_render.js?v=20260427-5';
-import { renderInlineChart, syncTvChartByName } from './chart.js?v=20260427-5';
-import { addTradingDays, countTradingDays } from './calendar.js?v=20260427-5';
+} from './warning_render.js?v=20260506-1';
+import { renderInlineChart, syncTvChartByName } from './chart.js?v=20260506-1';
+import { addTradingDays, countTradingDays } from './calendar.js?v=20260506-1';
 
 // ────────────────────────────────────────────────
 // KRX KIND 검색
@@ -91,7 +91,7 @@ export async function doSearch() {
   } finally {
     if (isCurrentSearch(searchRequestId)) {
       btn.disabled = false;
-      btn.textContent = 'search';
+      btn.textContent = '검색';
     }
   }
 }

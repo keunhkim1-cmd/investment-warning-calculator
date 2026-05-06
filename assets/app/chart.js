@@ -5,9 +5,9 @@ import {
   fetchJson,
   fmt,
   safeStockCode,
-} from './dom_utils.js?v=20260427-5';
-import { appState, isCurrentChart } from './state.js?v=20260427-5';
-import { renderChartLegend } from './warning_render.js?v=20260427-5';
+} from './dom_utils.js?v=20260506-1';
+import { appState, isCurrentChart } from './state.js?v=20260506-1';
+import { renderChartLegend } from './warning_render.js?v=20260506-1';
 
 // 경고 탭 인라인 SVG 차트 — NAVER 일별 주가 + 3개 임계선
 // TV 무료 embed는 한국 소형주 차트 렌더가 막혀 AAPL로 fallback되므로 사용하지 않음.
@@ -56,7 +56,7 @@ export function renderInlineChart(priceData, stockCode, stockName) {
   const lastX = xScale(lastIdx);
   const lastY = yScale(prices[lastIdx].close);
   const delta = prices.length >= 2 ? prices[lastIdx].close - prices[lastIdx - 1].close : 0;
-  const lastColor = delta >= 0 ? 'var(--tm-up)' : 'var(--tm-dn)';
+  const lastColor = delta >= 0 ? 'var(--color-danger)' : 'var(--color-blue)';
 
   // 15일 최고가 표시
   let max15Marker = '';
@@ -65,7 +65,7 @@ export function renderInlineChart(priceData, stockCode, stockName) {
     if (idx >= 0) {
       const mx = xScale(idx);
       const my = yScale(prices[idx].close);
-      max15Marker = `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3" fill="var(--tm-ok)" stroke="var(--tm-bg)" stroke-width="1"/>`;
+      max15Marker = `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3" fill="var(--color-success)" stroke="var(--color-surface)" stroke-width="1"/>`;
     }
   }
 
@@ -83,43 +83,43 @@ export function renderInlineChart(priceData, stockCode, stockName) {
   const lines = [];
   if (typeof t.thresh1 === 'number') {
     const y = yScale(t.thresh1);
-    lines.push(`<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="#FFFFFF" stroke-width="1" stroke-dasharray="4 3" opacity="0.65"/>`);
-    lines.push(`<text x="${padL + innerW - 4}" y="${y - 4}" fill="#FFFFFF" font-size="9" font-family="var(--mono)" text-anchor="end" opacity="0.85">① ${fmtNum(t.thresh1)}</text>`);
+    lines.push(`<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="var(--color-primary)" stroke-width="1" stroke-dasharray="4 3" opacity="0.65"/>`);
+    lines.push(`<text x="${padL + innerW - 4}" y="${y - 4}" fill="var(--color-primary)" font-size="11" font-family="var(--font-ui)" text-anchor="end" opacity="0.85">① ${fmtNum(t.thresh1)}</text>`);
   }
   if (typeof t.thresh2 === 'number') {
     const y = yScale(t.thresh2);
-    lines.push(`<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="#F04452" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>`);
-    lines.push(`<text x="${padL + innerW - 4}" y="${y - 4}" fill="#F04452" font-size="9" font-family="var(--mono)" text-anchor="end" opacity="0.9">② ${fmtNum(t.thresh2)}</text>`);
+    lines.push(`<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="var(--color-danger)" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>`);
+    lines.push(`<text x="${padL + innerW - 4}" y="${y - 4}" fill="var(--color-danger)" font-size="11" font-family="var(--font-ui)" text-anchor="end" opacity="0.9">② ${fmtNum(t.thresh2)}</text>`);
   }
   if (typeof t.max15 === 'number') {
     const y = yScale(t.max15);
-    lines.push(`<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="#4ADE80" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>`);
-    lines.push(`<text x="${padL + innerW - 4}" y="${y - 4}" fill="#4ADE80" font-size="9" font-family="var(--mono)" text-anchor="end" opacity="0.9">③ ${fmtNum(t.max15)}</text>`);
+    lines.push(`<line x1="${padL}" y1="${y}" x2="${padL + innerW}" y2="${y}" stroke="var(--color-success)" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>`);
+    lines.push(`<text x="${padL + innerW - 4}" y="${y - 4}" fill="var(--color-success)" font-size="11" font-family="var(--font-ui)" text-anchor="end" opacity="0.9">③ ${fmtNum(t.max15)}</text>`);
   }
 
   // Y축 눈금 라벨
   const yAxisLabels = yTicks.map(tk => `
-    <line x1="${padL}" y1="${tk.y}" x2="${padL + innerW}" y2="${tk.y}" stroke="var(--tm-hairline)" stroke-width="0.5" opacity="0.6"/>
-    <text x="${padL - 8}" y="${tk.y + 3}" fill="var(--tm-text-mute)" font-size="9" font-family="var(--mono)" text-anchor="end">${fmtNum(Math.round(tk.v))}</text>`).join('');
+    <line x1="${padL}" y1="${tk.y}" x2="${padL + innerW}" y2="${tk.y}" stroke="var(--color-border)" stroke-width="0.5" opacity="0.9"/>
+    <text x="${padL - 8}" y="${tk.y + 3}" fill="var(--color-text-tertiary)" font-size="11" font-family="var(--font-ui)" text-anchor="end">${fmtNum(Math.round(tk.v))}</text>`).join('');
 
   // X축 라벨
   const xAxisLabels = xLabels.map(l => `
-    <text x="${l.x}" y="${H - 10}" fill="var(--tm-text-mute)" font-size="9" font-family="var(--mono)" text-anchor="middle">${escHtml(l.label)}</text>`).join('');
+    <text x="${l.x}" y="${H - 10}" fill="var(--color-text-tertiary)" font-size="11" font-family="var(--font-ui)" text-anchor="middle">${escHtml(l.label)}</text>`).join('');
 
   container.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="chart-fill-${chartCode}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.12"/>
-          <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+          <stop offset="0%" stop-color="#3182f6" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#3182f6" stop-opacity="0"/>
         </linearGradient>
       </defs>
       ${yAxisLabels}
       ${lines.join('')}
       <path d="${areaPts}" fill="url(#chart-fill-${chartCode})"/>
-      <path d="${linePts}" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${linePts}" fill="none" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
       ${max15Marker}
-      <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lastColor}" stroke="var(--tm-bg)" stroke-width="1.5"/>
+      <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lastColor}" stroke="var(--color-surface)" stroke-width="1.5"/>
       ${xAxisLabels}
     </svg>
   `;

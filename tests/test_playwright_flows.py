@@ -165,7 +165,7 @@ def _route_stock_dependencies(page: Page) -> None:
 @pytest.mark.e2e
 def test_empty_search_shows_inline_validation(local_server, page: Page):
     page.goto(local_server)
-    page.get_by_role('button', name='search').click()
+    page.get_by_role('button', name='검색', exact=True).click()
 
     expect(page.locator('#searchResults')).to_contain_text('종목명을 입력하세요')
     expect(page.locator('#searchInput')).to_be_focused()
@@ -321,7 +321,7 @@ def test_warning_search_renders_price_thresholds_and_chart(local_server, page: P
 
     page.goto(local_server)
     page.locator('#searchInput').fill('삼성전자')
-    page.get_by_role('button', name='search').click()
+    page.get_by_role('button', name='검색', exact=True).click()
 
     expect(page.locator('#sym-header .ticker')).to_have_text('005930')
     expect(page.locator('#conditionsTbody')).to_contain_text('T-5 종가')
@@ -380,7 +380,7 @@ def test_caution_fallback_renders_escalation_verdict(local_server, page: Page):
 
     page.goto(local_server)
     page.locator('#searchInput').fill('테스트전자')
-    page.get_by_role('button', name='search').click()
+    page.get_by_role('button', name='검색', exact=True).click()
 
     expect(page.locator('#cautionCard')).to_be_visible()
     expect(page.locator('#cautionVerdict')).to_contain_text('투자경고 지정 예상')

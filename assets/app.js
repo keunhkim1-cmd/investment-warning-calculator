@@ -1,6 +1,6 @@
 // 앱 부트스트랩 — 모듈 결합 + 이벤트 와이어 + 초기화.
-import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260427-5';
-import { appState } from './app/state.js?v=20260427-5';
+import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260506-1';
+import { appState } from './app/state.js?v=20260506-1';
 import {
   apiErrorMessage,
   escHtml,
@@ -8,9 +8,9 @@ import {
   hideSearchResults,
   setElementState,
   showRuntimeError,
-} from './app/dom_utils.js?v=20260427-5';
-import { toDateStr } from './app/calendar.js?v=20260427-5';
-import { doSearch, selectResult } from './app/search.js?v=20260427-5';
+} from './app/dom_utils.js?v=20260506-1';
+import { toDateStr } from './app/calendar.js?v=20260506-1';
+import { doSearch, selectResult } from './app/search.js?v=20260506-1';
 
 // ────────────────────────────────────────────────
 // 전역 에러 핸들러
@@ -104,10 +104,27 @@ pageNavButtons.forEach((btn, idx) => {
 });
 
 document.getElementById('searchBtn').addEventListener('click', doSearch);
-document.getElementById('searchInput').addEventListener('keydown', (event) => {
+const searchInputEl = document.getElementById('searchInput');
+const searchClearBtn = document.getElementById('searchClearBtn');
+
+function syncSearchClear() {
+  if (!searchClearBtn || !searchInputEl) return;
+  searchClearBtn.hidden = searchInputEl.value.trim().length === 0;
+}
+
+searchInputEl.addEventListener('input', syncSearchClear);
+searchInputEl.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') doSearch();
   if (event.key === 'Escape') hideSearchResults();
 });
+if (searchClearBtn) {
+  searchClearBtn.addEventListener('click', () => {
+    searchInputEl.value = '';
+    syncSearchClear();
+    hideSearchResults();
+    searchInputEl.focus();
+  });
+}
 
 document.getElementById('searchResults').addEventListener('click', (e) => {
   const item = e.target.closest('.result-item');
@@ -127,6 +144,7 @@ window.addEventListener('totem:forecast-check', event => {
   const input = document.getElementById('searchInput');
   const warningNav = document.getElementById('nav-warning');
   input.value = stockName;
+  syncSearchClear();
   switchPage('warning', warningNav);
   input.focus();
   doSearch();
@@ -141,16 +159,4 @@ document.addEventListener('click', (e) => {
 
 // 지정일 기본값(오늘)
 document.getElementById('designationDate').value = toDateStr(new Date());
-
-// 하단 티커 (재미용 — 두 번 반복해서 끊김 없는 무한 스크롤)
-(function () {
-  const items = [
-    'ㅅㅅㅅ 금지', '가즈아 금지', '심상정인데? 금지', '오늘 xxx 개쎄다 금지',
-    '거래대금 언급 금지', '거래량 보소 금지', '미쳤다 금지', '다행이다 금지',
-    '차 살까? 금지', '계좌 고점이다 금지', '나이스! 금지', 'xxx 왜 안삼? 금지',
-    '했제 금지', '해외 골프 금지'
-  ];
-  const track = document.getElementById('tickerTrack');
-  const html = items.map(t => '<span class="ticker-item">' + t + '</span>').join('');
-  track.innerHTML = html + html;
-})();
+syncSearchClear();

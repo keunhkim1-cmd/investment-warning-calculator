@@ -1,286 +1,184 @@
-# Design Rules — TOTEM Research
+# Design Rules — TOTEM
 
-**투자경고 계산기 페이지(`#page-warning`, `.warning-terminal`)의 디자인이 전체 사이트의 기준입니다.**
-다른 페이지(About, 오늘의 운세, 패치 노트, 검색 결과)는 이 규칙에 맞춰 정리합니다.
+이 문서는 `DESIGN-import.md`를 현재 정적 SPA 구조에 맞게 이식한 최종 디자인 계약이다.
+새 UI와 디자인 수정은 이 문서를 기준으로 하고, 참고 원본인 `DESIGN-import.md`보다 이 문서가 우선한다.
 
-신규 컴포넌트는 §11 결정 트리만 보고 만들 수 있어야 합니다. 표에 없는 사이즈/스페이싱/정렬은 사용 금지입니다.
+기준 구현은 다음 파일이다.
 
----
+- `assets/css/base.css`: 색상, 타이포그래피, radius, 공통 컴포넌트 토큰의 source of truth
+- `index.html`: 정적 app shell과 접근성 ID/role의 source of truth
+- `assets/app/*.js`, `assets/secondary_pages.js`: 동적 렌더링 클래스 계약의 source of truth
 
-## 0. 디자인 철학
+TOTEM은 KRX 시장경보와 기업 공시를 빠르게 확인하는 업무형 금융 리서치 도구다. 화면은 장식보다 회사명, 종목코드, 날짜, 가격, 조건 판정을 먼저 보여준다.
 
-한 줄: **"프로용 리서치 터미널의 밀도 × 모노크롬 세련됨"**
+## 1. Visual Identity
 
-타깃은 전업 투자자·PB·애널리스트. 친근함보다 *"아는 사람 눈에만 보이는 정확성"* 이 우선.
+- 기본 화면은 밝은 work surface다: `#f2f4f6` 배경, 흰 surface, 얇은 회색 border.
+- primary action은 blue가 아니라 거의 검정에 가까운 neutral이다.
+- 상태색은 의미가 있을 때만 사용하며, 색상만으로 상태를 전달하지 않는다.
+- 화면은 marketing landing page가 아니라 오래 켜두는 업무 도구처럼 보여야 한다.
+- 로그인, 주문, 잔고, 관심종목, 개인화 피드는 제품 범위가 아니다.
+- 즐거움 요소는 독립 탭에 작고 조용하게 둔다. 전역 장식 ticker, glow, blob, glass, 과한 hero는 금지한다.
 
-### 우선순위 5
+## 2. Tokens
 
-1. **정보 밀도 > 카피 친절함** — 한 화면은 한 질문의 답. "내일 해제될까?" 의 답(타임라인·조건·Verdict)이 상단 60%에 있어야 함. PER·PBR·시총 같은 일반 정보는 후순위로.
-2. **색은 신호로만** — 본문은 회색 3단계(`--tm-text` / `--tm-text-dim` / `--tm-text-mute`) + 흰색 액센트가 전부. 컬러는 가격·상태 신호일 때만 (§7).
-3. **섹션은 1px hairline 으로만 구분** — 카드 안에 카드(중첩 박스) 금지. `border-radius: 0` 이 기본.
-4. **그림자·글로우·그라디언트 0** — flat 유지. Verdict 카드 1곳의 warm 톤 그라디언트만 예외.
-5. **SF Pro 3종이 폰트 전부** — Display + Text + Mono. 4번째 패밀리 추가 금지.
+모든 새 스타일은 token first로 작성한다. 임의 hex, 임의 font-size, 임의 radius를 feature code에 추가하지 않는다.
 
-### 드리프트 방지
+### Font
 
-작업 중 *"조금 더 친절하게 / 색 하나 더 / 카드를 둥글게"* 충동이 올 때:
-
-> **이 페이지는 1초 안에 답을 읽어내야 한다 — 장식은 시간을 뺏는다.**
-
----
-
-## 1. 타입 스케일 (5단계 — 그 외 금지)
-
-| 토큰 | px | 용도 | 페이지당 빈도 |
-|---|---|---|---|
-| `--fs-d1` | 28 | 페이지 헤더 H1, 강조 식별자(종목 코드 ticker) | 1~2개 |
-| `--fs-d2` | 21 | 핵심 수치 1개 (현재가 등) | 모먼트당 1개 |
-| `--fs-b1` | 14 | 강조 식별자(종목명, 결과 항목명) | 카드별 소수 |
-| `--fs-b2` | 12 | **기본 본문 · 테이블 셀 · 섹션 헤더 캡스** | 화면 대부분 |
-| `--fs-l1` | 10 | 라벨 · 칩 · 배지 · 테이블 th · 메타 · 출처 | 자유 |
-
-❌ **금지 사이즈**: 11, 13, 15, 16, 17, 18, 20, 22, 24, 32, 40px 등 5단계 외 전부
-
-선택을 못 하겠을 때 → **12px (`--fs-b2`) 가 기본값.**
-
----
-
-## 2. 패밀리 (역할 고정)
-
-| 토큰 | 패밀리 | 적용 |
-|---|---|---|
-| `--font-display` | SF Pro Display | 대문자 라벨·캡스, 28/21px 헤딩, 칩, 배지 |
-| `--font-text` | SF Pro Text | 한글/영문 본문, 종목명, 설명 단락 |
-| `--mono` | SF Mono | 숫자, 날짜, 출처 표기, 코드 |
-
-**규칙**:
-- 한글 본문은 항상 `--font-text`
-- 정렬되는 숫자(테이블, 가격)는 `--mono` + `font-variant-numeric: tabular-nums`
-- `text-transform: uppercase` 는 항상 `--font-display`
-
----
-
-## 3. Letter-spacing (사이즈+패밀리에 종속)
-
-| 컨텍스트 | letter-spacing | 토큰 |
-|---|---|---|
-| 28px display 헤딩 | `-0.3px` | — |
-| 21px display 숫자 | `-0.3px` | — |
-| 14px text 식별자 | `0` | — |
-| 12px text 본문 | `-0.12px` | `--tm-ls-12` |
-| 12px display CAPS (섹션 헤더) | `1.5px` | `--tm-ls-caps` |
-| 10px display LABEL/칩/배지 | `0.8px` | `--tm-ls-label` |
-| mono 작은 메타 (10/12px) | `0.3px` | — |
-| mono 큰 숫자 (14px↑) | `0` | — |
-
-❌ **금지 letter-spacing**: `1.0`, `1.2`, `-0.224`, `-0.374`, `-0.1`, `0.231`, `0.5`, `1px` 등 표 외 전부
-
----
-
-## 4. Weight (400 / 500 / 600 만 사용)
-
-| 컨텍스트 | weight |
-|---|---|
-| 28px 헤더 | 600 |
-| 21px 강조 숫자 | 500 |
-| 12px 섹션 헤더 캡스 | 500 |
-| 10px 라벨 / 칩 / 배지 | 600 |
-| 본문 텍스트 | 400 |
-| 식별자 · `<strong>` · 표 셀 강조 | 500 |
-
-❌ **금지 weight**: 100, 200, 300, 700, 800, 900
-
----
-
-## 5. Line-height
-
-| 컨텍스트 | line-height |
-|---|---|
-| 28 / 21px 한 줄 헤딩·숫자 | `1` |
-| 10px 한 줄 라벨 | `1` |
-| 12px 본문 / 섹션 헤더 / 표 셀 | `1.45` |
-| 멀티라인 설명 단락 (12~14px) | `1.45` |
-
-❌ **금지**: `1.07`, `1.10`, `1.14`, `1.19`, `1.29`, `1.43`, `1.47`, `1.5`, `1.7`, `2.41` 등 표 외 전부
-
----
-
-## 6. 정렬
-
-| 컨텐츠 | align |
-|---|---|
-| 헤딩 (H1, 섹션 헤더, 카드 제목) | **left** |
-| 본문 단락, 설명 텍스트 | **left** |
-| 종목명·식별자·라벨 | **left** |
-| 테이블 첫 컬럼 (라벨) | **left** |
-| 테이블 숫자 컬럼 | **right** + `tabular-nums` |
-| 단독 가격 등 핵심 수치 (`tm-sym .px`) | **right** (`align-items: flex-end`) |
-| 빈 상태 / 로딩 / 에러 메시지 | **center** |
-
-**가운데 정렬은 빈 상태 / 로딩 / 에러 3종에만.** 짧은 문장이거나, 카드 안 한 줄짜리 메시지여도, 그게 본문/카피이면 **left**.
-
-❌ **금지** (자주 오해하는 케이스):
-- 본문, 헤딩, 섹션 제목, 카드 타이틀의 가운데 정렬
-- 단일 문장 메시지(운세, 한 줄 카피, 한 줄 설명)를 "임팩트"용으로 가운데 정렬
-- 카드 하단의 디스클레이머 / 캡션 / footnote / 부연 노트 가운데 정렬
-- "Apple 가운데 정렬 히어로" 패턴 (`.header h1` 40px center) — 28px **left** 로 교체
-
----
-
-## 7. 컬러 시스템
-
-### 텍스트 컬러 (본문 = 무채색만)
-
-| 컬러 | 어디에 |
-|---|---|
-| `--tm-text` `#E8E8E8` | 본문 기본, 헤딩, 식별자 |
-| `--tm-text-dim` `#9A9A9A` | 부연 설명, p 태그 헤더 설명, 보조 본문 |
-| `--tm-text-mute` `#7A7A7E` | 라벨, 메타, 출처, 캡션, placeholder |
-| `--tm-accent` `#FFFFFF` | 강조 숫자(가격), 헤더 강조, 액센트 보더 |
-
-### 신호 컬러 (의미 있는 상태에만)
-
-| 컬러 | 의미 |
-|---|---|
-| `--tm-up` `#F04452` | 상승, 유지(hold) — 한국식 빨강=상승 |
-| `--tm-dn` `#3485FF` | 하락 |
-| `--tm-ok` `#4ADE80` | 해제(release), 이탈, 통과, 타임라인 past 셀 |
-| `--tm-toss` `#3182F6` | D-day, 정보성 강조 |
-| `--tm-amber` `#F5A623` | 사용 지양 — 원본 샤머니즘 모티브와의 브리지 용도로만 |
-
-### 신호 컬러 사용 패턴 (트라이어드 강제)
-
-배지·플래그·칩 등 신호를 표현할 때는 항상 다음 3가지 조합:
+제품 UI 글꼴은 Pretendard 우선 단일 산세리프 스택이다.
 
 ```css
-background: var(--tm-up-soft);    /* 10~12% alpha 배경 */
-color: var(--tm-up);               /* 풀 색 텍스트 */
-border: 1px solid var(--tm-up);    /* 1px 풀 색 보더 */
+font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 ```
 
-❌ **금지**: 신호 컬러를 큰 면적 배경, 그라디언트, 글로우, 큰 블록 fill 로 사용
+- 숫자, 날짜, 접수번호, 종목코드도 같은 글꼴을 쓴다.
+- 숫자 정렬은 `font-variant-numeric: tabular-nums`로 처리한다.
+- `font-mono`, `font-serif`, 새 외부 폰트는 도입하지 않는다.
+- letter spacing은 기본 `0`이다. viewport width 기반 font scaling은 금지한다.
 
----
+### Typography
 
-## 8. 숫자 · 기호 표기
+CSS 변수 `--text-t1`부터 `--text-t9`만 사용한다.
 
-- **모든 숫자는 `--mono` + `font-variant-numeric: tabular-nums`** — 등간격 아니면 표가 망가짐
-- **천 단위 콤마**: `value.toLocaleString('ko-KR')` — 예: `328,000`
-- **원 단위 생략** — `328,000원` 아닌 `328,000`
-- **화살표는 유니코드 ▲▼ 만** — SVG/이모지 아이콘 금지
-- **변동 기호는 숫자와 같은 셀**: `+45.00%`, `1.45×`, `-2,300` (별도 셀로 쪼개지 말 것)
+| Token | Size | Line height | 용도 |
+| --- | ---: | ---: | --- |
+| `--text-t1` | 30px | 40px | 매우 드문 큰 결과 상태 |
+| `--text-t2` | 26px | 35px | 독립 page title roomy |
+| `--text-t3` | 22px | 31px | 독립 page title compact |
+| `--text-t4` | 17px | 25.5px | 중요한 단일 데이터 강조 |
+| `--text-t5` | 15px | 22.5px | section/card title, 주요 행 제목 |
+| `--text-t6` | 14px | 21px | nav, label, table header |
+| `--text-t7` | 13px | 19.5px | 설명, 날짜, 코드, compact body |
+| `--text-t8` | 12px | 18px | badge, dense table cell |
+| `--text-t9` | 11px | 16.5px | helper, xsmall button |
 
----
+허용 weight는 400, 500, 600, 700이다. 700은 예외적 강조에만 쓴다.
 
-## 9. 한글 · 영문 혼용
+### Colors
 
-- **기본 카피는 한글** — UI 라벨, 본문, 버튼 모두
-- **영문 그대로 유지** (전문용어·표준 약어): `PER · PBR · KRX · KOSDAQ · DART · NAVER · T · T-5 · T-15 · D0 · T+n · AND · Δ`
-- **한글화 필수** (의미 모호 / 친화도 낮음):
-  - HOLD / CLEAR → **유지 / 이탈**
-  - REL / RELEASE NEXT DAY → **해제 / 해제 예정**
-  - SRC: → **출처:**
-  - RULE: → **규정:**
-- **단위는 한글** — `10 거래일`, `D-1`, `15일 최고가`
+Primitive palette는 `--tds-*`, 실제 구현은 semantic `--color-*`를 사용한다.
 
----
+- `--color-background`: app background
+- `--color-surface`: 주요 카드, header, table cell
+- `--color-surface-raised`: dropdown, overlay panel
+- `--color-border`: 기본 divider, control border
+- `--color-border-strong`: table header boundary, dropdown border
+- `--color-text-primary`: 주요 텍스트
+- `--color-text-secondary`: 보조 설명
+- `--color-text-tertiary`: metadata, placeholder
+- `--color-primary`: primary action
+- `--color-primary-pressed`: primary hover/pressed
+- `--color-primary-weak`: selected/hover background
+- `--color-blue`, `--color-blue-weak`: report/category 정보
+- `--color-success`, `--color-success-weak`: 성공, 해제 가능, 충족
+- `--color-danger`, `--color-danger-weak`: 실패, 위험, 오류, 유지 위험
+- `--color-warning`, `--color-warning-weak`: 투자경고, 보류, caution
+- `--color-info`, `--color-info-weak`: 보조 정보
 
-## 10. CSS 토큰
+색상 규칙:
 
-`:root` 에 추가 (전역 스케일):
+- primary button에 blue/green/purple을 쓰지 않는다.
+- red는 실패, 위험, 유지/연장 위험에만 쓴다.
+- green은 성공, 해제, 조건 통과에만 쓴다.
+- yellow는 투자경고, 보류, 주의에만 쓴다.
+- 상태 표현은 색상과 텍스트 label, badge, marker 중 하나 이상을 함께 사용한다.
 
-```css
-/* Type scale — warning-terminal baseline */
---fs-d1: 28px;
---fs-d2: 21px;
---fs-b1: 14px;
---fs-b2: 12px;   /* alias of existing --tm-fs-sm */
---fs-l1: 10px;   /* alias of existing --tm-fs-micro */
+### Radius And Stroke
 
-/* Weight */
---fw-reg:  400;
---fw-med:  500;  /* alias of existing --tm-fw-med */
---fw-semi: 600;
+- `--radius-surface: 8px`: 카드, dropdown, error panel
+- `--radius-control: 12px`: search field, button, nav item
+- badge는 `999px` pill을 허용한다.
+- 구조는 shadow가 아니라 border로 만든다. 일반 카드 shadow는 금지한다.
+
+## 3. Layout
+
+- app shell max width는 `1280px`를 기본으로 한다.
+- page padding은 mobile `16px`, tablet `24px`, desktop `32px`다.
+- page gap은 16px 또는 20px를 기본으로 한다.
+- 모바일에서는 한 column 업무 흐름을 유지한다.
+- 표는 모바일에서 축소하지 않고 horizontal scroll을 유지한다.
+- page section을 장식용 floating card처럼 겹겹이 만들지 않는다.
+
+## 4. Component Contracts
+
+### Top Navigation
+
+- sticky top, 흰 surface, bottom border.
+- mobile에서는 wrapping보다 horizontal scroll을 우선한다.
+- active tab은 `aria-current="page"`와 neutral weak background로 표시한다.
+- durable section은 popover가 아니라 route/tab으로 노출한다.
+
+### Surface And Section
+
+- 기본 surface는 `border: 1px solid var(--color-border)`, `background: var(--color-surface)`, `border-radius: var(--radius-surface)`.
+- ordinary card padding은 16px, roomy card는 20px까지 허용한다.
+- surface 안에 nested card를 만들지 않는다. 내부 구분은 `border-top`, `divide-y`, table row border로 한다.
+- section title은 `--text-t5`, 600, primary color를 기본으로 한다.
+
+### Search
+
+- 검색은 TOTEM의 1차 workflow다.
+- placeholder는 `회사명 또는 종목코드`처럼 허용 입력을 말한다.
+- `role="search"`와 접근 가능한 label을 유지한다.
+- focus는 primary border와 weak ring으로 표시한다.
+- 값이 있으면 clear button을 제공한다.
+- submit button visible text는 `검색`이다.
+
+### Button
+
+- 버튼 variant는 `fill` 또는 `weak`, color는 `primary`, `danger`, `light`만 사용한다.
+- primary fill은 neutral background다.
+- icon-only/clear button은 `aria-label`을 가진다.
+- loading button은 disabled와 안정적인 폭을 유지한다.
+
+### Badge And Status
+
+- badge는 빠른 상태 인식용이며 텍스트 label을 반드시 포함한다.
+- `success`, `danger`, `warning`, `info`, `primary` tone만 사용한다.
+- 반복 row 안 badge는 작은 pill을 기본으로 한다.
+
+### Table
+
+- wrapper는 horizontal scroll을 허용한다.
+- header는 `--text-t8`, 600, tertiary color.
+- numeric/date/code cell은 `tabular-nums`, right align이 기본이다.
+- 첫 컬럼 label은 left align이다.
+- empty cell은 `—`와 tertiary color를 쓴다.
+
+### State Message
+
+- loading/empty/error는 중앙 정렬을 허용한다.
+- empty는 neutral, error는 danger weak background와 `role="alert"`를 사용한다.
+- skeleton, empty, error copy를 동시에 보여주지 않는다.
+
+## 5. Legacy Compatibility
+
+현재 DOM과 JS는 `.warning-terminal`, `.tm-*`, `.forecast-*`, `.patch-*` 클래스를 사용한다. 이 이름은 호환 layer로 유지하지만, 시각 언어는 밝은 디자인 토큰을 따른다.
+
+새 코드에서 다음을 직접 사용하지 않는다.
+
+- `--tm-*`
+- `--fs-*`
+- `--mono`
+- hard-coded dark colors
+- terminal-only letter spacing
+
+## 6. Verification
+
+프론트엔드 변경 후 다음을 통과해야 한다.
+
+```bash
+python3 scripts/sync_frontend_metadata.py --check
+python3 scripts/check_frontend_smoke.py
+python3 scripts/check_frontend_budget.py
+python -m pytest tests/test_playwright_flows.py --disable-socket --allow-hosts=127.0.0.1,localhost
 ```
 
-기존 `--tm-fs-sm`, `--tm-fs-micro`, `--tm-ls-caps`, `--tm-ls-label`, `--tm-ls-12`, `--tm-fw-med` 는 호환을 위해 유지하되, 신규 코드에서는 `--fs-*` / `--fw-*` 사용.
+브라우저에서 desktop `1280x900`, mobile `390x844` 기준으로 확인한다.
 
-터미널 페이지 레이아웃 토큰은 `:root` 가 아니라 `.warning-terminal` 스코프에 둔다:
-
-```css
---tm-page-gutter: 16px;  /* desktop/tablet card x-axis */
---tm-card-gap: 16px;     /* vertical gap between page cards */
-```
-
-`@media (max-width: 767px)` 에서는 `.warning-terminal { --tm-page-gutter: 12px; }` 로만 좁힌다. 새 페이지가 카드 좌우 여백을 직접 `margin-left/right: 12px` 같은 방식으로 다시 정의하는 것은 금지한다.
-
----
-
-## 11. 빠른 결정 트리
-
-새 페이지·컴포넌트를 만들 때:
-
-1. **터미널 페이지 shell / 카드 가터?** → 새 탭은 `.warning-terminal` 스코프를 재사용하고, 페이지 직속 카드의 x축은 `margin: 0 var(--tm-page-gutter) var(--tm-card-gap)` 로만 맞춘다. About/Warning/Forecast/Fortune/Patch Notes의 첫 카드가 같은 viewport에서 같은 `x`와 `width`를 가져야 한다. 좁은 화면 전용 여백은 `responsive.css`에서 `--tm-page-gutter` 값만 바꾼다.
-   - **공통 카드 후보**: `.card`, `.result-card`, `.stage-section`, `.forecast-panel`, `.fortune-panel`, `.patch-list`, `#page-about .tm-sec`, `.server-notice`, `.price-card`.
-   - **반복 금지**: 페이지별로 `margin-left: 12px`, `margin-right: 12px`, `margin: 0 16px 16px` 같은 하드코딩을 복제하지 말 것.
-2. **페이지 헤더?** → `28px / display / 600 / -0.3px / left`
-   - **히어로 컨테이너 spacing**: 페이지 hero(`.about-hero`, `.patch-hero`, `.forecast-hero`, `.warning-terminal .header` 등)는 `padding: 32px var(--tm-page-gutter) 18px` 만으로 첫 카드와의 간격을 만들 것. **`margin-bottom` 금지** — 첫 카드는 hero 바로 아래에 매달림. 일반 `.header` 같은 광범위 셀렉터에 `margin-bottom: 40px` 류의 전역 룰을 두면 페이지마다 간격이 어긋남(과거 incident: `base.css .header { margin-bottom: 40px }` 가 워닝에만 누수돼 hero→카드 간격이 18px vs 58px로 벌어짐).
-3. **요약 strip / 여러 셀 카드?** → `<div class="tm-strip ..."><div class="tm-cell">...</div></div>` 를 쓰고, `.warning-terminal .tm-strip { display: grid; min-width: 0; }` 공통 규칙을 타게 한다. 개별 페이지는 `grid-template-columns` 만 지정한다. `display: grid` 누락은 좁은 화면에서 셀 정렬이 깨지는 원인이므로 금지.
-4. **그 페이지의 단 하나의 핵심 수치?** → `21px / display / 500 / -0.3px / right`
-5. **종목명, 결과 항목명, 강조 식별자?** → `14px / text / 500 / 0 / left`
-6. **그 외 본문, 테이블 셀, 일반 텍스트?** → `12px / text / 400 / -0.12px / left` ← **기본값**
-7. **대문자 섹션 라벨, 카드 타이틀?** → `12px / display / 500 / 1.5px / uppercase / left` (좌측 액센트 바 2px 권장)
-   - **마크업 (기본)**: `<section class="tm-sec ..."><div class="tm-sec-head"><span class="t">…</span></div>...</section>`. 페이지 직속 단독 카드든 결과 카드 *내부* sub-section이든 동일하게 적용. 컨테이너 박스 스타일(border, margin, padding)은 별도 클래스(`.stage-section` 등)로 부여.
-   - **`.src` 사용 금지 (장식·출처 라벨)**: 헤더 우측 `<span class="src">`에 `research use only`, `not investment advice`, `warning · disclosure · market data` 같은 *정적 영문 디스크립터·출처 표기*를 붙이지 말 것. 새 카드는 `.t` 하나만 두는 것이 기본. `.src` 슬롯은 **동적으로 데이터를 담을 때만** 허용 (예: 타임라인 상태 `T · 5거래일 경과 · D-5`, `해제 심사 가능`처럼 사용자가 그 줄을 읽고 새로운 정보를 얻는 경우). 의심스러우면 빼고 `.t`만 둘 것.
-   - **예외**: 검색 입력 그룹처럼 시맨틱 헤딩이 필요한 카드만 `<h2>/<h3>` + 컨테이너 룰(`.card h2` 등)을 유지. 시각 사양은 위와 동일.
-   - **헤더 → 첫 컨텐츠 분리**: `.tm-sec-head` 패턴은 헤더 자체에 `border-bottom: 1px solid var(--tm-hairline)` **필수** (운영 원칙·KRX 규정·시장경보 안내 등 일관) + 헤더 `padding-bottom`(9px) + 첫 sibling `padding-top`(예: `.tm-rules .r { padding: 9px 16px }`)으로 분리. 예외 패턴(`<h2>/<h3>`)은 `margin: 0 0 10px` 명시, 브라우저 default 의존 금지.
-8. **칩, 배지, 작은 대문자 라벨, 테이블 th?** → `10px / display / 500~600 / 0.8px / uppercase`
-9. **숫자 정렬, 날짜, 출처 표기?** → `mono / 본문과 같은 사이즈 / 0 또는 0.3px`
-
----
-
-## 12. 마이그레이션 체크리스트
-
-워닝 외 페이지를 기준에 맞춰 정리할 항목:
-
-- [ ] About H1 (`.about-brand`) 32px → **28px**
-- [ ] 오늘의 운세 H1 32px → **28px**
-- [ ] 운세 메시지 본문 (`.fortune-message`) 20px → **14px** 또는 **12px**
-- [ ] 패치 노트 H1 32px → **28px**
-- [ ] 검색 결과 헤더 (`.header h1`) 40px **center** → **28px left**
-- [ ] 검색 결과 헤더 p 17px → **12px** (또는 `--fs-b2`)
-- [ ] About `.about-strip` 라벨/값에서 11/13/15/16/17/22/24px 사용처 → 가까운 스케일 토큰으로
-- [ ] 모든 letter-spacing 하드코딩 (`-0.224`, `-0.374`, `0.231`, `1px`, `1.2px` 등) → §3 표 8값 중 하나로
-- [ ] 모든 line-height 하드코딩 (`1.10`, `1.14`, `1.19`, `1.43`, `1.47`, `1.5`, `1.7` 등) → §5 표 값으로
-- [ ] 인라인 `font-size: NNpx` → `var(--fs-*)` 토큰으로 치환
-- [ ] 가운데 정렬된 본문/헤딩 → 좌측 정렬 (state messages만 예외)
-- [ ] `.warning-terminal .header h1` 28px 는 이미 기준에 맞음 — 그대로 유지
-
----
-
-## 13. 안티패턴 (자주 하는 실수)
-
-**타이포그래피**
-
-- 카드마다 다른 헤딩 사이즈 — 카드 타이틀은 항상 12px CAPS (§11-5)
-- "조금 더 강조하고 싶어서" 본문을 14px로 올리는 것 — 강조는 weight 500 또는 컬러로
-- "가독성을 위해" line-height 1.6/1.7로 늘리는 것 — 1.45로 통일
-- 라벨에 `--font-text` (대문자라도) — 항상 `--font-display`
-- 숫자 컬럼에 비례폭 폰트 — 항상 `--mono` + `tabular-nums`
-- 새 letter-spacing 값 발명 — §3 표 8값 외 금지
-- 4번째 폰트 패밀리 추가 — SF Pro 3종이 끝
-
-**시각적 톤**
-
-- `border-radius: 8px+` 사용 — 워닝 톤은 0 고정 (조건 테이블 번호 배지의 50%만 예외)
-- `box-shadow` / drop-shadow / glow — 터미널은 flat
-- 그라디언트 배경 — Verdict 카드 1곳 외 금지
-- 카드 안에 카드 (중첩 박스) — 섹션 구분은 1px hairline 으로만
-- 페이지 hero에 `margin-bottom` — 간격은 hero `padding-bottom`만으로 (§11-1)
-- 신호 컬러를 배경 그라디언트나 큰 면적으로 사용 — 항상 §7 트라이어드 (soft bg + full color text + 1px border)
-
-**카피·아이콘**
-
-- "AI / 인사이트 / 스마트" 같은 마케팅 카피 — 라벨은 명사구만, 서술형 없음
-- ▲▼ 대신 SVG/이모지 아이콘 — 유니코드 화살표만
-- "투자 권유"로 해석될 수 있는 단정 카피 — Verdict 긍정 톤에는 "KRX §4-2 규정상" 같은 근거 문구 필수
+- 배경이 dark가 아니다.
+- 카드 radius는 8px, control radius는 12px다.
+- 텍스트와 버튼이 겹치지 않는다.
+- 주요 표는 horizontal scroll 또는 충분한 min-width로 읽힌다.
+- 검색, 예보 점검, 운세, 패치 노트 탭이 모두 동작한다.

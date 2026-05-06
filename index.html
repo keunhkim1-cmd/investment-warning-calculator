@@ -7,8 +7,8 @@
   <meta name="description" content="KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 점검하는 한국 주식 리서치 도구입니다." />
   <meta name="robots" content="index, follow" />
   <meta name="application-name" content="TOTEM" />
-  <meta name="theme-color" content="#0A0A0A" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#f2f4f6" />
+  <meta name="color-scheme" content="light" />
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20260425-4" />
   <link rel="canonical" href="https://totem-research.vercel.app/" />
   <meta property="og:type" content="website" />
@@ -23,8 +23,8 @@
   <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"TOTEM","alternateName":"투자경고 계산기","url":"https://totem-research.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고·투자위험 종목의 지정 여부, 기준가, 해제 예정일을 점검하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
-  <link rel="stylesheet" href="assets/app.css?v=20260427-5" />
-  <script type="module" src="assets/app.js?v=20260427-5"></script>
+  <link rel="stylesheet" href="assets/app.css?v=20260506-1" />
+  <script type="module" src="assets/app.js?v=20260506-1"></script>
 </head>
 <body>
 
@@ -120,12 +120,13 @@
           <div class="search-row">
             <input
               type="text" id="searchInput"
-              placeholder="종목명 입력 후 검색 (예: 에코프로, 셀트리온)"
+              placeholder="회사명 또는 종목코드"
               autocomplete="off"
               aria-controls="searchResults"
               aria-expanded="false"
             />
-            <button class="search-btn" id="searchBtn" type="button">search</button>
+            <button class="search-clear" id="searchClearBtn" type="button" aria-label="검색어 지우기" hidden>×</button>
+            <button class="search-btn" id="searchBtn" type="button">검색</button>
           </div>
           <div class="search-results" id="searchResults" aria-label="검색 결과" aria-live="polite" aria-busy="false"></div>
         </div>
@@ -288,7 +289,7 @@
         <section class="tm-sec forecast-panel" aria-labelledby="forecastPanelTitle">
           <div class="tm-sec-head">
             <span class="t" id="forecastPanelTitle">오늘의 예보</span>
-            <button class="forecast-refresh" id="forecastRefreshBtn" type="button">refresh</button>
+            <button class="forecast-refresh" id="forecastRefreshBtn" type="button">새로고침</button>
           </div>
           <div class="tm-strip forecast-summary" id="forecastSummary"></div>
           <div class="forecast-content" id="forecastContent" aria-live="polite"></div>
@@ -341,10 +342,6 @@
       </div>
     </div>
   </div>
-</div>
-
-<div class="ticker-wrap" aria-hidden="true">
-  <div class="ticker-track" id="tickerTrack"></div>
 </div>
 </body>
 </html>
