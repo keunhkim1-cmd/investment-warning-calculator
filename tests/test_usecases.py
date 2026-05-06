@@ -303,6 +303,20 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
         self.assertEqual(payload['summary']['total'], 1)
         self.assertEqual(payload['items'][0]['stockName'], '재예고종목')
 
+    def test_forecast_does_not_treat_investment_risk_rows_as_current_warning(self):
+        current_names, errors = usecases._current_warning_candidate_names(
+            [{
+                'stockName': '위험행',
+                'level': '투자위험',
+                'designationDate': '2026-04-23',
+            }],
+            {'위험행'},
+            date(2026, 4, 24),
+        )
+
+        self.assertEqual(current_names, set())
+        self.assertEqual(errors, [])
+
     def test_forecast_caution_fetch_failure_surfaces_error(self):
         today = date(2026, 4, 24)
         with (

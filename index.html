@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>근형봇 | 소개</title>
-  <meta name="description" content="근형봇은 KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다." />
+  <meta name="description" content="근형봇은 KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다." />
   <meta name="robots" content="index, follow" />
   <meta name="application-name" content="근형봇" />
   <meta name="theme-color" content="#f2f4f6" />
@@ -14,13 +14,13 @@
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:site_name" content="근형봇" />
   <meta property="og:title" content="근형봇 | 소개" />
-  <meta property="og:description" content="KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다." />
+  <meta property="og:description" content="KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다." />
   <meta property="og:url" content="https://kh-bot.vercel.app/" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="근형봇 | 소개" />
-  <meta name="twitter:description" content="KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다." />
+  <meta name="twitter:description" content="KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다." />
   <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 시장경보, 투자경고 계산, 기업 공시를 한 화면에서 검증하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
+{"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
   <link rel="stylesheet" href="assets/app.css?v=20260506-13" />
   <script type="module" src="assets/app.js?v=20260506-13"></script>
@@ -73,7 +73,7 @@
       <div class="section-inner">
         <section class="about-hero" aria-labelledby="aboutTitle">
           <h1 id="aboutTitle">근형봇 소개</h1>
-          <p>KRX 시장경보와 기업 공시를 한 화면에서 검증하는 개인 리서치 터미널입니다.</p>
+          <p>KRX 투자경고 해제 조건을 한 화면에서 검증하는 개인 리서치 터미널입니다.</p>
         </section>
 
         <section class="tm-sec" aria-labelledby="aboutScopeTitle">
@@ -81,7 +81,7 @@
             <span class="t" id="aboutScopeTitle">서비스 범위</span>
           </div>
           <div class="tm-strip about-strip">
-            <div class="tm-cell"><div class="l">시장경보</div><div class="v">투자주의 / 경고 / 위험</div><div class="s">KRX KIND 기준</div></div>
+            <div class="tm-cell"><div class="l">시장경보</div><div class="v">투자경고 해제</div><div class="s">KRX KIND 기준</div></div>
             <div class="tm-cell"><div class="l">가격 검증</div><div class="v">기준가 · 임계가 · 해제일</div><div class="s">NAVER 일별 시세</div></div>
             <div class="tm-cell"><div class="l">기업 리서치</div><div class="v">공시 · 재무 데이터</div><div class="s">DART 보조 지표</div></div>
           </div>
@@ -131,7 +131,6 @@
 
       <input type="hidden" id="stockName" />
       <input type="hidden" id="designationDate" />
-      <input type="hidden" id="warningType" value="warning_normal" />
       <input type="hidden" id="tradingStop" value="no" />
       <input type="hidden" id="resumeDate" />
 

@@ -367,7 +367,7 @@ def test_market_alert_forecast_tab_renders_and_checks_stock(local_server, page: 
     expect(page.locator('#page-forecast')).to_have_attribute('aria-hidden', 'false')
     expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
     expect(page.locator('#searchInput')).to_have_value('테스트전자')
-    expect(page.locator('#searchResults')).to_contain_text('현재 투자경고/투자주의가 아님')
+    expect(page.locator('#searchResults')).to_contain_text('현재 투자경고가 아님')
 
 
 @pytest.mark.e2e
@@ -445,54 +445,15 @@ def test_warning_search_renders_price_thresholds_and_chart(local_server, page: P
 
 
 @pytest.mark.e2e
-def test_caution_fallback_renders_escalation_verdict(local_server, page: Page):
-    _route_stock_dependencies(page)
+def test_warning_search_without_active_warning_stays_on_release_service(local_server, page: Page):
     page.route(
         '**/api/warn-search?*', lambda route: _fulfill_json(route, {'ok': True, 'results': []})
-    )
-    page.route(
-        '**/api/caution-search?*',
-        lambda route: _fulfill_json(
-            route,
-            {
-                'ok': True,
-                'status': 'ok',
-                'stockName': '테스트전자',
-                'code': '005930',
-                'market': 'KOSPI',
-                'indexSymbol': 'KOSPI',
-                'activeNotice': {
-                    'noticeDate': '2026-04-20',
-                    'firstJudgmentDate': '2026-04-21',
-                    'lastJudgmentDate': '2026-04-24',
-                    'judgmentDayIndex': 4,
-                    'judgmentWindowTotal': 5,
-                },
-                'escalation': {
-                    'tClose': 84000,
-                    'tDate': '2026-04-24',
-                    'indexClose': 2800.5,
-                    'headline': {'verdict': 'strong', 'matchedSet': 0},
-                    'sets': [
-                        {
-                            'label': '단기급등',
-                            'allMet': True,
-                            'conditions': [
-                                {'met': True, 'label': '가격 상승률', 'detail': '기준가 충족'},
-                                {'met': True, 'label': '최고가', 'detail': '최근 15일 최고'},
-                                {'met': True, 'label': '지수 대비', 'detail': '지수 상승률 초과'},
-                            ],
-                        }
-                    ],
-                },
-            },
-        ),
     )
 
     page.goto(local_server)
     page.locator('#searchInput').fill('테스트전자')
     page.get_by_role('button', name='검색', exact=True).click()
 
-    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'false')
-    expect(page.locator('#cautionCard')).to_be_visible()
-    expect(page.locator('#cautionVerdict')).to_contain_text('투자경고 지정 예상')
+    expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
+    expect(page.locator('#searchResults')).to_contain_text('현재 투자경고가 아님')
+    expect(page.locator('#cautionCard')).not_to_be_visible()

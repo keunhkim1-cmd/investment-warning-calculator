@@ -612,10 +612,6 @@
   background: var(--color-danger);
 }
 
-.dot-risk {
-  background: var(--color-primary);
-}
-
 .stage-text strong {
   color: var(--color-text-primary);
 }

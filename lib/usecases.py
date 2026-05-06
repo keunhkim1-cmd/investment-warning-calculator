@@ -371,7 +371,7 @@ def _current_warning_candidate_names(
         stock_name = row.get('stockName', '')
         if stock_name not in candidate_names:
             continue
-        if row.get('level') not in {'투자경고', '투자위험'}:
+        if row.get('level') != '투자경고':
             continue
         still_active, error = _warning_history_still_active(row, today_date)
         if error:
@@ -466,7 +466,7 @@ def market_alert_forecast_payload() -> dict:
         warning_rows = []
         errors.append(_forecast_source_error(
             'krx-warning',
-            _forecast_source_error_message('KRX 투자경고/위험 조회 실패', e),
+            _forecast_source_error_message('KRX 투자경고 조회 실패', e),
         ))
     current_warning_names, warning_status_errors = _current_warning_candidate_names(
         warning_rows,

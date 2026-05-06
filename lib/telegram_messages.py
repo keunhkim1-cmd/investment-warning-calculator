@@ -43,8 +43,7 @@ def build_warning_message(stock_name: str, warn: dict, thresholds: dict | None) 
     else:
         dday = f'D+{abs(diff)}'
 
-    level_emoji = '🟠' if warn['level'] == '투자경고' else '🔴'
-    lines = [f'{level_emoji} {stock_name} {warn["level"]}  |  {dday}', '']
+    lines = [f'🟠 {stock_name} 투자경고  |  {dday}', '']
 
     if thresholds and 'error' not in thresholds:
         t_d = date.fromisoformat(thresholds['tDate'])

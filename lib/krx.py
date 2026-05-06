@@ -1,4 +1,4 @@
-"""KRX KIND 투자경고/위험 종목 검색"""
+"""KRX KIND 투자경고 종목 검색"""
 
 import urllib.parse, re
 from datetime import date, timedelta
@@ -112,15 +112,14 @@ def search_kind(stock_name: str, *, raise_on_error: bool = False) -> list:
                 raise
             return []
 
-    # KRX KIND can intermittently reject tightly parallel Vercel-origin calls.
-    # Two small sequential requests are slower by milliseconds but much gentler.
-    results_list = [_fetch_level(args) for args in [('2', '투자경고'), ('3', '투자위험')]]
+    # Only the investment-warning release calculator is currently supported.
+    results_list = [_fetch_level(('2', '투자경고'))]
 
     for rows in results_list:
         all_results.extend(rows)
 
     all_results.sort(key=lambda x: x.get('designationDate', ''), reverse=True)
-    # 종목+레벨별 최근 경고만 유지 (같은 종목이 경고/위험 동시 지정 가능)
+    # 종목별 최근 투자경고만 유지
     seen = set()
     deduped = []
     for r in all_results:

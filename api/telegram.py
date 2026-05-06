@@ -1,6 +1,6 @@
 """
 투자경고 해제일 계산기 — 텔레그램 봇 (Vercel Webhook)
-종목명을 보내면 투자경고/위험 지정일, 해제 예상일, 기준가를 알려줍니다.
+종목명을 보내면 투자경고 지정일, 해제 예상일, 기준가를 알려줍니다.
 """
 from http.server import BaseHTTPRequestHandler
 import hmac
@@ -79,7 +79,7 @@ def _process_update_body(update: dict):
     if text.startswith('/start'):
         tg_send(chat_id,
             '📈 *투자경고 해제일 계산기*\n\n'
-            '투자경고/위험 종목의 해제 예상일과 기준가를 알려드립니다.\n\n'
+            '투자경고 종목의 해제 예상일과 기준가를 알려드립니다.\n\n'
             '*명령어*\n'
             '/warning `종목명` — 종목 투자경고 조회\n'
             '/caution `종목명` — 투자경고 지정 예상 점검\n'

@@ -61,7 +61,7 @@ def _run_task(name: str, fn) -> dict:
 
 def warm_cache() -> list[dict]:
     tasks = [
-        ('krx-warning-risky', lambda: {'items': len(search_kind(''))}),
+        ('krx-warning', lambda: {'items': len(search_kind(''))}),
         ('krx-caution', lambda: {'items': len(search_kind_caution(''))}),
         ('market-alert-forecast', lambda: market_alert_forecast_payload()['summary']),
         ('naver-code-samsung', lambda: {'items': len(stock_code('삼성전자'))}),

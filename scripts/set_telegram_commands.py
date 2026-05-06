@@ -16,7 +16,7 @@ sys.path.insert(0, ROOT)
 from lib.http_utils import telegram_bot_url, urlopen_sanitized
 
 COMMANDS = [
-    {'command': 'warning',    'description': '투자경고/위험 해제일 계산'},
+    {'command': 'warning',    'description': '투자경고 해제일 계산'},
     {'command': 'caution',    'description': '투자경고 지정 예상 점검 (투자주의 종목)'},
     {'command': 'bulgunjeon', 'description': '불건전 요건 안내'},
     {'command': 'info',       'description': '사업보고서 요약'},

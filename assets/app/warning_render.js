@@ -310,7 +310,7 @@ export function renderConditions(t) {
     row3(t, p.maxWindowDays);
 }
 
-// §5 Verdict — release / hold / risk variants
+// §5 Verdict — release / hold variants
 export function renderVerdict(t, releaseDate) {
   const v = document.getElementById('sec-verdict');
   if (!v) return;
@@ -375,7 +375,7 @@ export function renderRules(releaseDate) {
     <div class="r"><span class="k">1</span><span class="v">지정일로부터 10 매매거래일 경과 후 해제 심사 시작</span><span class="m num">${fmtDate(releaseDate)}</span></div>
     <div class="r"><span class="k">2</span><span class="v">해제 판단일에 ① ② ③ 세 조건 모두 충족 시 경고 유지. 하나라도 미충족이면 해제 대상.</span><span class="m">3 중 3</span></div>
     <div class="r"><span class="k">3</span><span class="v">지정 기간 중 신용융자 금지, 위탁증거금 100% 현금</span><span class="m">—</span></div>
-    <div class="r"><span class="k">4</span><span class="v">지정 기간 내 요건 재충족 시 투자위험종목으로 상향 지정</span><span class="m">—</span></div>`;
+    <div class="r"><span class="k">4</span><span class="v">실제 지정과 해제는 KRX 최종 공시 기준을 따릅니다.</span><span class="m">KRX</span></div>`;
 }
 
 // Chart legend (§6) — T 종가 + 3 thresholds as swatches

@@ -787,7 +787,6 @@ input[type="search"]:focus {
   color: var(--color-warning);
 }
 
-.level-risk,
 .forecast-level.alert,
 .patch-entry-tag.fix {
   background: var(--color-danger-weak);
