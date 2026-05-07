@@ -19,6 +19,10 @@ HEADERS = {
 _krx_cache = TTLCache(ttl=600, name='krx-kind', durable=True)
 
 
+def _casefold_contains(value: str, query: str) -> bool:
+    return query.casefold() in value.casefold()
+
+
 def fetch_kind_page(
     menu_index: str, page: int = 1, days_back: int = 365, page_size: int = 100
 ) -> str:
@@ -95,14 +99,18 @@ def parse_kind_html(html: str, level_name: str) -> list:
 
 def search_kind(stock_name: str, *, raise_on_error: bool = False) -> list:
     all_results = []
+    stock_name_key = (stock_name or '').casefold()
 
     def _fetch_level(args):
         idx, level = args
         try:
             html = fetch_kind_page(idx)
             rows = parse_kind_html(html, level)
-            if stock_name:
-                rows = [r for r in rows if stock_name in r['stockName']]
+            if stock_name_key:
+                rows = [
+                    r for r in rows
+                    if _casefold_contains(str(r.get('stockName', '') or ''), stock_name_key)
+                ]
             return rows
         except Exception as e:
             log_event(
@@ -140,6 +148,7 @@ def search_kind_caution(stock_name: str, *, raise_on_error: bool = False) -> lis
     - `market`: 시장 구분 ('KOSPI' | 'KOSDAQ' | '')  — 행의 아이콘(icn_t_yu/icn_t_ko)으로 판정
     - `recent15dCount`: 오늘 포함 15거래일 윈도우 안의 지정 행 수 (참고용)
     """
+    stock_name_key = (stock_name or '').casefold()
     # 투자주의는 일일 지정 건수가 많아(일 20~40건) 기본 pageSize=100으로는
     # 페이지 1에 오래된 데이터만 들어온다. 21일치를 한 번에 받도록 pageSize를 키운다.
     try:
@@ -175,7 +184,7 @@ def search_kind_caution(stock_name: str, *, raise_on_error: bool = False) -> lis
         else:
             market = ''
         name = name_m.group(1).strip()
-        if stock_name and stock_name not in name:
+        if stock_name_key and not _casefold_contains(name, stock_name_key):
             continue
         rows_by_stock.setdefault(name, []).append((dates[-1], reason, market))
 

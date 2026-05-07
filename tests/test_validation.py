@@ -15,6 +15,9 @@ class ValidationTests(unittest.TestCase):
     def test_normalize_query_strips_and_collapses_whitespace(self):
         self.assertEqual(normalize_query('  삼성전자    우  '), '삼성전자 우')
 
+    def test_normalize_query_preserves_ascii_case(self):
+        self.assertEqual(normalize_query('  원익qnc  '), '원익qnc')
+
     def test_normalize_query_rejects_empty_control_and_oversized_values(self):
         with self.assertRaises(ValueError):
             normalize_query('   ')

@@ -48,6 +48,24 @@ class DartRegistryTests(unittest.TestCase):
             }])
             self.assertEqual(dart_registry.resolve_exact_stock_codes('라이'), [])
 
+    def test_resolve_exact_stock_codes_matches_ascii_case_insensitively(self):
+        rows = [
+            {'c': '00263274', 'n': '원익QnC', 's': '074600'},
+            {'c': '00262549', 'n': 'iMBC', 's': '052220'},
+            {'c': '00000001', 'n': 'iMBC테스트', 's': '000001'},
+        ]
+        with patch.object(dart_registry, 'load_corp_rows', return_value=rows):
+            self.assertEqual(dart_registry.resolve_exact_stock_codes('원익qnc'), [{
+                'code': '074600',
+                'name': '원익QnC',
+                'corpCode': '00263274',
+            }])
+            self.assertEqual(dart_registry.resolve_exact_stock_codes('imbc'), [{
+                'code': '052220',
+                'name': 'iMBC',
+                'corpCode': '00262549',
+            }])
+
     def test_resolve_exact_stock_codes_accepts_direct_code(self):
         self.assertEqual(dart_registry.resolve_exact_stock_codes('005930'), [{
             'code': '005930',

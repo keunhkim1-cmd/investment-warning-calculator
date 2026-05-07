@@ -186,18 +186,20 @@ def resolve_exact_stock_codes(query: str) -> list[dict]:
     if not value:
         return []
 
+    value_key = value.casefold()
     matches = []
     seen_codes = set()
     for row in load_corp_rows():
+        corp_name = str(row.get('n', '') or '').strip()
         stock_code = str(row.get('s', '') or '').strip()
-        if row.get('n') != value or not STOCK_CODE_RE.fullmatch(stock_code):
+        if corp_name.casefold() != value_key or not STOCK_CODE_RE.fullmatch(stock_code):
             continue
         if stock_code in seen_codes:
             continue
         seen_codes.add(stock_code)
         matches.append({
             'code': stock_code,
-            'name': row.get('n', ''),
+            'name': corp_name,
             'corpCode': row.get('c', ''),
         })
     return matches
