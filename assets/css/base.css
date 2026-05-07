@@ -327,27 +327,6 @@ button:disabled {
   font-weight: 700;
 }
 
-.brand-logo-mark {
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: 6px;
-  background: var(--color-surface);
-}
-
-.brand-logo {
-  width: 34px;
-  height: 34px;
-  max-width: none;
-  flex: none;
-  display: block;
-  object-fit: cover;
-}
-
 .nav-search {
   position: relative;
   min-width: 280px;
