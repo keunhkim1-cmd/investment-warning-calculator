@@ -154,13 +154,13 @@
 
 .tm-sym .chip.warn {
   background: var(--color-warning-weak);
-  border: 1px solid #ffe08a;
+  border: 1px solid var(--color-warning-border);
   color: var(--color-warning);
 }
 
 .tm-sym .chip.dday {
   background: var(--color-blue-weak);
-  border: 1px solid #b8d9ff;
+  border: 1px solid var(--color-blue-border);
   color: var(--color-blue);
 }
 
@@ -172,7 +172,7 @@
 
 .tm-sym .chip.ok {
   background: var(--color-success-weak);
-  border: 1px solid #b8ebd5;
+  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
@@ -241,19 +241,19 @@
 
 .tm-tl-cell.past {
   background: var(--color-success-weak);
-  border-color: #b8ebd5;
+  border-color: var(--color-success-border);
   color: var(--color-success);
 }
 
 .tm-tl-cell.today {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-surface);
 }
 
 .tm-tl-cell.release {
   background: var(--color-blue-weak);
-  border-color: #b8d9ff;
+  border-color: var(--color-blue-border);
   color: var(--color-blue);
 }
 
@@ -335,13 +335,13 @@
 
 .tm-tbl tr.hold .lbl-col .badge {
   background: var(--color-danger-weak);
-  border-color: #ffc3c8;
+  border-color: var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-tbl tr.clear .lbl-col .badge {
   background: var(--color-success-weak);
-  border-color: #b8ebd5;
+  border-color: var(--color-success-border);
   color: var(--color-success);
 }
 
@@ -369,13 +369,13 @@
 
 .tm-tbl .flag.hold {
   background: var(--color-danger-weak);
-  border: 1px solid #ffc3c8;
+  border: 1px solid var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-tbl .flag.clear {
   background: var(--color-success-weak);
-  border: 1px solid #b8ebd5;
+  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
@@ -405,17 +405,17 @@
   flex: none;
   border-radius: 999px;
   background: var(--color-surface);
-  border: 1px solid #b8ebd5;
+  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
 .tm-verdict.hold .ico {
-  border-color: #ffc3c8;
+  border-color: var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-verdict.risk .ico {
-  border-color: #ffe08a;
+  border-color: var(--color-warning-border);
   color: var(--color-warning);
 }
 
@@ -426,17 +426,17 @@
 
 .tm-verdict .tag {
   background: var(--color-surface);
-  border: 1px solid #b8ebd5;
+  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
 .tm-verdict.hold .tag {
-  border-color: #ffc3c8;
+  border-color: var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-verdict.risk .tag {
-  border-color: #ffe08a;
+  border-color: var(--color-warning-border);
   color: var(--color-warning);
 }
 

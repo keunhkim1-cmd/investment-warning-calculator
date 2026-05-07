@@ -52,3 +52,6 @@ jobs:
 
       - name: Frontend asset budget
         run: python scripts/check_frontend_budget.py
+
+      - name: Frontend token drift
+        run: python scripts/check_frontend_tokens.py

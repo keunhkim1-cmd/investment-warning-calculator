@@ -94,7 +94,7 @@
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
-  font-size: 44px;
+  font-size: var(--text-display-fortune);
   line-height: 1;
   transition: transform 120ms ease;
 }
@@ -122,7 +122,6 @@
 #page-fortune .fortune-message--loading {
   color: var(--color-text-tertiary);
   text-align: center;
-  letter-spacing: 2px;
 }
 
 #page-patchnotes .patch-list-body {
@@ -167,7 +166,7 @@
 
 #page-patchnotes .patch-entry-tag.feat {
   background: var(--color-blue-weak);
-  border: 1px solid #b8d9ff;
+  border: 1px solid var(--color-blue-border);
   color: var(--color-blue);
 }
 

@@ -54,3 +54,10 @@ repos:
         language: system
         pass_filenames: false
         stages: [pre-push, manual]
+
+      - id: frontend-tokens
+        name: frontend token drift
+        entry: .venv/bin/python scripts/check_frontend_tokens.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push, manual]

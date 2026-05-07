@@ -64,5 +64,6 @@ to avoid a large one-time formatting churn.
 - Static server-side data: `data/`
 - Maintenance scripts: `scripts/`
 
-See `ARCHITECTURE.md`, `OPERATIONS.md`, and `SECURITY.md` for structure,
+See `CLAUDE.md` for the AI-facing invariants and change-type matrix, and
+`ARCHITECTURE.md`, `OPERATIONS.md`, and `SECURITY.md` for structure,
 operations, and secret-handling rules.
