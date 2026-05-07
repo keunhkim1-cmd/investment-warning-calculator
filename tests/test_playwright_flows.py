@@ -255,7 +255,7 @@ def test_navbar_search_keeps_current_page_until_result(local_server, page: Page)
     page.get_by_role('tab', name='패치 노트').click()
     expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
 
-    page.get_by_role('searchbox', name='투자경고 종목 검색').click()
+    page.get_by_role('searchbox', name='종목 검색').click()
     expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
     expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
     expect(page.locator('#searchInput')).to_be_focused()
