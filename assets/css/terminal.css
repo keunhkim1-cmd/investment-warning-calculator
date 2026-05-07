@@ -240,9 +240,13 @@
 }
 
 .tm-tl-cell.past {
-  background: var(--color-success-weak);
-  border-color: var(--color-success-border);
-  color: var(--color-success);
+  --timeline-disabled-fill: color-mix(in srgb, var(--color-primary) 22%, var(--color-surface));
+
+  background: var(--tds-grey-300);
+  border-color: var(--tds-grey-300);
+  background: var(--timeline-disabled-fill);
+  border-color: var(--timeline-disabled-fill);
+  color: var(--color-surface);
 }
 
 .tm-tl-cell.today {
@@ -252,9 +256,9 @@
 }
 
 .tm-tl-cell.release {
-  background: var(--color-blue-weak);
-  border-color: var(--color-blue-border);
-  color: var(--color-blue);
+  background: var(--color-primary-weak);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
 }
 
 .tm-tl-foot {
@@ -289,7 +293,7 @@
 }
 
 .tm-tbl th {
-  background: var(--color-primary-weak);
+  background: var(--color-surface);
   color: var(--color-text-tertiary);
   font-weight: 700;
   text-align: right;

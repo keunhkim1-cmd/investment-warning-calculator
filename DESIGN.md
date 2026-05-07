@@ -166,12 +166,17 @@ Badge는 텍스트 label을 반드시 포함한다. Tone은 `success`, `danger`,
 ### Table
 **Role:** Dense financial, disclosure, price, and date data.
 
-Wrapper는 horizontal scroll을 허용한다. Header는 `--text-t8`, weight 600, tertiary color. Numeric, date, code cell은 `tabular-nums`, right align이 기본이다. 첫 컬럼 label은 left align이다. Empty cell은 `—`와 tertiary color를 쓴다.
+Wrapper는 horizontal scroll을 허용한다. Header는 `--color-surface` 배경, `--text-t8`, weight 600, tertiary color를 쓴다. Numeric, date, code cell은 `tabular-nums`, right align이 기본이다. 첫 컬럼 label은 left align이다. Empty cell은 `—`와 tertiary color를 쓴다.
 
 ### State Message
 **Role:** Loading, empty, and error feedback.
 
 Loading, empty, error는 중앙 정렬을 허용한다. Empty는 neutral tone, error는 danger weak background와 `role="alert"`를 사용한다. Skeleton, empty, error copy를 동시에 보여주지 않는다.
+
+### Timeline
+**Role:** Trading-day progress for warning designation and release review windows.
+
+경과한 날짜 셀은 성공이나 해제 가능을 뜻하지 않으므로 green success 토큰을 쓰지 않는다. 현재 판단일은 primary fill로 강조하고, 경과 셀은 TDS disabled 상태처럼 primary fill을 surface와 섞어 톤다운한 회색 fill로 처리한다. 해제/보류 같은 끝점 셀도 결과 확정 badge가 아니면 blue accent 대신 neutral weak 스타일을 유지한다.
 
 ## Do's and Don'ts
 
