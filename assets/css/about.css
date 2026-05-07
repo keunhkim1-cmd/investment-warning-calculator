@@ -4,6 +4,24 @@
   overflow: hidden;
 }
 
+#page-about .about-card {
+  border: 0;
+  margin-top: 28px;
+}
+
+#page-about .about-card-hero {
+  padding: 24px 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+#page-about .about-card-block {
+  min-width: 0;
+}
+
+#page-about .about-card-block + .about-card-block {
+  border-top: 1px solid var(--color-border);
+}
+
 #page-about .about-strip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -41,6 +59,14 @@
 }
 
 @media (max-width: 767px) {
+  #page-about .about-card {
+    margin-top: 22px;
+  }
+
+  #page-about .about-card-hero {
+    padding: 22px 14px 16px;
+  }
+
   #page-about .about-strip {
     grid-template-columns: 1fr;
   }

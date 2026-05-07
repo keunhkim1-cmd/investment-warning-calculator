@@ -23,8 +23,8 @@
   <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
-  <link rel="stylesheet" href="assets/app.css?v=20260506-13" />
-  <script type="module" src="assets/app.js?v=20260506-13"></script>
+  <link rel="stylesheet" href="assets/app.css?v=20260507-2" />
+  <script type="module" src="assets/app.js?v=20260507-2"></script>
 </head>
 <body>
 
@@ -72,43 +72,45 @@
   <div class="warning-terminal about-terminal">
     <div class="section-dark">
       <div class="section-inner">
-        <section class="about-hero" aria-labelledby="aboutTitle">
-          <h1 id="aboutTitle">근형봇 소개</h1>
-          <p>KRX 투자경고 해제 조건을 한 화면에서 검증하는 개인 리서치 터미널입니다.</p>
-        </section>
+        <section class="tm-sec about-card" aria-labelledby="aboutTitle">
+          <div class="about-hero about-card-hero">
+            <h1 id="aboutTitle">근형봇 소개</h1>
+            <p>KRX 투자경고 해제 조건을 한 화면에서 검증하는 개인 리서치 터미널입니다.</p>
+          </div>
 
-        <section class="tm-sec" aria-labelledby="aboutScopeTitle">
-          <div class="tm-sec-head">
-            <span class="t" id="aboutScopeTitle">서비스 범위</span>
+          <div class="about-card-block" aria-labelledby="aboutScopeTitle">
+            <div class="tm-sec-head">
+              <span class="t" id="aboutScopeTitle">서비스 범위</span>
+            </div>
+            <div class="tm-strip about-strip">
+              <div class="tm-cell"><div class="l">시장경보</div><div class="v">투자경고 해제</div><div class="s">KRX KIND 기준</div></div>
+              <div class="tm-cell"><div class="l">가격 검증</div><div class="v">기준가 · 임계가 · 해제일</div><div class="s">NAVER 일별 시세</div></div>
+              <div class="tm-cell"><div class="l">기업 리서치</div><div class="v">공시 · 재무 데이터</div><div class="s">DART 보조 지표</div></div>
+            </div>
           </div>
-          <div class="tm-strip about-strip">
-            <div class="tm-cell"><div class="l">시장경보</div><div class="v">투자경고 해제</div><div class="s">KRX KIND 기준</div></div>
-            <div class="tm-cell"><div class="l">가격 검증</div><div class="v">기준가 · 임계가 · 해제일</div><div class="s">NAVER 일별 시세</div></div>
-            <div class="tm-cell"><div class="l">기업 리서치</div><div class="v">공시 · 재무 데이터</div><div class="s">DART 보조 지표</div></div>
-          </div>
-        </section>
 
-        <section class="tm-sec" aria-labelledby="aboutPrinciplesTitle">
-          <div class="tm-sec-head">
-            <span class="t" id="aboutPrinciplesTitle">운영 원칙</span>
+          <div class="about-card-block" aria-labelledby="aboutPrinciplesTitle">
+            <div class="tm-sec-head">
+              <span class="t" id="aboutPrinciplesTitle">운영 원칙</span>
+            </div>
+            <div class="tm-rules about-rules">
+              <div class="r"><span class="k">1</span><span class="v">공식 데이터 출처를 우선 사용하고, 자동 계산은 검증 보조 수단으로 제공합니다.</span><span class="m">검증</span></div>
+              <div class="r"><span class="k">2</span><span class="v">시장경보 조건은 KRX 기준을 기반으로 표시하되, 실제 지정과 해제는 거래소 판단을 따릅니다.</span><span class="m">KRX</span></div>
+              <div class="r"><span class="k">3</span><span class="v">AI 및 자동화된 데이터 수집을 활용하므로 지연, 누락, 해석 오류가 발생할 수 있습니다.</span><span class="m">확인</span></div>
+            </div>
           </div>
-          <div class="tm-rules about-rules">
-            <div class="r"><span class="k">1</span><span class="v">공식 데이터 출처를 우선 사용하고, 자동 계산은 검증 보조 수단으로 제공합니다.</span><span class="m">검증</span></div>
-            <div class="r"><span class="k">2</span><span class="v">시장경보 조건은 KRX 기준을 기반으로 표시하되, 실제 지정과 해제는 거래소 판단을 따릅니다.</span><span class="m">KRX</span></div>
-            <div class="r"><span class="k">3</span><span class="v">AI 및 자동화된 데이터 수집을 활용하므로 지연, 누락, 해석 오류가 발생할 수 있습니다.</span><span class="m">확인</span></div>
-          </div>
-        </section>
 
-        <section class="tm-sec about-disclaimer" aria-labelledby="aboutDisclaimerTitle">
-          <div class="tm-sec-head">
-            <span class="t" id="aboutDisclaimerTitle">투자 유의사항</span>
-          </div>
-          <div class="tm-verdict risk">
-            <div class="ico" aria-hidden="true">!</div>
-            <div class="body">
-              <div class="head"><span class="tag">주의 고지</span></div>
-              <div class="h">투자 권유가 아닌 개인 리서치 도구입니다.</div>
-              <div class="b">이 도구는 개인적인 투자 리서치 용도로 제작되었으며, 상업적 목적이 아닙니다. 제공되는 데이터 및 분석 결과에는 오류가 있을 수 있고, 최종 투자 판단과 책임은 사용자 본인에게 있습니다.</div>
+          <div class="about-card-block about-disclaimer" aria-labelledby="aboutDisclaimerTitle">
+            <div class="tm-sec-head">
+              <span class="t" id="aboutDisclaimerTitle">투자 유의사항</span>
+            </div>
+            <div class="tm-verdict risk">
+              <div class="ico" aria-hidden="true">!</div>
+              <div class="body">
+                <div class="head"><span class="tag">주의 고지</span></div>
+                <div class="h">투자 권유가 아닌 개인 리서치 도구입니다.</div>
+                <div class="b">이 도구는 개인적인 투자 리서치 용도로 제작되었으며, 상업적 목적이 아닙니다. 제공되는 데이터 및 분석 결과에는 오류가 있을 수 있고, 최종 투자 판단과 책임은 사용자 본인에게 있습니다.</div>
+              </div>
             </div>
           </div>
         </section>
@@ -247,19 +249,21 @@
   <div class="warning-terminal forecast-terminal">
     <div class="section-dark">
       <div class="section-inner">
-        <section class="patch-hero forecast-hero" aria-labelledby="forecastTitle">
-          <!-- 사용자가 기능 완성으로 판단해 삭제를 요청하기 전까지 (개발중) 태그 유지 -->
-          <h1 id="forecastTitle">투자경고 예보 <span class="forecast-dev-tag">(개발중)</span></h1>
-          <p>KRX 투자경고 지정예고 후보를 공개 가격조건 기준으로 경보·근접·관찰 단계로 정리합니다.</p>
-        </section>
-
-        <section class="tm-sec forecast-panel" aria-labelledby="forecastPanelTitle">
-          <div class="tm-sec-head">
-            <span class="t" id="forecastPanelTitle">오늘의 예보</span>
-            <button class="forecast-refresh" id="forecastRefreshBtn" type="button">새로고침</button>
+        <section class="tm-sec page-card forecast-panel" aria-labelledby="forecastTitle">
+          <div class="patch-hero forecast-hero page-card-hero">
+            <!-- 사용자가 기능 완성으로 판단해 삭제를 요청하기 전까지 (개발중) 태그 유지 -->
+            <h1 id="forecastTitle">투자경고 예보 <span class="forecast-dev-tag">(개발중)</span></h1>
+            <p>KRX 투자경고 지정예고 후보를 공개 가격조건 기준으로 경보·근접·관찰 단계로 정리합니다.</p>
           </div>
-          <div class="tm-strip forecast-summary" id="forecastSummary"></div>
-          <div class="forecast-content" id="forecastContent" aria-live="polite"></div>
+
+          <div class="page-card-block" aria-labelledby="forecastPanelTitle">
+            <div class="tm-sec-head">
+              <span class="t" id="forecastPanelTitle">오늘의 예보</span>
+              <button class="forecast-refresh" id="forecastRefreshBtn" type="button">새로고침</button>
+            </div>
+            <div class="tm-strip forecast-summary" id="forecastSummary"></div>
+            <div class="forecast-content" id="forecastContent" aria-live="polite"></div>
+          </div>
         </section>
       </div>
     </div>
@@ -270,15 +274,17 @@
   <div class="warning-terminal fortune-terminal">
     <div class="section-dark">
       <div class="section-inner">
-        <section class="patch-hero" aria-labelledby="fortuneTitle">
-          <h1 id="fortuneTitle">오늘의 운세</h1>
-          <p>재미로 보는 한 줄 운세입니다.</p>
-        </section>
-        <section class="tm-sec fortune-panel" aria-labelledby="fortunePanelTitle">
-          <div class="tm-sec-head">
-            <span class="t" id="fortunePanelTitle">행운이 함께하기를!</span>
+        <section class="tm-sec page-card fortune-panel" aria-labelledby="fortuneTitle">
+          <div class="patch-hero page-card-hero">
+            <h1 id="fortuneTitle">오늘의 운세</h1>
+            <p>재미로 보는 한 줄 운세입니다.</p>
           </div>
-          <div id="fortuneContent" class="fortune-content" aria-live="polite"></div>
+          <div class="page-card-block" aria-labelledby="fortunePanelTitle">
+            <div class="tm-sec-head">
+              <span class="t" id="fortunePanelTitle">행운이 함께하기를!</span>
+            </div>
+            <div id="fortuneContent" class="fortune-content" aria-live="polite"></div>
+          </div>
         </section>
       </div>
     </div>
@@ -289,18 +295,20 @@
   <div class="warning-terminal patchnotes-terminal">
     <div class="section-dark">
       <div class="section-inner">
-        <section class="patch-hero">
-          <h1>패치 노트</h1>
-          <p>신규 기능·개선·수정 내역을 최신 업데이트 순으로 정리합니다</p>
-        </section>
-        <section class="tm-sec patch-list">
-          <div class="tm-sec-head">
-            <span class="t">업데이트 로그</span>
+        <section class="tm-sec page-card patch-list" aria-labelledby="patchnotesTitle">
+          <div class="patch-hero page-card-hero">
+            <h1 id="patchnotesTitle">패치 노트</h1>
+            <p>신규 기능·개선·수정 내역을 최신 업데이트 순으로 정리합니다</p>
           </div>
-          <div id="patchnotesContent" class="patch-list-body">
-            <div class="state-message state-message-loading" role="status">
-              <span class="state-message-label">조회 중</span>
-              <span class="state-message-text">불러오는 중...</span>
+          <div class="page-card-block" aria-labelledby="patchnotesLogTitle">
+            <div class="tm-sec-head">
+              <span class="t" id="patchnotesLogTitle">업데이트 로그</span>
+            </div>
+            <div id="patchnotesContent" class="patch-list-body">
+              <div class="state-message state-message-loading" role="status">
+                <span class="state-message-label">조회 중</span>
+                <span class="state-message-text">불러오는 중...</span>
+              </div>
             </div>
           </div>
         </section>

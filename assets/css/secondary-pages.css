@@ -6,6 +6,32 @@
   overflow: hidden;
 }
 
+#page-forecast .page-card,
+#page-fortune .page-card,
+#page-patchnotes .page-card {
+  border: 0;
+  margin-top: 28px;
+}
+
+#page-forecast .page-card-hero,
+#page-fortune .page-card-hero,
+#page-patchnotes .page-card-hero {
+  padding: 24px 16px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+#page-forecast .page-card-block,
+#page-fortune .page-card-block,
+#page-patchnotes .page-card-block {
+  min-width: 0;
+}
+
+#page-forecast .page-card-block + .page-card-block,
+#page-fortune .page-card-block + .page-card-block,
+#page-patchnotes .page-card-block + .page-card-block {
+  border-top: 1px solid var(--color-border);
+}
+
 #page-forecast .forecast-panel .tm-sec-head,
 #page-fortune .fortune-panel .tm-sec-head,
 #page-patchnotes .patch-list .tm-sec-head {
@@ -204,6 +230,18 @@
 }
 
 @media (max-width: 767px) {
+  #page-forecast .page-card,
+  #page-fortune .page-card,
+  #page-patchnotes .page-card {
+    margin-top: 22px;
+  }
+
+  #page-forecast .page-card-hero,
+  #page-fortune .page-card-hero,
+  #page-patchnotes .page-card-hero {
+    padding: 22px 14px 16px;
+  }
+
   #page-forecast .forecast-refresh {
     margin-left: 0;
   }
