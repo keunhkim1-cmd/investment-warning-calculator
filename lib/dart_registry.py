@@ -4,15 +4,20 @@ import io
 import json
 import re
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from lib.cache import TTLCache
 from lib.dart_base import fetch_bytes
+from lib.http_utils import log_event, safe_exception_text
 from lib.timeouts import DART_DOCUMENT_TIMEOUT
 
 
 CORP_CODE_RE = re.compile(r'^\d{8}$')
+STOCK_CODE_RE = re.compile(r'^\d{6}$')
+DART_REGISTRY_CACHE_KEY = 'dart:corp-registry:v1'
+DART_REGISTRY_TTL_SECONDS = 35 * 24 * 3600
 ROOT = Path(__file__).resolve().parent.parent
 PACKAGED_CORP_PATH = ROOT / 'data' / 'dart-corps.json'
 
@@ -68,14 +73,88 @@ def fetch_live_corp_rows() -> list[dict]:
     return parse_corp_code_zip(raw)
 
 
+def validate_corp_rows(rows: list[dict]) -> None:
+    """Validate a compact DART registry before using or storing it."""
+    if not rows:
+        raise RuntimeError('DART corp registry is empty.')
+
+    seen = set()
+    for row in rows:
+        corp_code = str(row.get('c', '') or '').strip()
+        stock_code = str(row.get('s', '') or '').strip()
+        if not CORP_CODE_RE.fullmatch(corp_code):
+            raise RuntimeError(f'invalid corp_code: {corp_code!r}')
+        if not stock_code:
+            raise RuntimeError(f'missing stock_code for corp_code={corp_code}')
+        key = (corp_code, stock_code)
+        if key in seen:
+            raise RuntimeError(f'duplicate corp/stock pair: {key!r}')
+        seen.add(key)
+
+
+def _load_durable_corp_rows() -> list[dict] | None:
+    try:
+        from lib.durable_cache import get_json
+        payload = get_json(DART_REGISTRY_CACHE_KEY)
+    except Exception as e:
+        log_event('warning', 'dart_registry_durable_read_failed',
+                  error=safe_exception_text(e))
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+    raw_rows = payload.get('rows')
+    if not isinstance(raw_rows, list):
+        return None
+
+    rows = _parse_packaged_rows(raw_rows)
+    try:
+        validate_corp_rows(rows)
+    except Exception as e:
+        log_event('warning', 'dart_registry_durable_invalid',
+                  error=safe_exception_text(e))
+        return None
+    return rows
+
+
+def refresh_durable_corp_rows() -> dict:
+    """Fetch DART corpCode.xml and store the compact registry in Upstash."""
+    rows = fetch_live_corp_rows()
+    validate_corp_rows(rows)
+    updated_at = datetime.now(timezone.utc).isoformat(timespec='seconds')
+    payload = {
+        'updatedAt': updated_at,
+        'rows': rows,
+    }
+
+    stored = False
+    try:
+        from lib.durable_cache import enabled as durable_cache_enabled, set_json
+        if durable_cache_enabled():
+            set_json(DART_REGISTRY_CACHE_KEY, payload, ttl=DART_REGISTRY_TTL_SECONDS)
+            stored = True
+    finally:
+        _registry_cache.clear()
+
+    log_event('info', 'dart_registry_refresh_completed',
+              rows=len(rows), stored=stored, updated_at=updated_at)
+    return {
+        'rows': len(rows),
+        'updatedAt': updated_at,
+        'stored': stored,
+        'key': DART_REGISTRY_CACHE_KEY,
+        'ttlSeconds': DART_REGISTRY_TTL_SECONDS,
+    }
+
+
 def load_corp_rows() -> list[dict]:
-    """Return the latest DART registry, falling back to the bundled snapshot."""
+    """Return the cached DART registry, falling back to the bundled snapshot."""
 
     def _fetch():
-        try:
-            return fetch_live_corp_rows()
-        except Exception:
-            return load_packaged_corp_rows()
+        rows = _load_durable_corp_rows()
+        if rows:
+            return rows
+        return load_packaged_corp_rows()
 
     return _registry_cache.get_or_set(
         'rows',
@@ -97,3 +176,28 @@ def corp_map_by_stock_code() -> dict:
         allow_stale_on_error=True,
         max_stale=7 * 24 * 3600,
     )
+
+
+def resolve_exact_stock_codes(query: str) -> list[dict]:
+    """Resolve a 6-digit stock code or exact DART corp_name to stock-code items."""
+    value = (query or '').strip()
+    if STOCK_CODE_RE.fullmatch(value):
+        return [{'code': value, 'name': '', 'corpCode': ''}]
+    if not value:
+        return []
+
+    matches = []
+    seen_codes = set()
+    for row in load_corp_rows():
+        stock_code = str(row.get('s', '') or '').strip()
+        if row.get('n') != value or not STOCK_CODE_RE.fullmatch(stock_code):
+            continue
+        if stock_code in seen_codes:
+            continue
+        seen_codes.add(stock_code)
+        matches.append({
+            'code': stock_code,
+            'name': row.get('n', ''),
+            'corpCode': row.get('c', ''),
+        })
+    return matches

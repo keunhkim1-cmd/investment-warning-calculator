@@ -144,12 +144,42 @@ def build_investment_warning_status_message(status: dict) -> str:
         lines.append('')
 
     statuses = [c.get('status') for c in status.get('releaseConditions', [])]
-    if statuses and all(value == 'exceeded' for value in statuses):
+    reasons = {c.get('statusReason') for c in status.get('releaseConditions', []) if c.get('statusReason')}
+    evaluation_dates = [
+        c.get('evaluationDate')
+        for c in status.get('releaseConditions', [])
+        if c.get('evaluationDate')
+    ]
+    is_pre_judgment_preview = bool(
+        judgment and evaluation_dates and max(evaluation_dates) < judgment
+    )
+    if statuses and all(value == 'exceeded' for value in statuses) and is_pre_judgment_preview:
+        judgment_text = sd(date.fromisoformat(judgment))
+        lines.append(f'→ 현재가 기준 3가지 모두 해당 · 최종 판단일 {judgment_text} 전 예비 산정 🔴')
+    elif statuses and all(value == 'exceeded' for value in statuses):
         lines.append('→ 3가지 모두 해당 · 경고 유지 중 🔴')
     elif statuses and all(value != 'unavailable' for value in statuses):
         safe_count = sum(1 for value in statuses if value == 'safe')
-        release_text = sd(date.fromisoformat(expected)) if expected else '다음 매매일'
-        lines.append(f'→ {safe_count}가지 해제 기준 충족 · {release_text} 해제 가능 🟢')
+        if is_pre_judgment_preview:
+            judgment_text = sd(date.fromisoformat(judgment))
+            lines.append(f'→ 현재가 기준 {safe_count}가지 해제 기준 충족 · 최종 판단일 {judgment_text} 전 예비 산정')
+        else:
+            release_text = sd(date.fromisoformat(expected)) if expected else '다음 매매일'
+            lines.append(f'→ {safe_count}가지 해제 기준 충족 · {release_text} 해제 가능 🟢')
+    elif 'future_basis_date' in reasons:
+        lines.append('→ 일부 기준일 전이라 산정 보류 · 현재가 기준 예비 확인 ⚠️')
+    elif 'future_judgment_date' in reasons:
+        judgment_text = ''
+        if judgment:
+            judgment_text = f'({sd(date.fromisoformat(judgment))}) '
+        lines.append(f'→ 최초 판단일 {judgment_text}전이라 해제 조건 산정 보류 ⚠️')
+    elif 'missing_evaluation_price' in reasons:
+        judgment_text = ''
+        if judgment:
+            judgment_text = f'({sd(date.fromisoformat(judgment))}) '
+        lines.append(f'→ 판단일 {judgment_text}종가 확인 전이라 산정 보류 ⚠️')
+    elif status.get('tradingHaltReason'):
+        lines.append('→ 매매거래정지 상태라 산정 보류 ⚠️')
     else:
         lines.append('→ 거래정지 또는 가격 데이터 문제로 산정 보류 ⚠️')
     return '\n'.join(lines)

@@ -1,10 +1,10 @@
 """Telegram command use cases."""
+from lib.dart_registry import resolve_exact_stock_codes
 from lib.http_utils import log_event, log_exception, safe_exception_text
 from lib.investment_warning_status import get_investment_warning_status
 from lib.naver import (
     calc_thresholds,
     fetch_prices,
-    stock_code as naver_stock_code,
 )
 from lib.telegram_messages import (
     build_caution_message,
@@ -12,8 +12,19 @@ from lib.telegram_messages import (
     build_warning_message,
 )
 from lib.telegram_transport import send_markdown as tg_send, send_plain as tg_send_plain
-from lib.usecases import caution_search_payload, warning_search_payload
+from lib.usecases import (
+    EXACT_STOCK_NAME_MESSAGE,
+    KRX_TEMPORARY_LIMIT_MESSAGE,
+    caution_search_payload,
+    warning_search_payload,
+)
 from lib.validation import normalize_query
+
+
+def _krx_error_message(exc: Exception) -> str:
+    if getattr(exc, 'provider', '') == 'krx' and getattr(exc, 'status', None) == 403:
+        return KRX_TEMPORARY_LIMIT_MESSAGE
+    return safe_exception_text(exc)
 
 
 def do_search(chat_id: int, query: str):
@@ -33,18 +44,24 @@ def do_search(chat_id: int, query: str):
         payload = warning_search_payload(query)
         results = payload.get('results', [])
     except Exception as e:
-        tg_send_plain(chat_id, f'❌ KRX 조회 오류: {safe_exception_text(e)}')
+        tg_send_plain(chat_id, f'❌ KRX 조회 오류: {_krx_error_message(e)}')
         return
 
     if not results:
+        if payload.get('message'):
+            tg_send_plain(chat_id, f'"{query}" — {payload["message"]}')
+            return
         tg_send_plain(chat_id, f'"{query}" — 현재 투자경고가 아님.')
         return
 
     def _legacy_thresholds(warn):
         try:
-            codes = naver_stock_code(warn['stockName'])
-            if codes:
-                prices = fetch_prices(codes[0]['code'], count=20)
+            code = str(warn.get('stockCode', '') or '').strip()
+            if not code:
+                codes = resolve_exact_stock_codes(warn['stockName'])
+                code = str(codes[0].get('code', '') or '').strip() if codes else ''
+            if code:
+                prices = fetch_prices(code, count=20)
                 return calc_thresholds(prices)
             return {'error': '종목코드를 찾을 수 없어 기준가를 계산할 수 없습니다.'}
         except Exception as e:
@@ -56,9 +73,21 @@ def do_search(chat_id: int, query: str):
     targets = results[:3]
     for warn in targets:
         try:
+            if warn.get('statusSource') == 'krx-list-fallback':
+                thresholds = _legacy_thresholds(warn)
+                tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
+                continue
             if warn.get('level') == '투자경고' and warn.get('stockCode'):
                 status = get_investment_warning_status(warn['stockCode'])
-                tg_send(chat_id, build_investment_warning_status_message(status))
+                if status.get('status') == 'investment_warning':
+                    tg_send(chat_id, build_investment_warning_status_message(status))
+                else:
+                    log_event('warning', 'telegram_warning_status_disagreed_with_list',
+                              stock_name=warn.get('stockName', ''),
+                              stock_code=warn.get('stockCode', ''),
+                              status=status.get('status', ''))
+                    thresholds = _legacy_thresholds(warn)
+                    tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
             else:
                 thresholds = _legacy_thresholds(warn)
                 tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
@@ -89,19 +118,19 @@ def do_info(chat_id: int, query: str):
                   error=safe_exception_text(e))
 
     try:
-        codes = naver_stock_code(query)
+        codes = resolve_exact_stock_codes(query)
     except Exception as e:
         log_exception('telegram_info_stock_lookup_failed')
         tg_send_plain(chat_id, f'❌ 종목 조회 오류: {safe_exception_text(e)}')
         return
 
     if not codes:
-        tg_send_plain(chat_id, f'"{query}" — 종목을 찾을 수 없습니다.')
+        tg_send_plain(chat_id, f'"{query}" — {EXACT_STOCK_NAME_MESSAGE}')
         return
 
     target = codes[0]
     stock_code = target['code']
-    stock_name = target['name']
+    stock_name = target.get('name') or query
     log_event('info', 'telegram_info_target_selected',
               stock_name=stock_name, stock_code=stock_code)
 

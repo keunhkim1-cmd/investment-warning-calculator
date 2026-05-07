@@ -74,6 +74,11 @@ export async function doSearch() {
     const results = (data.results || []).filter(r => r.level === '투자경고');
     if (results.length === 0) {
       hideWarningCards();
+      if (data.message) {
+        hideCautionCard();
+        showSearchMessage(data.message);
+        return;
+      }
       showNotWarning();
       return;
     }
@@ -156,6 +161,9 @@ function investmentWarningUnavailableReason(status, conditions) {
   const judgmentText = status.nextJudgmentDate ? `(${status.nextJudgmentDate})` : '';
   if (reasonSet.has('future_judgment_date')) {
     return `최초 판단일${judgmentText} 전이라 KIND 기준 해제 조건을 아직 확정할 수 없습니다.`;
+  }
+  if (reasonSet.has('future_basis_date')) {
+    return '일부 기준일이 아직 도래하지 않아 해당 조건은 보류하고, 확인 가능한 조건은 현재가 기준으로 예비 산정했습니다.';
   }
   if (reasonSet.has('missing_evaluation_price')) {
     return `판단일${judgmentText} 종가가 아직 확인되지 않아 해제 조건 산정을 보류합니다.`;
@@ -289,7 +297,8 @@ async function checkAndDisplay(r, warningRequestId) {
     }
 
     if (status.status === 'not_warning') {
-      showNotWarning();
+      // The shared warning search result is the user-visible classification.
+      // The status API only enriches the card with release details.
       return;
     }
 

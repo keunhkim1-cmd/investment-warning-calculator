@@ -7,6 +7,13 @@ import pytest
 from lib import investment_warning_status as iws
 
 
+@pytest.fixture(autouse=True)
+def clear_status_cache():
+    iws._status_cache.clear()
+    yield
+    iws._status_cache.clear()
+
+
 def investment_warning_download_html(
     *,
     stock_code='047040',
@@ -113,8 +120,15 @@ def lycom_warning_rows():
     }]
 
 
-def lycom_prices_until_may6():
+def lycom_prices_until_may7():
     rows = [
+        ('2026-04-14', 4200),
+        ('2026-04-15', 4300),
+        ('2026-04-16', 4400),
+        ('2026-04-17', 4500),
+        ('2026-04-20', 5000),
+        ('2026-04-21', 5100),
+        ('2026-04-22', 5300),
         ('2026-04-23', 5570),
         ('2026-04-24', 5400),
         ('2026-04-27', 5560),
@@ -123,6 +137,7 @@ def lycom_prices_until_may6():
         ('2026-04-30', 5210),
         ('2026-05-04', 5470),
         ('2026-05-06', 5220),
+        ('2026-05-07', 5250),
     ]
     return [{'date': day, 'close': close} for day, close in rows]
 
@@ -348,10 +363,10 @@ def test_marks_release_conditions_as_exceeded(monkeypatch):
     ]
 
 
-def test_keeps_lycom_conditions_pending_before_kind_judgment_date(monkeypatch):
+def test_evaluates_lycom_conditions_with_current_price_before_kind_judgment_date(monkeypatch):
     install_status_stubs(
         monkeypatch,
-        prices=lycom_prices_until_may6(),
+        prices=lycom_prices_until_may7(),
         rows=lycom_warning_rows(),
     )
     monkeypatch.setattr(iws, 'fetch_investment_warning_designation_disclosure', lambda row: {
@@ -369,36 +384,33 @@ def test_keeps_lycom_conditions_pending_before_kind_judgment_date(monkeypatch):
     assert status['releaseConditions'] == [
         {
             'type': 'five_day_gain',
-            'status': 'unavailable',
-            'basisDate': '2026-05-11',
-            'basisPrice': None,
+            'status': 'safe',
+            'basisDate': '2026-04-28',
+            'basisPrice': 5190,
             'thresholdRate': 0.6,
-            'thresholdPrice': None,
-            'evaluationDate': '2026-05-18',
-            'evaluationPrice': None,
-            'statusReason': 'future_judgment_date',
+            'thresholdPrice': 8304,
+            'evaluationDate': '2026-05-07',
+            'evaluationPrice': 5250,
         },
         {
             'type': 'fifteen_day_gain',
-            'status': 'unavailable',
-            'basisDate': '2026-04-23',
-            'basisPrice': None,
+            'status': 'safe',
+            'basisDate': '2026-04-14',
+            'basisPrice': 4200,
             'thresholdRate': 1.0,
-            'thresholdPrice': None,
-            'evaluationDate': '2026-05-18',
-            'evaluationPrice': None,
-            'statusReason': 'future_judgment_date',
+            'thresholdPrice': 8400,
+            'evaluationDate': '2026-05-07',
+            'evaluationPrice': 5250,
         },
         {
             'type': 'fifteen_day_high',
-            'status': 'unavailable',
-            'basisDate': None,
-            'basisPrice': None,
+            'status': 'safe',
+            'basisDate': '2026-04-23',
+            'basisPrice': 5570,
             'thresholdRate': None,
-            'thresholdPrice': None,
-            'evaluationDate': '2026-05-18',
-            'evaluationPrice': None,
-            'statusReason': 'future_judgment_date',
+            'thresholdPrice': 5570,
+            'evaluationDate': '2026-05-07',
+            'evaluationPrice': 5250,
         },
     ]
 
@@ -495,6 +507,29 @@ def test_returns_not_warning_when_stock_absent(monkeypatch):
     install_status_stubs(monkeypatch, rows=[])
 
     assert iws.get_investment_warning_status('005930')['status'] == 'not_warning'
+
+
+def test_caches_live_status_for_same_day(monkeypatch):
+    calls = {'rows': 0}
+
+    def rows(stock_code, now=None):
+        calls['rows'] += 1
+        return lycom_warning_rows()
+
+    monkeypatch.setattr(iws, 'fetch_investment_warning_rows', rows)
+    monkeypatch.setattr(iws, 'fetch_current_trading_halt_status', lambda stock_code: {'status': 'not_halted', 'reason': None})
+    monkeypatch.setattr(iws, 'fetch_investment_warning_designation_disclosure', lambda row: {
+        'url': 'https://kind.krx.co.kr/external/2026/04/30/001702/20260430003898/70804.htm',
+        'html': lycom_disclosure_html(),
+    })
+    monkeypatch.setattr(iws, 'fetch_daily_close_prices', lambda stock_code, start, end: lycom_prices_until_may7())
+
+    first = iws.get_investment_warning_status('388790')
+    second = iws.get_investment_warning_status('388790')
+
+    assert first['status'] == 'investment_warning'
+    assert second['status'] == 'investment_warning'
+    assert calls['rows'] == 1
 
 
 def test_validates_stock_code():

@@ -8,9 +8,10 @@ from datetime import date, datetime, timedelta, timezone
 
 from lib.dart import search_disclosure
 from lib.dart_base import DART_SEARCH_OK_STATUSES, raise_for_status
+from lib.dart_registry import resolve_exact_stock_codes
 from lib.forecast_policy import FORECAST_POLICY, build_forecast_signal
 from lib.holidays import count_trading_days, is_trading_day
-from lib.http_utils import safe_exception_text
+from lib.http_utils import log_event, safe_exception_text
 from lib.krx import search_kind, search_kind_caution
 from lib.http_client import ExternalAPIError
 from lib.investment_warning_status import get_investment_warning_status
@@ -20,7 +21,6 @@ from lib.naver import (
     fetch_index_prices,
     fetch_prices,
     fetch_stock_overview,
-    stock_code,
 )
 from lib.validation import (
     normalize_query,
@@ -36,6 +36,8 @@ KST = timezone(timedelta(hours=9))
 FORECAST_MAX_WORKERS = 4
 FORECAST_PRICE_COUNT = 30
 WARNING_NOTICE_REASON = '투자경고 지정예고'
+EXACT_STOCK_NAME_MESSAGE = '정확한 종목명을 입력해주세요.'
+KRX_TEMPORARY_LIMIT_MESSAGE = 'KRX KIND가 일시적으로 조회를 제한했습니다. 잠시 후 다시 시도해주세요.'
 INTERNAL_REVIEW_REASON_KEYWORDS = (
     '불건전',
     '매수관여',
@@ -136,7 +138,7 @@ def _with_warning_stock_codes(rows: list[dict]) -> list[dict]:
             stock_name = str(item.get('stockName', '') or '')
             if stock_name not in code_cache:
                 try:
-                    matches = stock_code(stock_name)
+                    matches = resolve_exact_stock_codes(stock_name)
                     code_cache[stock_name] = str(matches[0].get('code', '')) if matches else ''
                 except Exception:
                     code_cache[stock_name] = ''
@@ -147,9 +149,107 @@ def _with_warning_stock_codes(rows: list[dict]) -> list[dict]:
     return enriched
 
 
+def _warning_status_search_result(name: str, candidates: list[dict]) -> dict | None:
+    """Return current KRX investment-warning status for an exact DART match."""
+    if not candidates:
+        return None
+
+    status_errors = []
+    for candidate in candidates:
+        code = str(candidate.get('code', '') or '').strip()
+        if len(code) != 6 or not code.isdigit():
+            continue
+        try:
+            status = get_investment_warning_status(code)
+        except Exception as e:
+            status_errors.append(e)
+            log_event('warning', 'warning_search_direct_status_failed',
+                      query=name, stock_code=code, error=safe_exception_text(e))
+            continue
+        if status.get('status') != 'investment_warning':
+            continue
+
+        result = {
+            'level': '투자경고',
+            'stockName': status.get('companyName') or candidate.get('name') or name,
+            'designationDate': status.get('designationDate', ''),
+            'stockCode': code,
+        }
+        return result
+    if status_errors:
+        try:
+            fallback = _warning_list_fallback_result(name, candidates)
+            if fallback:
+                log_event('warning', 'warning_search_using_list_fallback',
+                          query=name, error=safe_exception_text(status_errors[0]))
+                return fallback
+        except Exception as e:
+            log_event('warning', 'warning_search_list_fallback_failed',
+                      query=name, error=safe_exception_text(e))
+        raise status_errors[0]
+    return None
+
+
+def _warning_list_fallback_result(name: str, candidates: list[dict]) -> dict | None:
+    """Use the KRX warning list when detailed status is temporarily blocked."""
+    candidate_codes = {
+        str(candidate.get('code', '') or '').strip()
+        for candidate in candidates
+        if str(candidate.get('code', '') or '').strip()
+    }
+    candidate_names = {
+        str(candidate.get('name', '') or '').strip()
+        for candidate in candidates
+        if str(candidate.get('name', '') or '').strip()
+    }
+    query_for_list = '' if name.isdigit() else name
+    rows = _with_warning_stock_codes(search_kind(query_for_list, raise_on_error=True))
+    for row in rows:
+        row_name = str(row.get('stockName', '') or '').strip()
+        row_code = str(row.get('stockCode', '') or '').strip()
+        name_matches = bool(candidate_names and row_name in candidate_names)
+        code_matches = bool(candidate_codes and row_code in candidate_codes)
+        if not name_matches and not code_matches:
+            continue
+        if row.get('level') != '투자경고':
+            continue
+        return {
+            'level': '투자경고',
+            'stockName': row_name or next(iter(candidate_names), name),
+            'designationDate': row.get('designationDate', ''),
+            'stockCode': row_code or next(iter(candidate_codes), ''),
+            'statusSource': 'krx-list-fallback',
+        }
+    return None
+
+
 def warning_search_payload(raw_name: str) -> dict:
     name = normalize_query(raw_name)
-    return {'results': _with_warning_stock_codes(search_kind(name)), 'query': name}
+    candidates = resolve_exact_stock_codes(name)
+    if not candidates:
+        return {
+            'results': [],
+            'query': name,
+            'message': EXACT_STOCK_NAME_MESSAGE,
+        }
+
+    try:
+        direct_result = _warning_status_search_result(name, candidates)
+    except Exception as e:
+        if _is_krx_temporary_limit(e):
+            return {
+                'results': [],
+                'query': name,
+                'message': KRX_TEMPORARY_LIMIT_MESSAGE,
+            }
+        raise
+    if direct_result:
+        return {'results': [direct_result], 'query': name}
+    return {'results': [], 'query': name}
+
+
+def _is_krx_temporary_limit(exc: Exception) -> bool:
+    return getattr(exc, 'provider', '') == 'krx' and getattr(exc, 'status', None) == 403
 
 
 def investment_warning_status_payload(raw_stock_code: str) -> dict:
@@ -167,7 +267,7 @@ def caution_search_payload(raw_name: str) -> dict:
       'ok'                — 활성 지정예고 + [1]/[2] 계산 완료
       'non_price_reason'  — 오늘 지정은 있으나 활성 예고 없음 (소수계좌 등)
       'not_caution'       — 투자주의 이력 자체 없음 또는 활성 이력 없음
-      'code_not_found'    — 네이버 종목코드 조회 실패
+      'code_not_found'    — DART exact 종목코드 조회 실패
       'price_error'       — 주가/지수 조회 실패 또는 데이터 부족
     최상위 예외는 호출자(핸들러)에서 'error' 로 감쌈.
     """
@@ -200,19 +300,19 @@ def caution_search_payload(raw_name: str) -> dict:
 
     base_fields['activeNotice'] = active_notice
 
-    codes = stock_code(warn['stockName'])
+    codes = resolve_exact_stock_codes(warn['stockName'])
     if not codes:
         return {'status': 'code_not_found', **base_fields}
 
     code = codes[0]['code']
-    naver_market = codes[0].get('market', '')
-    idx_symbol = _market_to_index_symbol(krx_market or naver_market)
+    code_market = krx_market
+    idx_symbol = _market_to_index_symbol(krx_market)
 
     if not idx_symbol:
         return {
             'status': 'price_error', **base_fields,
-            'code': code, 'market': naver_market,
-            'errorMessage': f'시장 구분 판정 실패 ({krx_market or naver_market!r})',
+            'code': code, 'market': code_market,
+            'errorMessage': f'시장 구분 판정 실패 ({krx_market!r})',
         }
 
     try:
@@ -224,7 +324,7 @@ def caution_search_payload(raw_name: str) -> dict:
     except Exception as e:
         return {
             'status': 'price_error', **base_fields,
-            'code': code, 'market': naver_market, 'indexSymbol': idx_symbol,
+            'code': code, 'market': code_market, 'indexSymbol': idx_symbol,
             'errorMessage': str(e),
         }
 
@@ -232,13 +332,13 @@ def caution_search_payload(raw_name: str) -> dict:
     if 'error' in escalation:
         return {
             'status': 'price_error', **base_fields,
-            'code': code, 'market': naver_market, 'indexSymbol': idx_symbol,
+            'code': code, 'market': code_market, 'indexSymbol': idx_symbol,
             'errorMessage': escalation['error'],
         }
 
     return {
         'status': 'ok', **base_fields,
-        'code': code, 'market': naver_market, 'indexSymbol': idx_symbol,
+        'code': code, 'market': code_market, 'indexSymbol': idx_symbol,
         'escalation': escalation,
         'forecastSignal': build_forecast_signal(escalation),
     }
@@ -328,7 +428,7 @@ def _warning_history_still_active(row: dict, today_date: date) -> tuple[bool, di
         return True, None
 
     try:
-        codes = stock_code(stock_name)
+        codes = resolve_exact_stock_codes(stock_name)
         if not codes:
             return False, _forecast_source_error(
                 'krx-warning-current-status',
@@ -389,23 +489,23 @@ def _forecast_item_from_notice(warn: dict, active_notice: dict) -> dict:
             'KRX 내부 감시 데이터가 필요한 지정예고 유형입니다.',
         )
 
-    codes = stock_code(warn['stockName'])
+    codes = resolve_exact_stock_codes(warn['stockName'])
     if not codes:
         return _forecast_needs_review(item, '종목코드를 찾을 수 없습니다.')
 
     code_item = codes[0]
     code = code_item.get('code', '')
-    naver_market = code_item.get('market', '')
-    idx_symbol = _market_to_index_symbol(warn.get('market', '') or naver_market)
+    code_market = warn.get('market', '')
+    idx_symbol = _market_to_index_symbol(code_market)
     item.update({
         'code': code,
-        'market': naver_market or warn.get('market', ''),
+        'market': code_market,
         'indexSymbol': idx_symbol,
     })
     if not idx_symbol:
         return _forecast_needs_review(
             item,
-            f'시장 구분 판정 실패 ({warn.get("market", "") or naver_market!r})',
+            f'시장 구분 판정 실패 ({code_market!r})',
         )
 
     try:
@@ -539,7 +639,11 @@ def market_alert_forecast_payload() -> dict:
 
 def stock_code_payload(raw_name: str) -> dict:
     name = normalize_query(raw_name)
-    return {'items': stock_code(name)}
+    items = resolve_exact_stock_codes(name)
+    payload = {'items': items, 'query': name}
+    if not items:
+        payload['message'] = EXACT_STOCK_NAME_MESSAGE
+    return payload
 
 
 def stock_price_payload(raw_code: str) -> dict:

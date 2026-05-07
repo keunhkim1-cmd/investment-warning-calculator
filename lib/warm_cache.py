@@ -3,10 +3,11 @@ import time
 from datetime import datetime, timezone
 
 from lib.dart_corp import find_corp_by_stock_code
+from lib.dart_registry import refresh_durable_corp_rows
 from lib.durable_cache import delete, enabled as durable_cache_enabled, set_json_nx
 from lib.http_utils import log_event, safe_exception_text
 from lib.krx import search_kind, search_kind_caution
-from lib.naver import fetch_index_prices, fetch_prices, stock_code
+from lib.naver import fetch_index_prices, fetch_prices
 from lib.usecases import market_alert_forecast_payload
 
 
@@ -61,10 +62,10 @@ def _run_task(name: str, fn) -> dict:
 
 def warm_cache() -> list[dict]:
     tasks = [
+        ('dart-corp-registry-refresh', refresh_durable_corp_rows),
         ('krx-warning', lambda: {'items': len(search_kind(''))}),
         ('krx-caution', lambda: {'items': len(search_kind_caution(''))}),
         ('market-alert-forecast', lambda: market_alert_forecast_payload()['summary']),
-        ('naver-code-samsung', lambda: {'items': len(stock_code('삼성전자'))}),
         ('naver-price-samsung', lambda: {'items': len(fetch_prices('005930', count=30))}),
         ('naver-index-kospi', lambda: {'items': len(fetch_index_prices('KOSPI', count=30))}),
         ('naver-index-kosdaq', lambda: {'items': len(fetch_index_prices('KOSDAQ', count=30))}),

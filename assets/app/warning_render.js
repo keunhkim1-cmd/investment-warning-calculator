@@ -229,6 +229,7 @@ export function renderConditions(t) {
 
   function statusReasonLabel(reason) {
     if (reason === 'future_judgment_date') return '판단일 전';
+    if (reason === 'future_basis_date') return '기준일 전';
     if (reason === 'missing_basis_price') return '기준가 대기';
     if (reason === 'missing_evaluation_price') return '판단가 대기';
     return '보류';

@@ -2,6 +2,7 @@ import unittest
 from datetime import date, datetime
 from unittest.mock import patch
 
+from lib.http_client import ExternalAPIError
 from lib.errors import DartError
 from lib import usecases
 
@@ -9,25 +10,214 @@ from lib import usecases
 class UsecaseTests(unittest.TestCase):
     def test_warning_search_normalizes_query_and_returns_contract(self):
         with (
-            patch.object(usecases, 'search_kind', return_value=[{
-                'stockName': '삼성전자',
-                'level': '투자경고',
-            }]) as search,
-            patch.object(usecases, 'stock_code', return_value=[{
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
                 'code': '005930',
                 'name': '삼성전자',
-            }]),
+            }]) as resolve,
+            patch.object(usecases, 'get_investment_warning_status', return_value={
+                'status': 'investment_warning',
+                'stockCode': '005930',
+                'companyName': '삼성전자',
+                'designationDate': '2026-05-04',
+            }),
         ):
             payload = usecases.warning_search_payload(' 삼성전자 ')
 
-        search.assert_called_once_with('삼성전자')
+        resolve.assert_any_call('삼성전자')
         self.assertEqual(payload, {
             'results': [{
-                'stockName': '삼성전자',
                 'level': '투자경고',
+                'stockName': '삼성전자',
+                'designationDate': '2026-05-04',
                 'stockCode': '005930',
             }],
             'query': '삼성전자',
+        })
+
+    def test_warning_search_uses_exact_dart_and_status_source(self):
+        with (
+            patch.object(usecases, 'search_kind') as search,
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '388790',
+                'name': '라이콤',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', return_value={
+                'status': 'investment_warning',
+                'stockCode': '388790',
+                'companyName': '라이콤',
+                'designationDate': '2026-05-04',
+            }) as get_status,
+        ):
+            payload = usecases.warning_search_payload('라이콤')
+
+        search.assert_not_called()
+        get_status.assert_called_once_with('388790')
+        self.assertEqual(payload, {
+            'results': [{
+                'level': '투자경고',
+                'stockName': '라이콤',
+                'designationDate': '2026-05-04',
+                'stockCode': '388790',
+            }],
+            'query': '라이콤',
+        })
+
+    def test_warning_search_stays_empty_when_exact_status_says_not_warning(self):
+        with (
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '005930',
+                'name': '삼성전자',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', return_value={
+                'status': 'not_warning',
+                'stockCode': '005930',
+            }),
+        ):
+            payload = usecases.warning_search_payload('삼성전자')
+
+        self.assertEqual(payload, {'results': [], 'query': '삼성전자'})
+
+    def test_warning_search_requires_exact_name_match(self):
+        with (
+            patch.object(usecases, 'search_kind') as search,
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[]),
+            patch.object(usecases, 'get_investment_warning_status') as get_status,
+        ):
+            payload = usecases.warning_search_payload('라이')
+
+        search.assert_not_called()
+        get_status.assert_not_called()
+        self.assertEqual(payload, {
+            'results': [],
+            'query': '라이',
+            'message': usecases.EXACT_STOCK_NAME_MESSAGE,
+        })
+
+    def test_warning_search_accepts_direct_six_digit_code(self):
+        with (
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '005930',
+                'name': '',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', return_value={
+                'status': 'not_warning',
+                'stockCode': '005930',
+            }) as get_status,
+        ):
+            payload = usecases.warning_search_payload('005930')
+
+        get_status.assert_called_once_with('005930')
+        self.assertEqual(payload, {'results': [], 'query': '005930'})
+
+    def test_warning_search_surfaces_krx_detail_failure(self):
+        with (
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '388790',
+                'name': '라이콤',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', side_effect=RuntimeError('krx down')),
+            patch.object(usecases, 'search_kind', return_value=[]),
+        ):
+            with self.assertRaises(RuntimeError):
+                usecases.warning_search_payload('라이콤')
+
+    def test_warning_search_uses_exact_list_fallback_when_detail_is_blocked(self):
+        with (
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '388790',
+                'name': '라이콤',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', side_effect=RuntimeError('krx 403')),
+            patch.object(usecases, 'search_kind', return_value=[{
+                'stockName': '라이콤',
+                'level': '투자경고',
+                'designationDate': '2026-05-04',
+                'stockCode': '388790',
+            }]) as search,
+        ):
+            payload = usecases.warning_search_payload('라이콤')
+
+        search.assert_called_once_with('라이콤', raise_on_error=True)
+        self.assertEqual(payload, {
+            'results': [{
+                'level': '투자경고',
+                'stockName': '라이콤',
+                'designationDate': '2026-05-04',
+                'stockCode': '388790',
+                'statusSource': 'krx-list-fallback',
+            }],
+            'query': '라이콤',
+        })
+
+    def test_warning_search_uses_code_list_fallback_for_direct_code(self):
+        with (
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '388790',
+                'name': '',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', side_effect=RuntimeError('krx 403')),
+            patch.object(usecases, 'search_kind', return_value=[{
+                'stockName': '라이콤',
+                'level': '투자경고',
+                'designationDate': '2026-05-04',
+                'stockCode': '388790',
+            }]) as search,
+        ):
+            payload = usecases.warning_search_payload('388790')
+
+        search.assert_called_once_with('', raise_on_error=True)
+        self.assertEqual(payload['results'][0]['stockName'], '라이콤')
+        self.assertEqual(payload['results'][0]['stockCode'], '388790')
+
+    def test_warning_search_returns_temporary_limit_message_when_all_krx_sources_blocked(self):
+        error = ExternalAPIError(
+            'krx HTTP 403 while requesting https://kind.krx.co.kr/investwarn/investattentwarnrisky.do',
+            provider='krx',
+            status=403,
+            url='https://kind.krx.co.kr/investwarn/investattentwarnrisky.do',
+        )
+        with (
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+                'code': '388790',
+                'name': '라이콤',
+            }]),
+            patch.object(usecases, 'get_investment_warning_status', side_effect=error),
+            patch.object(usecases, 'search_kind', side_effect=error),
+        ):
+            payload = usecases.warning_search_payload('라이콤')
+
+        self.assertEqual(payload, {
+            'results': [],
+            'query': '라이콤',
+            'message': usecases.KRX_TEMPORARY_LIMIT_MESSAGE,
+        })
+
+    def test_stock_code_payload_uses_exact_dart_resolver(self):
+        with patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
+            'code': '388790',
+            'name': '라이콤',
+            'corpCode': '01569102',
+        }]) as resolve:
+            payload = usecases.stock_code_payload(' 라이콤 ')
+
+        resolve.assert_called_once_with('라이콤')
+        self.assertEqual(payload, {
+            'items': [{
+                'code': '388790',
+                'name': '라이콤',
+                'corpCode': '01569102',
+            }],
+            'query': '라이콤',
+        })
+
+    def test_stock_code_payload_returns_exact_name_message_on_miss(self):
+        with patch.object(usecases, 'resolve_exact_stock_codes', return_value=[]):
+            payload = usecases.stock_code_payload('라이')
+
+        self.assertEqual(payload, {
+            'items': [],
+            'query': '라이',
+            'message': usecases.EXACT_STOCK_NAME_MESSAGE,
         })
 
     def test_investment_warning_status_payload_validates_stock_code(self):
@@ -145,7 +335,7 @@ class CautionSearchPayloadTests(unittest.TestCase):
         }
         with (
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
-            patch.object(usecases, 'stock_code', return_value=[]),
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[]),
         ):
             payload = usecases.caution_search_payload('코드없음')
         self.assertEqual(payload['status'], 'code_not_found')
@@ -172,7 +362,7 @@ class CautionSearchPayloadTests(unittest.TestCase):
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
             patch.object(
                 usecases,
-                'stock_code',
+                'resolve_exact_stock_codes',
                 return_value=[{'code': '005930', 'name': '풀파이프', 'market': 'KOSPI'}],
             ),
             patch.object(usecases, 'fetch_prices', return_value=[]),
@@ -252,7 +442,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
                 'designationDate': notice,
             }]),
             patch.object(usecases, 'search_kind_caution', return_value=rows),
-            patch.object(usecases, 'stock_code', side_effect=codes),
+            patch.object(usecases, 'resolve_exact_stock_codes', side_effect=codes),
             patch.object(usecases, 'fetch_prices', side_effect=prices),
             patch.object(usecases, 'fetch_index_prices', return_value=[{'date': '2026-04-24', 'close': 1.0} for _ in range(16)]),
             patch.object(usecases, 'calc_official_escalation', side_effect=escalation),
@@ -282,7 +472,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
                 'designationDate': '2026-03-02',
             }]),
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
-            patch.object(usecases, 'stock_code', return_value=[{
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
                 'code': '000004',
                 'name': '재예고종목',
                 'market': 'KOSPI',
@@ -361,7 +551,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, '_today_kst_date', return_value=today),
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
             patch.object(usecases, 'search_kind', side_effect=RuntimeError('warning down')),
-            patch.object(usecases, 'stock_code', return_value=[{
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{
                 'code': '000005',
                 'name': '조회오류후보',
                 'market': 'KOSPI',
@@ -392,13 +582,13 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, '_today_kst_date', return_value=today),
             patch.object(usecases, 'search_kind', return_value=[]),
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
-            patch.object(usecases, 'stock_code') as stock_code,
+            patch.object(usecases, 'resolve_exact_stock_codes') as resolve_exact_stock_codes,
         ):
             payload = usecases.market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['needsReview'], 1)
         self.assertEqual(payload['items'][0]['calcStatus'], 'needs_review')
-        stock_code.assert_not_called()
+        resolve_exact_stock_codes.assert_not_called()
 
     def test_forecast_price_failure_is_review_needs_review(self):
         today = date(2026, 4, 24)
@@ -407,7 +597,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, '_today_kst_date', return_value=today),
             patch.object(usecases, 'search_kind', return_value=[]),
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
-            patch.object(usecases, 'stock_code', return_value=[{'code': '000003', 'name': '가격오류', 'market': 'KOSPI'}]),
+            patch.object(usecases, 'resolve_exact_stock_codes', return_value=[{'code': '000003', 'name': '가격오류', 'market': 'KOSPI'}]),
             patch.object(usecases, 'fetch_prices', side_effect=RuntimeError('timeout')),
             patch.object(usecases, 'fetch_index_prices', return_value=[{'date': '2026-04-24', 'close': 1.0} for _ in range(16)]),
         ):

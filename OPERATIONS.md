@@ -23,6 +23,10 @@ Recommended flow:
 Required production checks:
 
 - `/api/telegram` should report `configured`.
+- `python3 scripts/set_telegram_webhook.py --info` should report the canonical
+  Production URL, currently `https://kh-bot.vercel.app/api/telegram`. If it
+  points at an old Vercel domain or reports `307 Temporary Redirect`, run
+  `python3 scripts/set_telegram_webhook.py`.
 - `/api/warm-cache` should return 401 without Vercel's cron bearer token, not 503.
 
 ### Required Checks After Deploy
@@ -184,7 +188,8 @@ The job warms:
 
 - KRX warning/risky pages
 - KRX caution page
-- Samsung Electronics Naver code and price lookups
+- DART corp registry in Upstash (`dart:corp-registry:v1`)
+- Samsung Electronics Naver price lookup
 - KOSPI/KOSDAQ index price lookups
 - DART corp-code map
 
@@ -193,9 +198,10 @@ job uses a Redis lock to avoid overlapping runs.
 
 ### DART Corp Registry Refresh
 
-`data/dart-corps.json` is the bundled fallback for DART company lookup. Refresh
-it after meaningful listing changes, or schedule it in a trusted maintenance
-environment:
+`/api/warm-cache` refreshes the DART registry from `corpCode.xml` into Upstash
+on weekdays. `data/dart-corps.json` is the bundled fallback for exact company
+lookup when Upstash is unavailable or cold. Refresh the snapshot after
+meaningful listing changes, or schedule it in a trusted maintenance environment:
 
 ```bash
 DART_API_KEY=... python3 scripts/update_dart_corps.py
