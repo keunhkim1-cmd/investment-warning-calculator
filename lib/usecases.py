@@ -11,7 +11,7 @@ from lib.dart_base import DART_SEARCH_OK_STATUSES, raise_for_status
 from lib.dart_registry import resolve_exact_stock_codes
 from lib.forecast_policy import FORECAST_POLICY, build_forecast_signal
 from lib.holidays import count_trading_days, is_trading_day
-from lib.http_utils import log_event, safe_exception_text
+from lib.http_utils import safe_exception_text
 from lib.krx import search_kind, search_kind_caution
 from lib.http_client import ExternalAPIError
 from lib.investment_warning_status import get_investment_warning_status
@@ -149,92 +149,10 @@ def _with_warning_stock_codes(rows: list[dict]) -> list[dict]:
     return enriched
 
 
-def _warning_status_search_result(name: str, candidates: list[dict]) -> dict | None:
-    """Return current KRX investment-warning status for an exact DART match."""
-    if not candidates:
-        return None
-
-    status_errors = []
-    for candidate in candidates:
-        code = str(candidate.get('code', '') or '').strip()
-        if len(code) != 6 or not code.isdigit():
-            continue
-        try:
-            status = get_investment_warning_status(code)
-        except Exception as e:
-            status_errors.append(e)
-            log_event('warning', 'warning_search_direct_status_failed',
-                      query=name, stock_code=code, error=safe_exception_text(e))
-            continue
-        if status.get('status') != 'investment_warning':
-            continue
-
-        result = {
-            'level': '투자경고',
-            'stockName': status.get('companyName') or candidate.get('name') or name,
-            'designationDate': status.get('designationDate', ''),
-            'stockCode': code,
-        }
-        return result
-    if status_errors:
-        try:
-            fallback = _warning_list_fallback_result(name, candidates)
-            if fallback:
-                log_event('warning', 'warning_search_using_list_fallback',
-                          query=name, error=safe_exception_text(status_errors[0]))
-                return fallback
-        except Exception as e:
-            log_event('warning', 'warning_search_list_fallback_failed',
-                      query=name, error=safe_exception_text(e))
-        raise status_errors[0]
-    return None
-
-
-def _warning_list_fallback_result(name: str, candidates: list[dict]) -> dict | None:
-    """Use the KRX warning list when detailed status is temporarily blocked."""
-    candidate_codes = {
-        str(candidate.get('code', '') or '').strip()
-        for candidate in candidates
-        if str(candidate.get('code', '') or '').strip()
-    }
-    candidate_names = {
-        str(candidate.get('name', '') or '').strip()
-        for candidate in candidates
-        if str(candidate.get('name', '') or '').strip()
-    }
-    query_for_list = '' if name.isdigit() else name
-    rows = _with_warning_stock_codes(search_kind(query_for_list, raise_on_error=True))
-    for row in rows:
-        row_name = str(row.get('stockName', '') or '').strip()
-        row_code = str(row.get('stockCode', '') or '').strip()
-        name_matches = bool(candidate_names and row_name in candidate_names)
-        code_matches = bool(candidate_codes and row_code in candidate_codes)
-        if not name_matches and not code_matches:
-            continue
-        if row.get('level') != '투자경고':
-            continue
-        return {
-            'level': '투자경고',
-            'stockName': row_name or next(iter(candidate_names), name),
-            'designationDate': row.get('designationDate', ''),
-            'stockCode': row_code or next(iter(candidate_codes), ''),
-            'statusSource': 'krx-list-fallback',
-        }
-    return None
-
-
 def warning_search_payload(raw_name: str) -> dict:
     name = normalize_query(raw_name)
-    candidates = resolve_exact_stock_codes(name)
-    if not candidates:
-        return {
-            'results': [],
-            'query': name,
-            'message': EXACT_STOCK_NAME_MESSAGE,
-        }
-
     try:
-        direct_result = _warning_status_search_result(name, candidates)
+        rows = search_kind(name, raise_on_error=True)
     except Exception as e:
         if _is_krx_temporary_limit(e):
             return {
@@ -243,9 +161,7 @@ def warning_search_payload(raw_name: str) -> dict:
                 'message': KRX_TEMPORARY_LIMIT_MESSAGE,
             }
         raise
-    if direct_result:
-        return {'results': [direct_result], 'query': name}
-    return {'results': [], 'query': name}
+    return {'results': _with_warning_stock_codes(rows), 'query': name}
 
 
 def _is_krx_temporary_limit(exc: Exception) -> bool:

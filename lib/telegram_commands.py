@@ -1,14 +1,12 @@
 """Telegram command use cases."""
 from lib.dart_registry import resolve_exact_stock_codes
 from lib.http_utils import log_event, log_exception, safe_exception_text
-from lib.investment_warning_status import get_investment_warning_status
 from lib.naver import (
     calc_thresholds,
     fetch_prices,
 )
 from lib.telegram_messages import (
     build_caution_message,
-    build_investment_warning_status_message,
     build_warning_message,
 )
 from lib.telegram_transport import send_markdown as tg_send, send_plain as tg_send_plain
@@ -73,24 +71,8 @@ def do_search(chat_id: int, query: str):
     targets = results[:3]
     for warn in targets:
         try:
-            if warn.get('statusSource') == 'krx-list-fallback':
-                thresholds = _legacy_thresholds(warn)
-                tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
-                continue
-            if warn.get('level') == '투자경고' and warn.get('stockCode'):
-                status = get_investment_warning_status(warn['stockCode'])
-                if status.get('status') == 'investment_warning':
-                    tg_send(chat_id, build_investment_warning_status_message(status))
-                else:
-                    log_event('warning', 'telegram_warning_status_disagreed_with_list',
-                              stock_name=warn.get('stockName', ''),
-                              stock_code=warn.get('stockCode', ''),
-                              status=status.get('status', ''))
-                    thresholds = _legacy_thresholds(warn)
-                    tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
-            else:
-                thresholds = _legacy_thresholds(warn)
-                tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
+            thresholds = _legacy_thresholds(warn)
+            tg_send(chat_id, build_warning_message(warn['stockName'], warn, thresholds))
         except Exception:
             try:
                 thresholds = _legacy_thresholds(warn)

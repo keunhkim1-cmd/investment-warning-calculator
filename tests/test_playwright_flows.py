@@ -220,7 +220,6 @@ def _investment_warning_payload() -> dict[str, Any]:
 def _route_stock_dependencies(page: Page) -> None:
     page.route('**/api/stock-code?*', lambda route: _fulfill_json(route, _stock_code_payload()))
     page.route('**/api/stock-price?*', lambda route: _fulfill_json(route, _stock_price_payload()))
-    page.route('**/api/market-alerts/investment-warning?*', lambda route: _fulfill_json(route, _investment_warning_payload()))
 
 
 @pytest.mark.e2e
@@ -411,6 +410,11 @@ def test_market_alert_forecast_tab_surfaces_source_error(local_server, page: Pag
 @pytest.mark.e2e
 def test_warning_search_renders_price_thresholds_and_chart(local_server, page: Page):
     _route_stock_dependencies(page)
+    status_requests = []
+    page.route(
+        '**/api/market-alerts/investment-warning?*',
+        lambda route: (status_requests.append(route.request.url), route.abort()),
+    )
     page.route(
         '**/api/warn-search?*',
         lambda route: _fulfill_json(
@@ -442,6 +446,7 @@ def test_warning_search_renders_price_thresholds_and_chart(local_server, page: P
     expect(page.locator('#sec-verdict .b')).to_contain_text('해제 판단일')
     expect(page.locator('#sec-verdict')).not_to_contain_text('다음 거래일')
     expect(page.locator('#tvChartWarning svg')).to_be_visible()
+    assert status_requests == []
 
 
 @pytest.mark.e2e
