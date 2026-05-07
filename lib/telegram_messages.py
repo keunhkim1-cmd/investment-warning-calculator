@@ -104,20 +104,50 @@ def build_investment_warning_status_message(status: dict) -> str:
     d_date = date.fromisoformat(status['designationDate'])
     expected = status.get('expectedReleaseDate')
     judgment = status.get('nextJudgmentDate') or status.get('firstJudgmentDate')
-    basis = status.get('calculationBasis', '')
-    lines = [f'🟠 {name} 투자경고  |  지정 {sd(d_date)}', '']
+    target_date = None
+    if expected or judgment:
+        target_date = date.fromisoformat(expected or judgment)
 
-    if expected:
-        lines.append(f'해제 예상일  {sd(date.fromisoformat(expected))}')
-    elif judgment:
-        lines.append(f'다음 판단일  {sd(date.fromisoformat(judgment))}')
+    conditions = [c for c in status.get('releaseConditions', []) if isinstance(c, dict)]
+    evaluation_dates = [c.get('evaluationDate') for c in conditions if c.get('evaluationDate')]
+    today = date.fromisoformat(max(evaluation_dates)) if evaluation_dates else date.today()
+    elapsed = count_trading_days(d_date, today) - 1
+
+    if target_date:
+        diff = (target_date - today).days
+        if diff > 0:
+            dday = f'D-{diff}'
+        elif diff == 0:
+            dday = 'D-Day'
+        else:
+            dday = f'D+{abs(diff)}'
     else:
-        lines.append('해제 예상일  산정 보류')
-    if basis:
-        lines.append(basis)
+        dday = '산정 보류'
+
+    lines = [f'🟠 {name} 투자경고  |  {dday}', '']
+
+    def _money(value) -> str:
+        return f'{value:,}원' if isinstance(value, (int, float)) else '-'
+
+    evaluation = next(
+        (
+            c for c in conditions
+            if isinstance(c.get('evaluationPrice'), (int, float)) and c.get('evaluationDate')
+        ),
+        None,
+    )
+
+    block_lines = []
+    if evaluation:
+        t_d = date.fromisoformat(evaluation['evaluationDate'])
+        block_lines.append(f'현재가  {_money(evaluation["evaluationPrice"])}  ({sd(t_d)})')
+    if target_date:
+        block_lines.append(f'지정일  {sd(d_date)}  →  해제 판단일  {sd(target_date)}')
+    else:
+        block_lines.append(f'지정일  {sd(d_date)}  →  해제 판단일  산정 보류')
+    block_lines.append(f'경과    {elapsed} / 10 거래일')
     if status.get('tradingHaltReason'):
-        lines.append(f'사유: {status["tradingHaltReason"]}')
-    lines.append('')
+        block_lines.append(f'사유    {status["tradingHaltReason"]}')
 
     label_by_type = {
         'five_day_gain': '① T-5',
@@ -125,31 +155,42 @@ def build_investment_warning_status_message(status: dict) -> str:
         'fifteen_day_high': '③ 고점',
     }
     status_icon = {
-        'safe': '🟢 해제 가능',
-        'exceeded': '🔴 유지 조건',
-        'unavailable': '⚠️ 보류',
+        'safe': '❌',
+        'exceeded': '✅',
+        'unavailable': '⚠️',
     }
-    condition_lines = []
-    for condition in status.get('releaseConditions', []):
-        label = label_by_type.get(condition.get('type'), condition.get('type', '조건'))
-        icon = status_icon.get(condition.get('status'), '⚠️ 보류')
-        threshold = condition.get('thresholdPrice')
-        evaluation = condition.get('evaluationPrice')
-        threshold_text = f'{threshold:,}원' if isinstance(threshold, (int, float)) else '-'
-        evaluation_text = f'{evaluation:,}원' if isinstance(evaluation, (int, float)) else '-'
-        condition_lines.append(f'{label}  기준 {threshold_text} / 현재 {evaluation_text}  {icon}')
-
-    if condition_lines:
-        lines.append('```\n' + '\n'.join(condition_lines) + '\n```')
-        lines.append('')
-
-    statuses = [c.get('status') for c in status.get('releaseConditions', [])]
-    reasons = {c.get('statusReason') for c in status.get('releaseConditions', []) if c.get('statusReason')}
-    evaluation_dates = [
-        c.get('evaluationDate')
-        for c in status.get('releaseConditions', [])
-        if c.get('evaluationDate')
+    ordered = [
+        (condition_type, label_by_type[condition_type])
+        for condition_type in ('five_day_gain', 'fifteen_day_gain', 'fifteen_day_high')
     ]
+    condition_by_type = {c.get('type'): c for c in conditions}
+    row_data = []
+    for condition_type, label in ordered:
+        condition = condition_by_type.get(condition_type, {})
+        row_data.append((
+            label,
+            _money(condition.get('thresholdPrice')),
+            status_icon.get(condition.get('status'), '⚠️'),
+        ))
+
+    if row_data:
+        l_w = max(vlen(label) for label, _, _ in row_data) + 1
+        p_w = max(vlen(price) for _, price, _ in row_data)
+        sep = l_w + 2 + p_w + 3 + vlen('결과')
+        block_lines.extend([
+            '',
+            vpad_l('조건', l_w) + '  ' + vpad_r('기준가', p_w) + '   결과',
+            '─' * sep,
+        ])
+        for label, price, icon in row_data:
+            block_lines.append(vpad_l(label, l_w) + '  ' + vpad_r(price, p_w) + '   ' + icon)
+
+    block = '\n'.join(block_lines)
+    lines.append(f'```\n{block}\n```')
+    lines.append('')
+
+    statuses = [c.get('status') for c in conditions]
+    reasons = {c.get('statusReason') for c in conditions if c.get('statusReason')}
     is_pre_judgment_preview = bool(
         judgment and evaluation_dates and max(evaluation_dates) < judgment
     )
@@ -162,10 +203,10 @@ def build_investment_warning_status_message(status: dict) -> str:
         safe_count = sum(1 for value in statuses if value == 'safe')
         if is_pre_judgment_preview:
             judgment_text = sd(date.fromisoformat(judgment))
-            lines.append(f'→ 현재가 기준 {safe_count}가지 해제 기준 충족 · 최종 판단일 {judgment_text} 전 예비 산정')
+            lines.append(f'→ 현재가 기준 {safe_count}가지 미해당 · 최종 판단일 {judgment_text} 전 예비 산정 🟢')
         else:
-            release_text = sd(date.fromisoformat(expected)) if expected else '다음 매매일'
-            lines.append(f'→ {safe_count}가지 해제 기준 충족 · {release_text} 해제 가능 🟢')
+            release_text = sd(target_date) if target_date else '다음 매매일'
+            lines.append(f'→ {safe_count}가지 미해당 · {release_text} 해제 가능 🟢')
     elif 'future_basis_date' in reasons:
         lines.append('→ 일부 기준일 전이라 산정 보류 · 현재가 기준 예비 확인 ⚠️')
     elif 'future_judgment_date' in reasons:
@@ -192,7 +233,7 @@ def build_caution_message(d: dict) -> str:
     name = d.get('stockName', query)
 
     if status == 'not_caution':
-        return f'"{query}" — 현재 투자경고가 아님.'
+        return f'"{query}" — 현재 투자주의/지정예고 조회 결과가 없습니다.'
 
     reason = d.get('designationReason', '')
     d_str = d.get('latestDesignationDate', '')
