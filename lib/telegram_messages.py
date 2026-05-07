@@ -100,17 +100,31 @@ def build_investment_warning_status_message(status: dict) -> str:
     if status.get('status') == 'not_warning':
         return f'"{status.get("stockCode", "")}" — 현재 투자경고가 아님.'
 
+    def _optional_date(value) -> date | None:
+        if not isinstance(value, str):
+            return None
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+
     name = status.get('companyName') or status.get('stockCode', '')
     d_date = date.fromisoformat(status['designationDate'])
-    expected = status.get('expectedReleaseDate')
-    judgment = status.get('nextJudgmentDate') or status.get('firstJudgmentDate')
-    target_date = None
-    if expected or judgment:
-        target_date = date.fromisoformat(expected or judgment)
+    expected_date = _optional_date(status.get('expectedReleaseDate'))
+    judgment_date = (
+        _optional_date(status.get('nextJudgmentDate'))
+        or _optional_date(status.get('firstJudgmentDate'))
+    )
+    target_date = expected_date or judgment_date
 
     conditions = [c for c in status.get('releaseConditions', []) if isinstance(c, dict)]
-    evaluation_dates = [c.get('evaluationDate') for c in conditions if c.get('evaluationDate')]
-    today = date.fromisoformat(max(evaluation_dates)) if evaluation_dates else date.today()
+    evaluation_dates = [
+        value
+        for c in conditions
+        if isinstance(value := c.get('evaluationDate'), str)
+    ]
+    latest_evaluation_date = max(evaluation_dates) if evaluation_dates else None
+    today = date.fromisoformat(latest_evaluation_date) if latest_evaluation_date else date.today()
     elapsed = count_trading_days(d_date, today) - 1
 
     if target_date:
@@ -163,14 +177,19 @@ def build_investment_warning_status_message(status: dict) -> str:
         (condition_type, label_by_type[condition_type])
         for condition_type in ('five_day_gain', 'fifteen_day_gain', 'fifteen_day_high')
     ]
-    condition_by_type = {c.get('type'): c for c in conditions}
+    condition_by_type: dict[str, dict] = {
+        condition_type: c
+        for c in conditions
+        if isinstance(condition_type := c.get('type'), str)
+    }
     row_data = []
     for condition_type, label in ordered:
         condition = condition_by_type.get(condition_type, {})
+        condition_status = condition.get('status')
         row_data.append((
             label,
             _money(condition.get('thresholdPrice')),
-            status_icon.get(condition.get('status'), '⚠️'),
+            status_icon.get(condition_status, '⚠️') if isinstance(condition_status, str) else '⚠️',
         ))
 
     if row_data:
@@ -191,18 +210,22 @@ def build_investment_warning_status_message(status: dict) -> str:
 
     statuses = [c.get('status') for c in conditions]
     reasons = {c.get('statusReason') for c in conditions if c.get('statusReason')}
-    is_pre_judgment_preview = bool(
-        judgment and evaluation_dates and max(evaluation_dates) < judgment
-    )
-    if statuses and all(value == 'exceeded' for value in statuses) and is_pre_judgment_preview:
-        judgment_text = sd(date.fromisoformat(judgment))
+    pre_judgment_date = None
+    if (
+        judgment_date
+        and latest_evaluation_date
+        and date.fromisoformat(latest_evaluation_date) < judgment_date
+    ):
+        pre_judgment_date = judgment_date
+    if statuses and all(value == 'exceeded' for value in statuses) and pre_judgment_date:
+        judgment_text = sd(pre_judgment_date)
         lines.append(f'→ 현재가 기준 3가지 모두 해당 · 최종 판단일 {judgment_text} 전 예비 산정 🔴')
     elif statuses and all(value == 'exceeded' for value in statuses):
         lines.append('→ 3가지 모두 해당 · 경고 유지 중 🔴')
     elif statuses and all(value != 'unavailable' for value in statuses):
         safe_count = sum(1 for value in statuses if value == 'safe')
-        if is_pre_judgment_preview:
-            judgment_text = sd(date.fromisoformat(judgment))
+        if pre_judgment_date:
+            judgment_text = sd(pre_judgment_date)
             lines.append(f'→ 현재가 기준 {safe_count}가지 미해당 · 최종 판단일 {judgment_text} 전 예비 산정 🟢')
         else:
             release_text = sd(target_date) if target_date else '다음 매매일'
@@ -211,13 +234,13 @@ def build_investment_warning_status_message(status: dict) -> str:
         lines.append('→ 일부 기준일 전이라 산정 보류 · 현재가 기준 예비 확인 ⚠️')
     elif 'future_judgment_date' in reasons:
         judgment_text = ''
-        if judgment:
-            judgment_text = f'({sd(date.fromisoformat(judgment))}) '
+        if judgment_date:
+            judgment_text = f'({sd(judgment_date)}) '
         lines.append(f'→ 최초 판단일 {judgment_text}전이라 해제 조건 산정 보류 ⚠️')
     elif 'missing_evaluation_price' in reasons:
         judgment_text = ''
-        if judgment:
-            judgment_text = f'({sd(date.fromisoformat(judgment))}) '
+        if judgment_date:
+            judgment_text = f'({sd(judgment_date)}) '
         lines.append(f'→ 판단일 {judgment_text}종가 확인 전이라 산정 보류 ⚠️')
     elif status.get('tradingHaltReason'):
         lines.append('→ 매매거래정지 상태라 산정 보류 ⚠️')
