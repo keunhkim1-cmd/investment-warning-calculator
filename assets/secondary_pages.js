@@ -124,9 +124,8 @@ export function createSecondaryPageRenderers({
 
   function renderForecastRows(items, hasSourceErrors = false) {
     if (!Array.isArray(items) || items.length === 0) {
-      const message = hasSourceErrors
-        ? 'KRX 원천 조회가 일시적으로 제한되어 예보 후보를 확인할 수 없습니다.'
-        : '활성 투자경고 지정예고 후보가 없습니다.';
+      if (hasSourceErrors) return '';
+      const message = '활성 투자경고 지정예고 후보가 없습니다.';
       return `
         <table class="tm-tbl forecast-table">
           <tbody>
