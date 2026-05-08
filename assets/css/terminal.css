@@ -154,25 +154,21 @@
 
 .tm-sym .chip.warn {
   background: var(--color-warning-weak);
-  border: 1px solid var(--color-warning-border);
   color: var(--color-warning);
 }
 
 .tm-sym .chip.dday {
   background: var(--color-blue-weak);
-  border: 1px solid var(--color-blue-border);
   color: var(--color-blue);
 }
 
 .tm-sym .chip.past {
   background: var(--color-primary-weak);
-  border: 1px solid var(--color-border-strong);
   color: var(--color-text-secondary);
 }
 
 .tm-sym .chip.ok {
   background: var(--color-success-weak);
-  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
@@ -333,19 +329,16 @@
   height: 24px;
   padding: 0;
   background: var(--color-primary-weak);
-  border: 1px solid var(--color-border-strong);
   color: var(--color-text-secondary);
 }
 
 .tm-tbl tr.hold .lbl-col .badge {
   background: var(--color-danger-weak);
-  border-color: var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-tbl tr.clear .lbl-col .badge {
   background: var(--color-success-weak);
-  border-color: var(--color-success-border);
   color: var(--color-success);
 }
 
@@ -373,13 +366,11 @@
 
 .tm-tbl .flag.hold {
   background: var(--color-danger-weak);
-  border: 1px solid var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-tbl .flag.clear {
   background: var(--color-success-weak);
-  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
@@ -430,17 +421,14 @@
 
 .tm-verdict .tag {
   background: var(--color-surface);
-  border: 1px solid var(--color-success-border);
   color: var(--color-success);
 }
 
 .tm-verdict.hold .tag {
-  border-color: var(--color-danger-border);
   color: var(--color-danger);
 }
 
 .tm-verdict.risk .tag {
-  border-color: var(--color-warning-border);
   color: var(--color-warning);
 }
 

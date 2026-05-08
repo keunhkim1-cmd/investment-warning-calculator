@@ -121,6 +121,10 @@
   transform: scale(1.04);
 }
 
+#page-fortune .fortune-cookie:focus-visible {
+  background: var(--color-primary-weak);
+}
+
 #page-fortune .fortune-cookie:active {
   transform: scale(0.96);
 }
@@ -184,7 +188,6 @@
 
 #page-patchnotes .patch-entry-tag.feat {
   background: var(--color-blue-weak);
-  border: 1px solid var(--color-blue-border);
   color: var(--color-blue);
 }
 

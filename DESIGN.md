@@ -71,6 +71,7 @@
 - Green은 성공, 해제, 조건 통과에만 쓴다.
 - Yellow는 투자경고, 보류, 주의에만 쓴다.
 - 상태 표현은 색상과 텍스트 label, badge, marker 중 하나 이상을 함께 사용한다.
+- Button과 badge에는 border를 쓰지 않는다. 형태 구분은 fill, weak background, text color, spacing으로 처리한다.
 
 ### Dark Mode
 
@@ -178,7 +179,7 @@ Placeholder는 `회사명 또는 종목코드`처럼 허용 입력을 말한다.
 ### Button
 **Role:** Commands and compact workflow actions.
 
-Variant는 `fill` 또는 `weak`, color는 `primary`, `danger`, `light`만 사용한다. Primary fill은 neutral background다. Icon-only 또는 clear button은 `aria-label`을 가진다. Loading button은 disabled와 안정적인 폭을 유지한다.
+Variant는 `fill` 또는 `weak`, color는 `primary`, `danger`, `light`만 사용한다. Primary fill은 neutral background다. 모든 button은 borderless로 만들고, 구분은 background, text color, hover/pressed state로 처리한다. Icon-only 또는 clear button은 `aria-label`을 가진다. Loading button은 disabled와 안정적인 폭을 유지한다.
 
 ### Theme Toggle
 **Role:** Manual light/dark theme switch.
@@ -188,7 +189,7 @@ Variant는 `fill` 또는 `weak`, color는 `primary`, `danger`, `light`만 사용
 ### Badge And Status
 **Role:** Fast status recognition in rows, summaries, and rule outcomes.
 
-Badge는 텍스트 label을 반드시 포함한다. Tone은 `success`, `danger`, `warning`, `info`, `primary`만 사용한다. 반복 row 안 badge는 작은 pill을 기본으로 한다.
+Badge는 텍스트 label을 반드시 포함한다. Tone은 `success`, `danger`, `warning`, `info`, `primary`만 사용한다. 모든 badge는 borderless pill로 만들고, tone weak background와 text color만으로 상태를 구분한다. 반복 row 안 badge는 작은 pill을 기본으로 한다.
 
 ### Table
 **Role:** Dense financial, disclosure, price, and date data.
@@ -223,6 +224,7 @@ Loading, empty, error는 중앙 정렬을 허용한다. Empty는 neutral tone, e
 - Marketing landing page처럼 과한 hero, glow, blob, glass, 전역 장식 ticker를 만들지 않는다.
 - 로그인, 주문, 잔고, 관심종목, 개인화 피드를 제품 범위에 넣지 않는다.
 - Primary action에 blue, green, purple을 쓰지 않는다.
+- Button과 badge에 border 또는 1px accent stroke를 넣지 않는다. Button의 keyboard focus는 border가 아닌 background/weak state 변화로 표시한다.
 - Surface 안에 nested card를 만들거나 일반 카드 shadow로 elevation을 만들지 않는다.
 - 임의 font-size, 임의 radius, hard-coded dark colors를 feature code에 추가하지 않는다.
 
@@ -267,7 +269,7 @@ Loading, empty, error는 중앙 정렬을 허용한다. Empty는 neutral tone, e
 ### Example Component Prompts
 
 1. Create a search panel: Semantic surface, 8px radius, 1px `--color-border`, 16px padding. Title `종목 검색` uses `--text-t5`, weight 600, `--color-text-primary`. Input placeholder is `회사명 또는 종목코드`, 12px control radius, visible submit button label `검색`.
-2. Create a warning status badge: Small pill badge with visible Korean label. Use `--color-danger` and `--color-danger-weak` only when the row represents failure, risk, error, or warning-maintenance risk.
+2. Create a warning status badge: Small borderless pill badge with visible Korean label. Use `--color-danger` and `--color-danger-weak` only when the row represents failure, risk, error, or warning-maintenance risk.
 3. Create a dense disclosure table: Header uses `--text-t8`, weight 600, `--color-text-tertiary`. Date and code cells use tabular numbers and right alignment. Keep horizontal scroll on mobile.
 4. Create a top navigation bar: Sticky 52px translucent semantic surface with bottom border. Active route uses `aria-current="page"` and `--color-primary-weak`; labels remain Korean.
 

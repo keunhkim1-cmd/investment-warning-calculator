@@ -38,7 +38,6 @@
 
 #page-about .about-disclaimer .tag {
   background: var(--color-surface);
-  border: 1px solid var(--color-warning-border);
   color: var(--color-warning);
 }
 
