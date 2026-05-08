@@ -8,8 +8,9 @@
   <meta name="robots" content="index, follow" />
   <meta name="application-name" content="근형봇" />
   <!-- unify-design:ignore — meta theme-color cannot reference CSS vars; mirrors --color-background -->
-  <meta name="theme-color" content="#f2f4f6" />
-  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f4f6" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />
+  <meta name="color-scheme" content="light dark" />
   <link rel="canonical" href="https://kh-bot.vercel.app/" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="ko_KR" />
@@ -23,8 +24,8 @@
   <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
-  <link rel="stylesheet" href="assets/app.css?v=20260507-5" />
-  <script type="module" src="assets/app.js?v=20260507-5"></script>
+  <link rel="stylesheet" href="assets/app.css?v=20260508-6" />
+  <script type="module" src="assets/app.js?v=20260508-6"></script>
 </head>
 <body>
 
@@ -313,6 +314,22 @@
     </div>
   </div>
 </div>
+<button class="theme-toggle" id="themeToggleBtn" type="button" aria-label="다크 모드로 전환" aria-pressed="false" title="다크 모드로 전환">
+  <svg class="theme-toggle-icon theme-toggle-moon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3a6 6 0 0 0 9 7.5A9 9 0 1 1 12 3Z"></path>
+  </svg>
+  <svg class="theme-toggle-icon theme-toggle-sun" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2"></path>
+    <path d="M12 20v2"></path>
+    <path d="m4.93 4.93 1.41 1.41"></path>
+    <path d="m17.66 17.66 1.41 1.41"></path>
+    <path d="M2 12h2"></path>
+    <path d="M20 12h2"></path>
+    <path d="m6.34 17.66-1.41 1.41"></path>
+    <path d="m19.07 4.93-1.41 1.41"></path>
+  </svg>
+</button>
 <div class="ticker-wrap" aria-hidden="true">
   <div class="ticker-track" id="tickerTrack"></div>
 </div>

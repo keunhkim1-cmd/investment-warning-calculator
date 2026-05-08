@@ -1,6 +1,6 @@
 // 앱 부트스트랩 — 모듈 결합 + 이벤트 와이어 + 초기화.
-import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260507-5';
-import { appState } from './app/state.js?v=20260507-5';
+import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260508-6';
+import { appState } from './app/state.js?v=20260508-6';
 import {
   apiErrorMessage,
   escHtml,
@@ -8,9 +8,9 @@ import {
   hideSearchResults,
   setElementState,
   showRuntimeError,
-} from './app/dom_utils.js?v=20260507-5';
-import { toDateStr } from './app/calendar.js?v=20260507-5';
-import { doSearch, selectResult } from './app/search.js?v=20260507-5';
+} from './app/dom_utils.js?v=20260508-6';
+import { toDateStr } from './app/calendar.js?v=20260508-6';
+import { doSearch, selectResult } from './app/search.js?v=20260508-6';
 
 // ────────────────────────────────────────────────
 // 전역 에러 핸들러
@@ -21,6 +21,79 @@ window.addEventListener('error', event => {
 window.addEventListener('unhandledrejection', event => {
   showRuntimeError(event.reason || 'Unhandled promise rejection');
 });
+
+// ────────────────────────────────────────────────
+// 테마 전환 — OS 기본값 위에 사용자의 명시적 선택을 저장
+// ────────────────────────────────────────────────
+const THEME_STORAGE_KEY = 'geunhyeongbot-theme';
+const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+
+function normalizeTheme(value) {
+  return value === 'dark' || value === 'light' ? value : null;
+}
+
+function readThemePreference() {
+  try {
+    return normalizeTheme(window.localStorage.getItem(THEME_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+function writeThemePreference(theme) {
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // Storage can be unavailable in hardened browser contexts.
+  }
+}
+
+function effectiveTheme() {
+  const explicitTheme = normalizeTheme(document.documentElement.dataset.theme);
+  if (explicitTheme) return explicitTheme;
+  return themeMedia.matches ? 'dark' : 'light';
+}
+
+function systemTheme() {
+  return themeMedia.matches ? 'dark' : 'light';
+}
+
+function updateThemeToggle() {
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (!themeToggleBtn) return;
+  const isDark = effectiveTheme() === 'dark';
+  const label = isDark ? '라이트 모드로 전환' : '다크 모드로 전환';
+  themeToggleBtn.setAttribute('aria-label', label);
+  themeToggleBtn.setAttribute('aria-pressed', String(isDark));
+  themeToggleBtn.title = label;
+}
+
+function setThemePreference(theme) {
+  document.documentElement.dataset.theme = theme;
+  writeThemePreference(theme);
+  updateThemeToggle();
+}
+
+function initThemeToggle() {
+  const savedTheme = readThemePreference();
+  document.documentElement.dataset.theme = savedTheme || systemTheme();
+  updateThemeToggle();
+
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      setThemePreference(effectiveTheme() === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  themeMedia.addEventListener('change', () => {
+    if (!readThemePreference()) {
+      document.documentElement.dataset.theme = systemTheme();
+      updateThemeToggle();
+    }
+  });
+}
+initThemeToggle();
 
 // ────────────────────────────────────────────────
 // 공휴일 (data/holidays.json 단일 소스) — appState로 노출해 다른 모듈이 await

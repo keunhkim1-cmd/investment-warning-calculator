@@ -4,8 +4,8 @@ import {
   fmt,
   stateMessageHtml,
   showSearchMessage,
-} from './dom_utils.js?v=20260507-5';
-import { countTradingDays } from './calendar.js?v=20260507-5';
+} from './dom_utils.js?v=20260508-6';
+import { countTradingDays } from './calendar.js?v=20260508-6';
 
 export function hideWarningCards() {
   const rc = document.getElementById('resultCard');
