@@ -19,8 +19,8 @@ HEADERS = {
 _krx_cache = TTLCache(ttl=600, name='krx-kind', durable=True)
 
 
-def _casefold_contains(value: str, query: str) -> bool:
-    return query.casefold() in value.casefold()
+def _casefold_equals(value: str, query: str) -> bool:
+    return value.casefold() == query.casefold()
 
 
 def fetch_kind_page(
@@ -109,7 +109,7 @@ def search_kind(stock_name: str, *, raise_on_error: bool = False) -> list:
             if stock_name_key:
                 rows = [
                     r for r in rows
-                    if _casefold_contains(str(r.get('stockName', '') or ''), stock_name_key)
+                    if _casefold_equals(str(r.get('stockName', '') or ''), stock_name_key)
                 ]
             return rows
         except Exception as e:
@@ -139,7 +139,7 @@ def search_kind(stock_name: str, *, raise_on_error: bool = False) -> list:
 
 
 def search_kind_caution(stock_name: str, *, raise_on_error: bool = False) -> list:
-    """투자주의(menuIndex=1) 페이지에서 stock_name 부분일치 종목의 지정 이력 집계.
+    """투자주의(menuIndex=1) 페이지에서 stock_name 정확일치 종목의 지정 이력 집계.
 
     반환 각 항목:
       {'stockName', 'latestDesignationDate', 'latestDesignationReason',
@@ -184,7 +184,7 @@ def search_kind_caution(stock_name: str, *, raise_on_error: bool = False) -> lis
         else:
             market = ''
         name = name_m.group(1).strip()
-        if stock_name_key and not _casefold_contains(name, stock_name_key):
+        if stock_name_key and not _casefold_equals(name, stock_name_key):
             continue
         rows_by_stock.setdefault(name, []).append((dates[-1], reason, market))
 

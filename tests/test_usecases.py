@@ -75,29 +75,16 @@ class UsecaseTests(unittest.TestCase):
         get_status.assert_not_called()
         self.assertEqual(payload, {'results': [], 'query': '삼성전자'})
 
-    def test_warning_search_allows_partial_kind_list_results(self):
+    def test_warning_search_does_not_add_partial_fallback_results(self):
         with (
-            patch.object(usecases, 'search_kind', return_value=[{
-                'level': '투자경고',
-                'stockName': '라이콤',
-                'designationDate': '2026-05-04',
-                'stockCode': '388790',
-            }]) as search,
+            patch.object(usecases, 'search_kind', return_value=[]) as search,
             patch.object(usecases, 'get_investment_warning_status') as get_status,
         ):
             payload = usecases.warning_search_payload('라이')
 
         search.assert_called_once_with('라이', raise_on_error=True)
         get_status.assert_not_called()
-        self.assertEqual(payload, {
-            'results': [{
-                'level': '투자경고',
-                'stockName': '라이콤',
-                'designationDate': '2026-05-04',
-                'stockCode': '388790',
-            }],
-            'query': '라이',
-        })
+        self.assertEqual(payload, {'results': [], 'query': '라이'})
 
     def test_warning_search_surfaces_non_krx_list_failure(self):
         with (

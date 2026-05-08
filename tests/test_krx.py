@@ -28,7 +28,7 @@ def test_search_kind_fetches_only_investment_warning(monkeypatch):
     }]
 
 
-def test_search_kind_filters_case_insensitively(monkeypatch):
+def test_search_kind_matches_exact_name_case_insensitively(monkeypatch):
     monkeypatch.setattr(krx, 'fetch_kind_page', lambda menu_index, *args, **kwargs: 'html')
     monkeypatch.setattr(krx, 'parse_kind_html', lambda html, level_name: [
         {
@@ -53,9 +53,10 @@ def test_search_kind_filters_case_insensitively(monkeypatch):
         'designationDate': '2026-04-24',
         'stockCode': '240810',
     }]
+    assert krx.search_kind('ips') == []
 
 
-def test_search_kind_caution_filters_case_insensitively(monkeypatch):
+def test_search_kind_caution_matches_exact_name_case_insensitively(monkeypatch):
     html = '''
       <table><tbody>
         <tr class="icn_t_ko">
@@ -76,3 +77,4 @@ def test_search_kind_caution_filters_case_insensitively(monkeypatch):
     assert rows[0]['stockName'] == 'SK하이닉스'
     assert rows[0]['latestDesignationDate'] == '2026-05-04'
     assert rows[0]['latestDesignationReason'] == '투자경고 지정예고'
+    assert krx.search_kind_caution('하이닉스') == []
