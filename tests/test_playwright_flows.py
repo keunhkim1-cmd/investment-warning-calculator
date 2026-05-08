@@ -357,7 +357,9 @@ def test_market_alert_forecast_tab_renders_and_checks_stock(local_server, page: 
     page.get_by_role('tab', name='투자경고 예보 (개발중)').click()
 
     expect(page.locator('#forecastTitle')).to_contain_text('(개발중)')
+    expect(page.locator('#forecastRefreshBtn')).to_have_count(0)
     expect(page.locator('#forecastSummary')).to_contain_text('경보')
+    expect(page.locator('#forecastSummary')).to_contain_text('2026-04-26 09:10:00+09:00')
     expect(page.locator('#forecastContent')).to_contain_text('테스트전자')
     expect(page.locator('#forecastContent')).to_contain_text('단기급등 충족')
     expect(page.locator('#forecastContent')).to_contain_text('확인 필요')

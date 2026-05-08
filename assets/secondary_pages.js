@@ -184,12 +184,11 @@ export function createSecondaryPageRenderers({
     });
   }
 
-  async function renderMarketForecast(options = {}) {
-    const force = Boolean(options.force);
+  async function renderMarketForecast() {
     const summaryEl = document.getElementById('forecastSummary');
     const container = document.getElementById('forecastContent');
     if (!container || !summaryEl) return;
-    if (appState.forecast.loaded && !force) return;
+    if (appState.forecast.loaded) return;
     if (appState.serverBase === null) {
       summaryEl.innerHTML = '';
       setElementState(container, '로컬 서버 실행 후 예보를 조회할 수 있습니다.', 'empty');

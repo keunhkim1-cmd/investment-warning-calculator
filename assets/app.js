@@ -263,11 +263,6 @@ document.addEventListener('keydown', (event) => {
   focusNavSearch();
 });
 
-const forecastRefreshBtn = document.getElementById('forecastRefreshBtn');
-if (forecastRefreshBtn) {
-  forecastRefreshBtn.addEventListener('click', () => renderMarketForecast({ force: true }));
-}
-
 window.addEventListener('geunhyeongbot:forecast-check', event => {
   const stockName = event.detail?.stockName || '';
   if (!stockName) return;

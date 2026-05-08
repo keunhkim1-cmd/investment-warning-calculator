@@ -28,7 +28,7 @@ class WarmCacheJobTests(unittest.TestCase):
             patch.object(warm_cache, 'refresh_durable_corp_rows', return_value={'rows': 1}),
             patch.object(warm_cache, 'search_kind', return_value=[]),
             patch.object(warm_cache, 'search_kind_caution', return_value=[]),
-            patch.object(warm_cache, 'market_alert_forecast_payload', return_value={'summary': {'total': 0}}),
+            patch.object(warm_cache, 'refresh_market_alert_forecast_cache', return_value={'summary': {'total': 0}}),
             patch.object(warm_cache, 'fetch_prices', return_value=[]),
             patch.object(warm_cache, 'fetch_index_prices', return_value=[]),
             patch.object(warm_cache, 'find_corp_by_stock_code', return_value={'corp_code': '00126380'}),

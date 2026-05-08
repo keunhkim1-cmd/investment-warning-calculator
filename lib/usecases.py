@@ -9,6 +9,7 @@ from datetime import date, datetime, timedelta, timezone
 from lib.dart import search_disclosure
 from lib.dart_base import DART_SEARCH_OK_STATUSES, raise_for_status
 from lib.dart_registry import resolve_exact_stock_codes
+from lib.durable_cache import get_json as durable_get_json, set_json as durable_set_json
 from lib.forecast_policy import FORECAST_POLICY, build_forecast_signal
 from lib.holidays import count_trading_days, is_trading_day
 from lib.http_utils import safe_exception_text
@@ -35,6 +36,12 @@ from lib.validation import (
 KST = timezone(timedelta(hours=9))
 FORECAST_MAX_WORKERS = 4
 FORECAST_PRICE_COUNT = 30
+FORECAST_CACHE_KEY = 'market-alert-forecast:latest:v1'
+FORECAST_CACHE_TTL_SECONDS = 7 * 24 * 3600
+FORECAST_CACHE_MISS_MESSAGE = (
+    '투자경고 예보 캐시가 아직 준비되지 않았습니다. '
+    '평일 16:10 KST 자동 갱신 후 다시 확인해주세요.'
+)
 WARNING_NOTICE_REASON = '투자경고 지정예고'
 EXACT_STOCK_NAME_MESSAGE = '정확한 종목명을 입력해주세요.'
 KRX_TEMPORARY_LIMIT_MESSAGE = 'KRX KIND가 일시적으로 조회를 제한했습니다. 잠시 후 다시 시도해주세요.'
@@ -314,7 +321,7 @@ def _forecast_source_error_message(prefix: str, exc: Exception) -> str:
     if isinstance(exc, ExternalAPIError) and exc.provider == 'krx' and exc.status == 403:
         return (
             f'{prefix}: KRX KIND가 배포 서버 조회를 일시적으로 제한했습니다. '
-            '잠시 후 새로고침하면 재시도합니다.'
+            '다음 자동 갱신 때 재시도합니다.'
         )
     return f'{prefix}: {safe_exception_text(exc)}'
 
@@ -450,7 +457,7 @@ def _forecast_item_from_notice(warn: dict, active_notice: dict) -> dict:
     return item
 
 
-def market_alert_forecast_payload() -> dict:
+def build_market_alert_forecast_payload() -> dict:
     """KRX 투자경고 지정예고 후보군을 경보/주의보로 보수 분류한다."""
     today_date = _today_kst_date()
     today_kst = today_date.isoformat()
@@ -551,6 +558,90 @@ def market_alert_forecast_payload() -> dict:
         'items': items,
         'errors': errors,
     }
+
+
+def _empty_forecast_summary() -> dict:
+    return {
+        'total': 0,
+        'alert': 0,
+        'near': 0,
+        'watch': 0,
+        'calculated': 0,
+        'needsReview': 0,
+        'excludedCurrentWarning': 0,
+        'highRisk': 0,
+    }
+
+
+def _forecast_cache_age_seconds(payload: dict) -> int | None:
+    generated_at = payload.get('generatedAt')
+    if not generated_at:
+        return None
+    try:
+        generated_dt = datetime.fromisoformat(str(generated_at))
+    except ValueError:
+        return None
+    if generated_dt.tzinfo is None:
+        generated_dt = generated_dt.replace(tzinfo=KST)
+    age = datetime.now(KST) - generated_dt.astimezone(KST)
+    return max(0, int(age.total_seconds()))
+
+
+def _with_forecast_cache_info(payload: dict, status: str) -> dict:
+    data = dict(payload)
+    cache_info = {
+        'status': status,
+        'key': FORECAST_CACHE_KEY,
+    }
+    age_seconds = _forecast_cache_age_seconds(data)
+    if status == 'hit' and age_seconds is not None:
+        cache_info['ageSeconds'] = age_seconds
+    data['cacheInfo'] = cache_info
+    return data
+
+
+def _forecast_cache_miss_payload(message: str = FORECAST_CACHE_MISS_MESSAGE) -> dict:
+    return {
+        'todayKst': _today_kst_date().isoformat(),
+        'generatedAt': '',
+        'policy': FORECAST_POLICY,
+        'summary': _empty_forecast_summary(),
+        'items': [],
+        'errors': [_forecast_source_error('forecast-cache', message)],
+        'cacheInfo': {
+            'status': 'miss',
+            'key': FORECAST_CACHE_KEY,
+        },
+    }
+
+
+def refresh_market_alert_forecast_cache() -> dict:
+    """Build and store the latest public forecast snapshot for scheduled warmers."""
+    payload = build_market_alert_forecast_payload()
+    durable_set_json(
+        FORECAST_CACHE_KEY,
+        payload,
+        ttl=FORECAST_CACHE_TTL_SECONDS,
+    )
+    return {
+        'key': FORECAST_CACHE_KEY,
+        'ttlSeconds': FORECAST_CACHE_TTL_SECONDS,
+        'generatedAt': payload.get('generatedAt', ''),
+        'summary': payload.get('summary', {}),
+    }
+
+
+def market_alert_forecast_payload() -> dict:
+    """Return the latest scheduled forecast snapshot without touching upstreams."""
+    try:
+        cached = durable_get_json(FORECAST_CACHE_KEY)
+    except Exception:
+        return _forecast_cache_miss_payload(
+            '투자경고 예보 캐시를 읽을 수 없습니다. 다음 자동 갱신 후 다시 확인해주세요.'
+        )
+    if not isinstance(cached, dict):
+        return _forecast_cache_miss_payload()
+    return _with_forecast_cache_info(cached, 'hit')
 
 
 def stock_code_payload(raw_name: str) -> dict:

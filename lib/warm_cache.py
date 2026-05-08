@@ -8,7 +8,7 @@ from lib.durable_cache import delete, enabled as durable_cache_enabled, set_json
 from lib.http_utils import log_event, safe_exception_text
 from lib.krx import search_kind, search_kind_caution
 from lib.naver import fetch_index_prices, fetch_prices
-from lib.usecases import market_alert_forecast_payload
+from lib.usecases import refresh_market_alert_forecast_cache
 
 
 LOCK_KEY = 'cron:warm-cache:lock'
@@ -65,7 +65,7 @@ def warm_cache() -> list[dict]:
         ('dart-corp-registry-refresh', refresh_durable_corp_rows),
         ('krx-warning', lambda: {'items': len(search_kind(''))}),
         ('krx-caution', lambda: {'items': len(search_kind_caution(''))}),
-        ('market-alert-forecast', lambda: market_alert_forecast_payload()['summary']),
+        ('market-alert-forecast', refresh_market_alert_forecast_cache),
         ('naver-price-samsung', lambda: {'items': len(fetch_prices('005930', count=30))}),
         ('naver-index-kospi', lambda: {'items': len(fetch_index_prices('KOSPI', count=30))}),
         ('naver-index-kosdaq', lambda: {'items': len(fetch_index_prices('KOSDAQ', count=30))}),

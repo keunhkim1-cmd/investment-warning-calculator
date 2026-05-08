@@ -331,6 +331,73 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             'market': 'KOSPI',
         }
 
+    def test_forecast_public_payload_returns_cache_miss_without_upstream_calls(self):
+        today = date(2026, 4, 24)
+        with (
+            patch.object(usecases, '_today_kst_date', return_value=today),
+            patch.object(usecases, 'durable_get_json', return_value=None),
+            patch.object(usecases, 'search_kind_caution') as search_kind_caution,
+            patch.object(usecases, 'search_kind') as search_kind,
+            patch.object(usecases, 'fetch_prices') as fetch_prices,
+            patch.object(usecases, 'fetch_index_prices') as fetch_index_prices,
+        ):
+            payload = usecases.market_alert_forecast_payload()
+
+        self.assertEqual(payload['cacheInfo']['status'], 'miss')
+        self.assertEqual(payload['cacheInfo']['key'], usecases.FORECAST_CACHE_KEY)
+        self.assertEqual(payload['summary']['total'], 0)
+        self.assertEqual(payload['items'], [])
+        self.assertEqual(payload['errors'][0]['source'], 'forecast-cache')
+        search_kind_caution.assert_not_called()
+        search_kind.assert_not_called()
+        fetch_prices.assert_not_called()
+        fetch_index_prices.assert_not_called()
+
+    def test_forecast_public_payload_returns_cached_snapshot_with_cache_info(self):
+        cached = {
+            'todayKst': '2026-04-26',
+            'generatedAt': '2026-04-26T09:10:00+09:00',
+            'policy': {'name': 'policy'},
+            'summary': {'total': 1},
+            'items': [{'stockName': '캐시종목'}],
+            'errors': [],
+        }
+        with (
+            patch.object(usecases, 'durable_get_json', return_value=cached),
+            patch.object(usecases, 'search_kind_caution') as search_kind_caution,
+        ):
+            payload = usecases.market_alert_forecast_payload()
+
+        self.assertEqual(payload['cacheInfo']['status'], 'hit')
+        self.assertEqual(payload['cacheInfo']['key'], usecases.FORECAST_CACHE_KEY)
+        self.assertIsInstance(payload['cacheInfo']['ageSeconds'], int)
+        self.assertEqual(payload['summary']['total'], 1)
+        self.assertEqual(payload['items'][0]['stockName'], '캐시종목')
+        search_kind_caution.assert_not_called()
+
+    def test_refresh_forecast_cache_builds_and_stores_snapshot(self):
+        snapshot = {
+            'todayKst': '2026-04-26',
+            'generatedAt': '2026-04-26T16:10:00+09:00',
+            'summary': {'total': 2},
+            'items': [],
+            'errors': [],
+        }
+        with (
+            patch.object(usecases, 'build_market_alert_forecast_payload', return_value=snapshot),
+            patch.object(usecases, 'durable_set_json') as durable_set_json,
+        ):
+            result = usecases.refresh_market_alert_forecast_cache()
+
+        durable_set_json.assert_called_once_with(
+            usecases.FORECAST_CACHE_KEY,
+            snapshot,
+            ttl=usecases.FORECAST_CACHE_TTL_SECONDS,
+        )
+        self.assertEqual(result['key'], usecases.FORECAST_CACHE_KEY)
+        self.assertEqual(result['ttlSeconds'], usecases.FORECAST_CACHE_TTL_SECONDS)
+        self.assertEqual(result['summary'], {'total': 2})
+
     def test_forecast_filters_active_notices_and_excludes_current_warning(self):
         today = date(2026, 4, 24)
         notice = '2026-04-23'
@@ -371,7 +438,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, 'fetch_index_prices', return_value=[{'date': '2026-04-24', 'close': 1.0} for _ in range(16)]),
             patch.object(usecases, 'calc_official_escalation', side_effect=escalation),
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['total'], 2)
         self.assertEqual(payload['summary']['alert'], 1)
@@ -411,7 +478,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
                 'sets': [{'label': '단기급등', 'allMet': False}],
             }),
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['excludedCurrentWarning'], 0)
         self.assertEqual(payload['summary']['total'], 1)
@@ -438,7 +505,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, 'search_kind_caution', side_effect=RuntimeError('krx down')),
             patch.object(usecases, 'search_kind') as search_kind,
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['total'], 0)
         self.assertEqual(payload['items'], [])
@@ -459,7 +526,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, 'search_kind_caution', side_effect=error),
             patch.object(usecases, 'search_kind') as search_kind,
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['total'], 0)
         self.assertEqual(payload['items'], [])
@@ -493,7 +560,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
                 'sets': [{'label': '단기급등', 'allMet': False}],
             }),
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['total'], 1)
         self.assertEqual(payload['errors'][0]['source'], 'krx-warning')
@@ -508,7 +575,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
             patch.object(usecases, 'resolve_exact_stock_codes') as resolve_exact_stock_codes,
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['needsReview'], 1)
         self.assertEqual(payload['items'][0]['calcStatus'], 'needs_review')
@@ -525,7 +592,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, 'fetch_prices', side_effect=RuntimeError('timeout')),
             patch.object(usecases, 'fetch_index_prices', return_value=[{'date': '2026-04-24', 'close': 1.0} for _ in range(16)]),
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['needsReview'], 1)
         self.assertEqual(payload['items'][0]['level'], 'review')
@@ -540,7 +607,7 @@ class MarketAlertForecastPayloadTests(unittest.TestCase):
             patch.object(usecases, 'search_kind', return_value=[]),
             patch.object(usecases, 'search_kind_caution', return_value=[warn]),
         ):
-            payload = usecases.market_alert_forecast_payload()
+            payload = usecases.build_market_alert_forecast_payload()
 
         self.assertEqual(payload['summary']['total'], 0)
 

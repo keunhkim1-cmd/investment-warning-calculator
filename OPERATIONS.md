@@ -176,6 +176,7 @@ instances may remain until their local TTL expires.
 Example durable keys:
 
 - `krx-kind:kind:1:1:21:1000:YYYY-MM-DD`
+- `market-alert-forecast:latest:v1`
 - `naver-code:code:삼성전자`
 - `dart-report-summary:summary:005930:RCEPT_NO:v1`
 
@@ -188,6 +189,7 @@ The job warms:
 
 - KRX warning/risky pages
 - KRX caution page
+- investment-warning forecast snapshot (`market-alert-forecast:latest:v1`)
 - DART corp registry in Upstash (`dart:corp-registry:v1`)
 - Samsung Electronics Naver price lookup
 - KOSPI/KOSDAQ index price lookups
@@ -195,6 +197,13 @@ The job warms:
 
 Set `CRON_SECRET` in Production before deployment. With Upstash configured, the
 job uses a Redis lock to avoid overlapping runs.
+
+`/api/market-alert-forecast` is read-only against this durable snapshot. The
+snapshot TTL is 7 days so weekend/holiday gaps and a few failed cron runs keep
+serving the last successful result. Public user requests do not call KRX or
+Naver directly; if the snapshot is missing, the endpoint returns an empty
+"preparing" forecast with a `forecast-cache` source error until the next
+successful weekday 16:10 KST warm-cache run.
 
 ### DART Corp Registry Refresh
 

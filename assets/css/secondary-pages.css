@@ -38,14 +38,6 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-#page-forecast .forecast-refresh {
-  margin-left: auto;
-  min-height: 32px;
-  padding: 0 12px;
-  font-size: var(--text-t8);
-  line-height: var(--leading-t8);
-}
-
 #page-forecast .forecast-summary {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid var(--color-border);
@@ -240,10 +232,6 @@
   #page-fortune .page-card-hero,
   #page-patchnotes .page-card-hero {
     padding: 22px 14px 16px;
-  }
-
-  #page-forecast .forecast-refresh {
-    margin-left: 0;
   }
 
   #page-forecast .forecast-summary {

@@ -661,7 +661,6 @@ input[type="search"]:focus {
 }
 
 .search-btn,
-.forecast-refresh,
 .forecast-check {
   min-height: 40px;
   display: inline-flex;
@@ -679,7 +678,6 @@ input[type="search"]:focus {
 }
 
 .search-btn:hover,
-.forecast-refresh:hover,
 .forecast-check:hover {
   background: var(--color-primary-pressed);
   border-color: var(--color-primary-pressed);
