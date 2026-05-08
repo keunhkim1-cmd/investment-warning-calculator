@@ -1,6 +1,6 @@
 // 앱 부트스트랩 — 모듈 결합 + 이벤트 와이어 + 초기화.
-import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260508-7';
-import { appState } from './app/state.js?v=20260508-7';
+import { createSecondaryPageRenderers } from './secondary_pages.js?v=20260508-12';
+import { appState } from './app/state.js?v=20260508-12';
 import {
   apiErrorMessage,
   escHtml,
@@ -8,9 +8,9 @@ import {
   hideSearchResults,
   setElementState,
   showRuntimeError,
-} from './app/dom_utils.js?v=20260508-7';
-import { toDateStr } from './app/calendar.js?v=20260508-7';
-import { doSearch, selectResult } from './app/search.js?v=20260508-7';
+} from './app/dom_utils.js?v=20260508-12';
+import { toDateStr } from './app/calendar.js?v=20260508-12';
+import { doSearch, selectResult } from './app/search.js?v=20260508-12';
 
 // ────────────────────────────────────────────────
 // 전역 에러 핸들러
@@ -103,7 +103,7 @@ appState.holidaysReady = fetchJson('/data/holidays.json')
   .catch(e => console.warn('공휴일 데이터 로드 실패, 주말만 판정합니다:', e));
 
 // ────────────────────────────────────────────────
-// 페이지 전환 (about / warning / forecast / fortune / patchnotes)
+// 페이지 전환 (about / intro / warning / forecast / fortune / patchnotes)
 // ────────────────────────────────────────────────
 const { renderFortune, renderMarketForecast, renderPatchNotes } = createSecondaryPageRenderers({
   apiErrorMessage,
@@ -116,7 +116,9 @@ const { renderFortune, renderMarketForecast, renderPatchNotes } = createSecondar
 function switchPage(page, el) {
   const targetPage = document.getElementById('page-' + page);
   if (!targetPage) return;
-  const activeNav = el || document.querySelector(`[data-page="${page}"]`);
+  const activeNav = el || document.querySelector(
+    `.nav-title[data-page="${page}"], .nav-item[data-page="${page}"]`
+  );
   appState.ui.activePage = page;
 
   document.querySelectorAll('.page-section').forEach(panel => {
@@ -136,12 +138,31 @@ function switchPage(page, el) {
     else btn.removeAttribute('aria-current');
   });
 
+  let hasActiveMoreItem = false;
+  document.querySelectorAll('.nav-more-item').forEach(item => {
+    const active = item.dataset.page === page;
+    hasActiveMoreItem ||= active;
+    item.classList.toggle('active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
+  const navMoreButton = document.getElementById('navMoreButton');
+  if (navMoreButton) {
+    navMoreButton.classList.toggle('active', hasActiveMoreItem);
+    if (hasActiveMoreItem) navMoreButton.setAttribute('aria-current', 'page');
+    else navMoreButton.removeAttribute('aria-current');
+  }
+
   document.body.classList.toggle('is-warning-active', page === 'warning');
-  document.body.classList.toggle('is-terminal-active', page === 'warning' || page === 'about' || page === 'forecast' || page === 'fortune' || page === 'patchnotes');
+  document.body.classList.toggle('is-terminal-active', page === 'warning' || page === 'about' || page === 'intro' || page === 'forecast' || page === 'fortune' || page === 'patchnotes');
   if (page !== 'warning') hideSearchResults();
   if (page === 'forecast') renderMarketForecast();
   if (page === 'fortune') renderFortune();
   if (page === 'patchnotes') renderPatchNotes();
+}
+
+function isNavMoreOpen() {
+  return navMoreButton?.getAttribute('aria-expanded') === 'true';
 }
 
 // 초기 로드 시 소개 화면이 default active 이므로 body 클래스 반영
@@ -166,6 +187,9 @@ const navTabsEl = document.querySelector('.nav-tabs');
 const navTabsWrap = document.querySelector('.nav-tabs-wrap');
 const navScrollHintLeft = document.getElementById('navScrollHintLeft');
 const navScrollHint = document.getElementById('navScrollHint');
+const navMoreButton = document.getElementById('navMoreButton');
+const navMoreMenu = document.getElementById('navMoreMenu');
+const navMoreItems = Array.from(document.querySelectorAll('.nav-more-item'));
 const searchInputEl = document.getElementById('searchInput');
 const searchClearBtn = document.getElementById('searchClearBtn');
 
@@ -183,6 +207,71 @@ pageNavButtons.forEach((btn, idx) => {
     const next = pageNavButtons[nextIdx];
     next.focus();
     switchPage(next.dataset.page, next);
+  });
+});
+
+function setNavMoreOpen(open) {
+  if (!navMoreButton || !navMoreMenu) return;
+  navMoreButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+  navMoreMenu.hidden = !open;
+  if (open) syncNavMoreMenuPosition();
+}
+
+function closeNavMore() {
+  setNavMoreOpen(false);
+}
+
+function openNavMore(focusIndex = 0) {
+  setNavMoreOpen(true);
+  const nextItem = navMoreItems[focusIndex] || navMoreItems[0];
+  if (nextItem) nextItem.focus();
+}
+
+function syncNavMoreMenuPosition() {
+  if (!navMoreButton || !navMoreMenu || navMoreMenu.hidden) return;
+  const buttonRect = navMoreButton.getBoundingClientRect();
+  const menuWidth = Math.max(navMoreMenu.offsetWidth || 148, 148);
+  const viewportGap = 8;
+  const left = Math.min(
+    window.innerWidth - menuWidth - viewportGap,
+    Math.max(viewportGap, buttonRect.right - menuWidth)
+  );
+  const top = Math.max(viewportGap, buttonRect.bottom + 7);
+  navMoreMenu.style.setProperty('--nav-more-menu-left', `${Math.round(left)}px`);
+  navMoreMenu.style.setProperty('--nav-more-menu-top', `${Math.round(top)}px`);
+}
+
+if (navMoreButton && navMoreMenu) {
+  navMoreButton.addEventListener('click', () => {
+    setNavMoreOpen(navMoreButton.getAttribute('aria-expanded') !== 'true');
+  });
+  navMoreButton.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    event.preventDefault();
+    openNavMore(event.key === 'ArrowUp' ? navMoreItems.length - 1 : 0);
+  });
+}
+
+navMoreItems.forEach((item, idx) => {
+  item.addEventListener('click', () => {
+    closeNavMore();
+    switchPage(item.dataset.page);
+  });
+  item.addEventListener('keydown', event => {
+    let nextIdx = null;
+    if (event.key === 'ArrowDown') nextIdx = (idx + 1) % navMoreItems.length;
+    else if (event.key === 'ArrowUp') nextIdx = (idx - 1 + navMoreItems.length) % navMoreItems.length;
+    else if (event.key === 'Home') nextIdx = 0;
+    else if (event.key === 'End') nextIdx = navMoreItems.length - 1;
+    else if (event.key === 'Escape') {
+      event.preventDefault();
+      closeNavMore();
+      navMoreButton?.focus();
+      return;
+    }
+    if (nextIdx == null) return;
+    event.preventDefault();
+    navMoreItems[nextIdx]?.focus();
   });
 });
 
@@ -225,6 +314,7 @@ function syncNavScrollHint() {
   navTabsWrap.classList.toggle('at-scroll-end', atScrollEnd);
   navScrollHintLeft.hidden = atScrollStart;
   navScrollHint.hidden = atScrollEnd;
+  if (isNavMoreOpen()) syncNavMoreMenuPosition();
 }
 
 function scrollNavTabs(direction) {
@@ -239,7 +329,10 @@ if (navTabsEl && navScrollHintLeft && navScrollHint) {
   navTabsEl.addEventListener('scroll', syncNavScrollHint, { passive: true });
   navScrollHintLeft.addEventListener('click', () => scrollNavTabs(-1));
   navScrollHint.addEventListener('click', () => scrollNavTabs(1));
-  window.addEventListener('resize', syncNavScrollHint);
+  window.addEventListener('resize', () => {
+    syncNavScrollHint();
+    if (isNavMoreOpen()) syncNavMoreMenuPosition();
+  });
   requestAnimationFrame(syncNavScrollHint);
 }
 
@@ -281,6 +374,9 @@ window.addEventListener('geunhyeongbot:show-warning-page', () => {
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.nav-search')) {
     hideSearchResults();
+  }
+  if (!e.target.closest('.nav-more')) {
+    closeNavMore();
   }
 });
 

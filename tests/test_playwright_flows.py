@@ -227,6 +227,8 @@ def test_empty_search_shows_inline_validation(local_server, page: Page):
     page.goto(local_server)
     expect(page.locator('#page-about')).to_have_attribute('aria-hidden', 'false')
     expect(page.locator('#page-warning')).to_have_attribute('aria-hidden', 'true')
+    expect(page.locator('#page-about')).to_contain_text('우측 상단 검색창을 이용하세요')
+    expect(page.locator('#page-about')).not_to_contain_text('근형봇 소개')
 
     page.get_by_role('button', name='검색', exact=True).click()
 
@@ -244,15 +246,56 @@ def test_secondary_tabs_render_from_split_modules(local_server, page: Page):
     expect(page.locator('#fortuneContent .fortune-message')).to_be_visible()
     expect(page.locator('#fortunePanelTitle')).to_contain_text('행운')
 
-    page.get_by_role('tab', name='패치 노트').click()
+    page.get_by_role('button', name='더 보기').click()
+    page.get_by_role('menuitem', name='근형봇 소개').click()
+    expect(page.locator('#page-intro')).to_have_attribute('aria-hidden', 'false')
+    expect(page.locator('#page-intro')).to_contain_text('근형봇 소개')
+
+    page.get_by_role('button', name='더 보기').click()
+    page.get_by_role('menuitem', name='패치 노트').click()
     expect(page.locator('#patchnotesContent .patch-entry').first).to_be_visible()
+
+
+@pytest.mark.e2e
+def test_more_menu_contains_isolated_pages(local_server, page: Page):
+    page.goto(local_server)
+
+    more_button = page.get_by_role('button', name='더 보기')
+    expect(page.locator('.nav-tabs #navMoreButton')).to_have_count(1)
+    expect(page.locator('#navMoreMenu')).to_be_hidden()
+    expect(page.get_by_role('tab', name='패치 노트')).to_have_count(0)
+    expect(page.get_by_role('tab', name='근형봇 소개')).to_have_count(0)
+
+    more_button.click()
+    expect(page.locator('#navMoreMenu')).to_be_visible()
+    expect(more_button).to_have_attribute('aria-expanded', 'true')
+    expect(page.get_by_role('menuitem')).to_have_count(2)
+    expect(page.get_by_role('menuitem', name='오늘의 운세')).to_have_count(0)
+    expect(page.locator('#navMoreMenu')).to_have_css('box-shadow', 'none')
+
+    page.get_by_role('menuitem', name='근형봇 소개').click()
+    expect(page.locator('#page-intro')).to_have_attribute('aria-hidden', 'false')
+    expect(more_button).to_have_attribute('aria-current', 'page')
+
+    more_button.click()
+    page.get_by_role('menuitem', name='패치 노트').click()
+    expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
+    expect(more_button).to_have_attribute('aria-expanded', 'false')
+
+    more_button.focus()
+    page.keyboard.press('ArrowDown')
+    expect(page.get_by_role('menuitem', name='근형봇 소개')).to_be_focused()
+    page.keyboard.press('Escape')
+    expect(page.locator('#navMoreMenu')).to_be_hidden()
+    expect(more_button).to_be_focused()
 
 
 @pytest.mark.e2e
 def test_navbar_search_keeps_current_page_until_result(local_server, page: Page):
     page.goto(local_server)
 
-    page.get_by_role('tab', name='패치 노트').click()
+    page.get_by_role('button', name='더 보기').click()
+    page.get_by_role('menuitem', name='패치 노트').click()
     expect(page.locator('#page-patchnotes')).to_have_attribute('aria-hidden', 'false')
 
     page.get_by_role('searchbox', name='종목 검색').click()

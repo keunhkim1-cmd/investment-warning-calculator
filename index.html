@@ -24,8 +24,8 @@
   <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"근형봇","alternateName":"투자경고 계산기","url":"https://kh-bot.vercel.app/","applicationCategory":"FinanceApplication","operatingSystem":"Web","inLanguage":"ko-KR","description":"KRX 투자경고 지정일과 해제 조건을 한 화면에서 확인하는 한국 주식 리서치 도구입니다.","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"}}
   </script>
-  <link rel="stylesheet" href="assets/app.css?v=20260508-7" />
-  <script type="module" src="assets/app.js?v=20260508-7"></script>
+  <link rel="stylesheet" href="assets/app.css?v=20260508-12" />
+  <script type="module" src="assets/app.js?v=20260508-12"></script>
 </head>
 <body>
 
@@ -33,13 +33,26 @@
   <div class="nav-inner">
     <div class="nav-tabs-wrap">
       <button class="nav-scroll-hint nav-scroll-hint-left" id="navScrollHintLeft" type="button" aria-label="메뉴 왼쪽으로 스크롤" hidden>&lt;</button>
-      <div class="nav-tabs" role="tablist" aria-label="페이지 전환">
-        <button class="nav-title active" id="nav-about" type="button" role="tab" data-page="about" aria-controls="page-about" aria-selected="true" tabindex="0" aria-current="page" aria-label="근형봇">
-          <span class="brand-text">근형봇</span>
-        </button>
-        <button class="nav-item" id="nav-forecast" type="button" role="tab" data-page="forecast" aria-controls="page-forecast" aria-selected="false" tabindex="-1">투자경고 예보 <span class="forecast-dev-tag">(개발중)</span></button>
-        <button class="nav-item" id="nav-fortune" type="button" role="tab" data-page="fortune" aria-controls="page-fortune" aria-selected="false" tabindex="-1">오늘의 운세</button>
-        <button class="nav-item" id="nav-patchnotes" type="button" role="tab" data-page="patchnotes" aria-controls="page-patchnotes" aria-selected="false" tabindex="-1">패치 노트</button>
+      <div class="nav-tabs">
+        <div class="nav-tablist" role="tablist" aria-label="페이지 전환">
+          <button class="nav-title active" id="nav-about" type="button" role="tab" data-page="about" aria-controls="page-about" aria-selected="true" tabindex="0" aria-current="page" aria-label="근형봇">
+            <span class="brand-text">근형봇</span>
+          </button>
+          <button class="nav-item" id="nav-forecast" type="button" role="tab" data-page="forecast" aria-controls="page-forecast" aria-selected="false" tabindex="-1">투자경고 예보 <span class="forecast-dev-tag">(개발중)</span></button>
+          <button class="nav-item" id="nav-fortune" type="button" role="tab" data-page="fortune" aria-controls="page-fortune" aria-selected="false" tabindex="-1">오늘의 운세</button>
+        </div>
+        <div class="nav-more">
+          <button class="nav-more-button" id="navMoreButton" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="navMoreMenu">
+            <span>더 보기</span>
+            <svg class="nav-more-icon" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m6 9 6 6 6-6"></path>
+            </svg>
+          </button>
+          <div class="nav-more-menu" id="navMoreMenu" role="menu" aria-labelledby="navMoreButton" hidden>
+            <button class="nav-more-item" id="nav-intro" type="button" role="menuitem" data-page="intro">근형봇 소개</button>
+            <button class="nav-more-item" id="nav-patchnotes" type="button" role="menuitem" data-page="patchnotes">패치 노트</button>
+          </div>
+        </div>
       </div>
       <button class="nav-scroll-hint nav-scroll-hint-right" id="navScrollHint" type="button" aria-label="메뉴 오른쪽으로 스크롤" hidden>&gt;</button>
     </div>
@@ -67,7 +80,19 @@
 </nav>
 
 <div id="page-about" class="page-section active" role="tabpanel" aria-labelledby="nav-about" aria-hidden="false">
-  <div class="warning-terminal about-terminal">
+  <div class="warning-terminal home-terminal">
+    <div class="section-dark">
+      <div class="section-inner">
+        <section class="tm-sec home-card" aria-label="근형봇 홈">
+          <p class="home-guide">우측 상단 검색창을 이용하세요.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-intro" class="page-section" role="tabpanel" aria-labelledby="nav-intro" aria-hidden="true" hidden>
+  <div class="warning-terminal intro-terminal">
     <div class="section-dark">
       <div class="section-inner">
         <section class="tm-sec about-card" aria-labelledby="aboutTitle">

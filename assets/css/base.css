@@ -277,6 +277,14 @@ button:focus-visible {
   -webkit-overflow-scrolling: touch;
 }
 
+.nav-tablist {
+  flex: none;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .nav-tabs::-webkit-scrollbar {
   display: none;
 }
@@ -365,6 +373,90 @@ button:focus-visible {
 
 .nav-title.active,
 .nav-item.active {
+  background: var(--color-primary-weak);
+  color: var(--color-text-primary);
+}
+
+.nav-more {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.nav-more-button {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-t6);
+  line-height: var(--leading-t6);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.nav-more-button:hover,
+.nav-more-button:focus-visible,
+.nav-more-button.active,
+.nav-more-button[aria-expanded="true"] {
+  background: var(--color-primary-weak);
+  color: var(--color-text-primary);
+}
+
+.nav-more-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  transition: transform 120ms ease;
+}
+
+.nav-more-button[aria-expanded="true"] .nav-more-icon {
+  transform: rotate(180deg);
+}
+
+.nav-more-menu {
+  position: fixed;
+  top: var(--nav-more-menu-top, 52px);
+  left: var(--nav-more-menu-left, 0px);
+  z-index: 130;
+  min-width: 148px;
+  padding: 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-surface);
+  background: var(--color-surface-raised);
+}
+
+.nav-more-menu[hidden] {
+  display: none;
+}
+
+.nav-more-item {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 4px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-t7);
+  line-height: var(--leading-t7);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.nav-more-item:hover,
+.nav-more-item:focus-visible,
+.nav-more-item.active {
   background: var(--color-primary-weak);
   color: var(--color-text-primary);
 }
@@ -507,7 +599,8 @@ button:focus-visible {
 }
 
 .warning-terminal,
-.about-terminal,
+.home-terminal,
+.intro-terminal,
 .forecast-terminal,
 .fortune-terminal,
 .patchnotes-terminal {

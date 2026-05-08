@@ -31,7 +31,8 @@
     flex: 1 1 auto;
   }
 
-  .nav-item {
+  .nav-item,
+  .nav-more-button {
     min-height: 34px;
     padding: 0 10px;
     font-size: var(--text-t7);
@@ -43,7 +44,7 @@
 
   .nav-search {
     min-width: 0;
-    flex: 0 1 min(62vw, 270px);
+    flex: 0 1 min(48vw, 230px);
   }
 
   .nav-search-field,
@@ -52,7 +53,8 @@
   }
 
   .warning-terminal,
-  .about-terminal,
+  .home-terminal,
+  .intro-terminal,
   .forecast-terminal,
   .fortune-terminal,
   .patchnotes-terminal {
@@ -86,8 +88,12 @@
   }
 
   .nav-search {
-    flex-basis: min(66vw, 252px);
+    flex-basis: min(50vw, 190px);
     gap: 6px;
+  }
+
+  .nav-more-button {
+    padding: 0 8px;
   }
 
   .nav-search #searchInput {

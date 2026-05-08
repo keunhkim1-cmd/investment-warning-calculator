@@ -1,47 +1,64 @@
-/* About tab on the bright 근형봇 work-surface system. */
+/* Home and intro tabs on the bright 근형봇 work-surface system. */
 
-#page-about .about-terminal .tm-sec {
+#page-about .home-card {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  text-align: center;
+}
+
+#page-about .home-guide {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-t5);
+  line-height: var(--leading-t5);
+  font-weight: 600;
+}
+
+#page-intro .intro-terminal .tm-sec {
   overflow: hidden;
 }
 
-#page-about .about-card {
+#page-intro .about-card {
   border: 0;
   margin-top: 28px;
 }
 
-#page-about .about-card-hero {
+#page-intro .about-card-hero {
   padding: 24px 16px 18px;
   border-bottom: 1px solid var(--color-border);
 }
 
-#page-about .about-card-block {
+#page-intro .about-card-block {
   min-width: 0;
 }
 
-#page-about .about-card-block + .about-card-block {
+#page-intro .about-card-block + .about-card-block {
   border-top: 1px solid var(--color-border);
 }
 
-#page-about .about-strip {
+#page-intro .about-strip {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-#page-about .about-disclaimer .tm-verdict {
+#page-intro .about-disclaimer .tm-verdict {
   border-top: 0;
   background: var(--color-warning-weak);
 }
 
-#page-about .about-disclaimer .ico {
+#page-intro .about-disclaimer .ico {
   border-color: var(--color-warning-border);
   color: var(--color-warning);
 }
 
-#page-about .about-disclaimer .tag {
+#page-intro .about-disclaimer .tag {
   background: var(--color-surface);
   color: var(--color-warning);
 }
 
-#page-about .about-disclaimer .h {
+#page-intro .about-disclaimer .h {
   margin-top: 6px;
   color: var(--color-text-primary);
   font-size: var(--text-t5);
@@ -49,7 +66,7 @@
   font-weight: 700;
 }
 
-#page-about .about-disclaimer .b {
+#page-intro .about-disclaimer .b {
   margin-top: 4px;
   color: var(--color-text-secondary);
   font-size: var(--text-t7);
@@ -58,24 +75,24 @@
 }
 
 @media (max-width: 767px) {
-  #page-about .about-card {
+  #page-intro .about-card {
     margin-top: 22px;
   }
 
-  #page-about .about-card-hero {
+  #page-intro .about-card-hero {
     padding: 22px 14px 16px;
   }
 
-  #page-about .about-strip {
+  #page-intro .about-strip {
     grid-template-columns: 1fr;
   }
 
-  #page-about .about-strip .tm-cell {
+  #page-intro .about-strip .tm-cell {
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
   }
 
-  #page-about .about-strip .tm-cell:last-child {
+  #page-intro .about-strip .tm-cell:last-child {
     border-bottom: 0;
   }
 }
