@@ -589,7 +589,7 @@ def _forecast_cache_age_seconds(payload: dict) -> int | None:
 
 def _with_forecast_cache_info(payload: dict, status: str) -> dict:
     data = dict(payload)
-    cache_info = {
+    cache_info: dict[str, str | int] = {
         'status': status,
         'key': FORECAST_CACHE_KEY,
     }
