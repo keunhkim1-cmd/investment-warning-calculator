@@ -160,7 +160,11 @@ def create_investment_warning_calculation_basis(trading_halt_status: dict, relea
         return '매매거래정지 상태를 확인할 수 없어 해제 가능일 산정을 보류합니다.'
     if release_criteria['source'] == 'kind_disclosure':
         return 'KIND 지정 공시 원문 해제요건 기준입니다.'
-    return f"KIND 지정 공시 해제요건 파싱 실패로 기본 기준을 사용했습니다. 사유: {release_criteria.get('fallbackReason', '')}"
+    return (
+        'KIND 지정 공시 해제요건을 해석하지 못해 표준값(5일 60% / 15일 100%)으로 추정 표시 중입니다. '
+        '실공시상 종목별로 45%/75% 등 다른 기준이 적용될 수 있으므로 KIND 원문을 함께 확인해 주세요. '
+        f"사유: {release_criteria.get('fallbackReason', '')}"
+    )
 
 
 def create_future_judgment_release_conditions(

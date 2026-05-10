@@ -152,10 +152,24 @@ def fetch_investment_warning_designation_disclosure_reference(warning_row: dict)
     }
     html = kind_post_text(KIND_DISCLOSURE_DETAILS_URL, body)
     disclosures = parse_kind_disclosure_search_results(html)
-    for disclosure in disclosures:
-        if '투자경고종목지정' in normalize_disclosure_title(disclosure['title']):
-            return disclosure
-    raise InvestmentWarningStatusError('KIND 지정 공시를 상세검색에서 찾을 수 없습니다.', 'PARSE')
+    candidates = [
+        disclosure for disclosure in disclosures
+        if _is_designation_disclosure_title(disclosure['title'])
+    ]
+    if not candidates:
+        raise InvestmentWarningStatusError('KIND 지정 공시를 상세검색에서 찾을 수 없습니다.', 'PARSE')
+    candidates.sort(key=lambda d: '정정' not in normalize_disclosure_title(d['title']))
+    return candidates[0]
+
+
+def _is_designation_disclosure_title(title: str) -> bool:
+    normalized = normalize_disclosure_title(title)
+    if '투자경고종목지정' not in normalized:
+        return False
+    # '투자경고종목지정예고', '투자경고종목지정해제', '투자경고종목지정해제예고' 등은 본 지정 공시가 아님.
+    if '지정예고' in normalized or '지정해제' in normalized:
+        return False
+    return True
 
 
 def fetch_daily_close_prices(stock_code: str, start_date: str, end_date: str) -> list[dict]:

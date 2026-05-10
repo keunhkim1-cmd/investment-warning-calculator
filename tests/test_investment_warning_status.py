@@ -535,3 +535,51 @@ def test_caches_live_status_for_same_day(monkeypatch):
 def test_validates_stock_code():
     with pytest.raises(ValueError, match='stockCode'):
         iws.get_investment_warning_status('00593')
+
+
+def test_designation_disclosure_title_filter():
+    from lib.investment_warning_rows import _is_designation_disclosure_title
+
+    assert _is_designation_disclosure_title('투자경고종목 지정') is True
+    assert _is_designation_disclosure_title('[정정]투자경고종목지정') is True
+    assert _is_designation_disclosure_title('투자경고종목지정(재지정)') is True
+    # 지정예고·지정해제는 본 지정 공시가 아니므로 제외.
+    assert _is_designation_disclosure_title('[투자주의]투자경고종목 지정예고') is False
+    assert _is_designation_disclosure_title('[투자주의]투자경고종목 지정해제') is False
+    assert _is_designation_disclosure_title('[투자주의]투자경고종목 지정해제 및 재지정 예고') is False
+
+
+def test_designation_disclosure_picker_prefers_correction(monkeypatch):
+    from lib import investment_warning_rows as iwr
+
+    monkeypatch.setattr(iwr, 'kind_post_text', lambda url, body: '')
+    monkeypatch.setattr(iwr, 'parse_kind_disclosure_search_results', lambda html: [
+        {'acptNo': '111', 'title': '[투자주의]투자경고종목 지정예고'},
+        {'acptNo': '222', 'title': '투자경고종목지정'},
+        {'acptNo': '333', 'title': '[정정]투자경고종목지정'},
+    ])
+
+    picked = iwr.fetch_investment_warning_designation_disclosure_reference({
+        'companyName': 'X', 'stockCode': '000000',
+        'disclosureDate': '2026-04-13', 'designationDate': '2026-04-14',
+        'releaseDate': None,
+    })
+    assert picked['acptNo'] == '333'
+
+
+def test_year_end_closure_marked_non_trading():
+    from datetime import date as _date
+
+    from lib.holidays import is_trading_day
+
+    for year in (2024, 2025, 2026, 2027, 2029):
+        assert is_trading_day(_date(year, 12, 31)) is False, (
+            f'{year}-12-31 must be a KRX year-end closure'
+        )
+
+
+def test_arithmetic_skips_year_end_closure():
+    assert iws.add_krx_trading_days('2025-12-17', 10) == '2026-01-02'
+    assert iws.next_krx_trading_day('2025-12-30') == '2026-01-02'
+    assert iws.subtract_krx_trading_days('2026-01-05', 14) == '2025-12-11'
+    assert iws.add_krx_trading_days('2025-12-11', 10) == '2025-12-24'
