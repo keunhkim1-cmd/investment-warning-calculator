@@ -33,11 +33,10 @@ BROWSER_HEADERS = {
 }
 
 TRANSIENT_HTTP_STATUSES = frozenset({408, 425, 429, 500, 502, 503, 504})
-PROVIDER_TRANSIENT_HTTP_STATUSES = {
-    # KIND occasionally returns edge/WAF 403s from Vercel even when the same
-    # request succeeds moments later. Treat it as retryable for KRX only.
-    'krx': frozenset({403}),
-}
+# Per-provider additions to TRANSIENT_HTTP_STATUSES. Empirically KIND 403s on
+# Vercel egress are IP-block based — retrying in <2s never recovers, just
+# burns budget and doubles up alert traffic. Kept as an extension point.
+PROVIDER_TRANSIENT_HTTP_STATUSES: dict[str, frozenset[int]] = {}
 
 
 class ExternalAPIError(RuntimeError):

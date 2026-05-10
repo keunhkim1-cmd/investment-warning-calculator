@@ -63,7 +63,7 @@ def fetch_kind_page(
         cache_key,
         _fetch,
         allow_stale_on_error=True,
-        max_stale=3600,
+        max_stale=6 * 3600,
     )
 
 
