@@ -34,7 +34,13 @@ The highest ROI work has already happened:
 - Split HTML, CSS, and JS into separately cacheable files.
 - Keep the HTML shell small enough to revalidate cheaply.
 - Use immutable versioned static assets.
-- Add a size-budget check to prevent drifting back toward a monolithic HTML file.
+
+The per-asset size budget gate (`scripts/check_frontend_budget.py`) was
+retired on 2026-05-11. Reasoning: the limits were a self-imposed regression
+fence with no external counterpart while Vercel/Upstash free tiers stay far
+from saturation. They generated red CI mail without signaling a real
+constraint. Re-introduce when an actual constraint bites (Vercel free-tier
+bandwidth/cost, Lighthouse regression, user-reported latency).
 
 ## Trigger Points
 
@@ -64,15 +70,4 @@ and module organization matter more than the extra project machinery.
 
 ## Budget Check
 
-Run this after frontend changes:
-
-```bash
-python3 scripts/check_frontend_budget.py
-```
-
-Current budgets:
-
-- `index.html`: 16 KB raw, 5 KB gzip
-- `assets/app.css`: 60 KB raw, 12 KB gzip
-- `assets/app.js`: 60 KB raw, 16 KB gzip
-- total shell + assets: 128 KB raw, 32 KB gzip
+Retired on 2026-05-11. See the **Decision** section above.

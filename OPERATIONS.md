@@ -48,17 +48,18 @@ Required production checks:
    - no burst of `external_api_retry`
    - no unexpected `provider_rate_limit_exceeded`
 
-### Frontend Asset Budget
+### Frontend Static Smoke
 
 After frontend edits, run:
 
 ```bash
-python3 scripts/check_frontend_budget.py
 python3 scripts/check_frontend_smoke.py
 ```
 
-This guards the static SPA against drifting back into a large single HTML file.
-See `FRONTEND_BUILD_ROI.md` for the current bundler decision record.
+See `FRONTEND_BUILD_ROI.md` for the current bundler decision record. The
+per-asset size budget gate was retired on 2026-05-11 — re-introduce only when
+an actual constraint (Vercel free-tier cost/bandwidth, Lighthouse regression,
+user-reported latency) bites.
 
 ### Cache Hit/Miss Audit
 

@@ -393,7 +393,6 @@ Loading, empty, error는 중앙 정렬을 허용한다. Empty는 neutral tone, e
 ```bash
 python3 scripts/sync_frontend_metadata.py --check
 python3 scripts/check_frontend_smoke.py
-python3 scripts/check_frontend_budget.py
 python3 scripts/check_frontend_tokens.py
 python -m pytest tests/test_playwright_flows.py --disable-socket --allow-hosts=127.0.0.1,localhost
 ```

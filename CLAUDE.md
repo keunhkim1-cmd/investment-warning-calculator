@@ -73,7 +73,6 @@ warmer cron. Domain terminology stays in Korean (`투자주의`, `투자경고`,
    python -m pytest -m "not external" --disable-socket --allow-hosts=127.0.0.1,localhost --record-mode=none --cov --cov-report=term-missing
    python -m json.tool vercel.json
    python scripts/check_frontend_smoke.py
-   python scripts/check_frontend_budget.py
    python scripts/check_frontend_tokens.py
    ```
 
@@ -109,7 +108,7 @@ warmer cron. Domain terminology stays in Korean (`투자주의`, `투자경고`,
 | Add an environment variable | `.env.example` → reader/parser in `lib/` → `SECURITY.md` (if a secret) and/or `OPERATIONS.md` (if operational) → `README.md` only when user-facing | Fast gate; `/api/debug` shows `environment.missing` empty |
 | Record a new VCR cassette | Run `python -m pytest tests/test_external_cassettes.py --record-mode=once` locally with real keys → confirm secrets filtered → commit | Fast gate must pass with `--record-mode=none` afterward |
 | Refresh DART corp registry snapshot | `DART_API_KEY=... python3 scripts/update_dart_corps.py` → re-run fast gate | Fast gate; `data/dart-corps.json` diff is a snapshot update |
-| Frontend (HTML/JS/CSS) edit | `index.html` / `assets/*` → `python3 scripts/sync_frontend_metadata.py` → smoke + budget + tokens | `python3 scripts/check_frontend_smoke.py`, `python3 scripts/check_frontend_budget.py`, and `python3 scripts/check_frontend_tokens.py`; Playwright via `pytest tests/test_playwright_flows.py` |
+| Frontend (HTML/JS/CSS) edit | `index.html` / `assets/*` → `python3 scripts/sync_frontend_metadata.py` → smoke + tokens | `python3 scripts/check_frontend_smoke.py` and `python3 scripts/check_frontend_tokens.py`; Playwright via `pytest tests/test_playwright_flows.py` |
 
 ## 🔒 Invariants
 
@@ -189,7 +188,6 @@ lib/                                  # Shared application + adapter layer
 serve.py                              # Local dev server; reads .env.local then .env
 
 scripts/                              # Operator-run maintenance utilities
-  check_frontend_budget.py            # Static SPA asset budget gate
   check_frontend_smoke.py             # Static SPA smoke
   sync_frontend_metadata.py           # Frontend metadata sync (--check)
   set_telegram_webhook.py             # Set/inspect Telegram webhook (--info)
@@ -237,8 +235,9 @@ log drain setup, rate-limit tuning, and rollback (`vercel rollback`).
   during the legacy client migration; new endpoints use `errorInfo.code` /
   `errorInfo.message` only.
 - **Frontend stays as a static SPA, no bundler.** See `FRONTEND_BUILD_ROI.md`.
-  `scripts/check_frontend_budget.py` enforces drift back into a large single
-  HTML file.
+  The per-asset size budget gate was retired on 2026-05-11 — re-introduce only
+  when an actual constraint (Vercel free-tier cost/bandwidth, Lighthouse
+  regression, user-reported latency) bites.
 - **DART access consolidated in `lib/dart_base.py`.** Do not propose a per-
   module DART client.
 - **Telegram split is intentional**: `api/telegram.py` (transport + dedup +

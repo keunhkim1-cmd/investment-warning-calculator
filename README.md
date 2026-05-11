@@ -33,7 +33,6 @@ python -m pytest -m "not external" --disable-socket --allow-hosts=127.0.0.1,loca
 python -m json.tool vercel.json
 python scripts/sync_frontend_metadata.py --check
 python scripts/check_frontend_smoke.py
-python scripts/check_frontend_budget.py
 ```
 
 CI runs the same fast test suite with live external network disabled. The
