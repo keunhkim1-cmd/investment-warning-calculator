@@ -6,6 +6,7 @@ disclosures, and Naver daily close prices. Pure data-access — no orchestration
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timezone
 from html import unescape
 import re
@@ -87,8 +88,7 @@ def fetch_investment_warning_rows(stock_code: str, now: datetime | date | None =
 
 
 def fetch_current_trading_halt_status(stock_code: str) -> dict:
-    first_error: Exception | None = None
-    for market_type in KIND_TRADING_HALT_MARKET_TYPES:
+    def _query(market_type: str) -> dict:
         body = {
             'method': 'searchTradingHaltIssueSub',
             'currentPageSize': '3000',
@@ -102,16 +102,22 @@ def fetch_current_trading_halt_status(stock_code: str) -> dict:
             'outsvcno': '',
             'marketType': market_type,
         }
-        try:
-            status = parse_kind_current_trading_halt_status(
-                kind_post_text(KIND_TRADING_HALT_URL, body),
-            )
-        except Exception as exc:
-            if first_error is None:
-                first_error = exc
-            continue
-        if status['status'] == 'halted':
-            return status
+        return parse_kind_current_trading_halt_status(
+            kind_post_text(KIND_TRADING_HALT_URL, body),
+        )
+
+    first_error: Exception | None = None
+    with ThreadPoolExecutor(max_workers=len(KIND_TRADING_HALT_MARKET_TYPES)) as executor:
+        futures = [executor.submit(_query, mt) for mt in KIND_TRADING_HALT_MARKET_TYPES]
+        for future in as_completed(futures):
+            try:
+                status = future.result()
+            except Exception as exc:
+                if first_error is None:
+                    first_error = exc
+                continue
+            if status['status'] == 'halted':
+                return status
 
     if first_error is not None:
         return {

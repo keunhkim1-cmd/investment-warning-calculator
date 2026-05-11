@@ -191,6 +191,85 @@ def test_parses_current_kind_trading_halt_rows():
     }
 
 
+def _install_kind_post_text_stub(monkeypatch, market_responses):
+    """Stub kind_post_text to return per-marketType HTML or raise an exception.
+
+    `market_responses` maps a market_type ('1'|'2'|'6') to either an HTML string
+    or an Exception instance to raise. Concurrent calls each look up their own
+    market_type from the POST body.
+    """
+    def fake_post(url, body):
+        market_type = body['marketType']
+        if market_type not in market_responses:
+            raise AssertionError(f'unexpected marketType={market_type!r}')
+        response = market_responses[market_type]
+        if isinstance(response, Exception):
+            raise response
+        return response
+    monkeypatch.setattr(iwr_module, 'kind_post_text', fake_post)
+
+
+def test_trading_halt_returns_not_halted_when_all_markets_clear(monkeypatch):
+    _install_kind_post_text_stub(monkeypatch, {
+        '1': no_current_trading_halt_html(),
+        '2': no_current_trading_halt_html(),
+        '6': no_current_trading_halt_html(),
+    })
+
+    assert iwr_module.fetch_current_trading_halt_status('005930') == {
+        'status': 'not_halted',
+        'reason': None,
+    }
+
+
+def test_trading_halt_returns_halted_from_any_market(monkeypatch):
+    for halted_market in ('1', '2', '6'):
+        responses = {mt: no_current_trading_halt_html() for mt in ('1', '2', '6')}
+        responses[halted_market] = current_trading_halt_html(reason='조회공시 요구')
+        _install_kind_post_text_stub(monkeypatch, responses)
+
+        assert iwr_module.fetch_current_trading_halt_status('005930') == {
+            'status': 'halted',
+            'reason': '조회공시 요구',
+        }
+
+
+def test_trading_halt_reports_unknown_when_all_markets_error(monkeypatch):
+    _install_kind_post_text_stub(monkeypatch, {
+        '1': RuntimeError('boom-kospi'),
+        '2': RuntimeError('boom-kosdaq'),
+        '6': RuntimeError('boom-konex'),
+    })
+
+    result = iwr_module.fetch_current_trading_halt_status('005930')
+    assert result['status'] == 'unknown'
+    assert result['reason'] in {'boom-kospi', 'boom-kosdaq', 'boom-konex'}
+
+
+def test_trading_halt_reports_unknown_when_one_market_errors_and_others_clear(monkeypatch):
+    _install_kind_post_text_stub(monkeypatch, {
+        '1': RuntimeError('kospi outage'),
+        '2': no_current_trading_halt_html(),
+        '6': no_current_trading_halt_html(),
+    })
+
+    result = iwr_module.fetch_current_trading_halt_status('005930')
+    assert result == {'status': 'unknown', 'reason': 'kospi outage'}
+
+
+def test_trading_halt_prefers_halted_even_if_other_market_errors(monkeypatch):
+    _install_kind_post_text_stub(monkeypatch, {
+        '1': RuntimeError('kospi outage'),
+        '2': current_trading_halt_html(reason='풍문 또는 보도 관련'),
+        '6': no_current_trading_halt_html(),
+    })
+
+    assert iwr_module.fetch_current_trading_halt_status('005930') == {
+        'status': 'halted',
+        'reason': '풍문 또는 보도 관련',
+    }
+
+
 def test_parses_naver_daily_close_rows():
     text = '''
       [
