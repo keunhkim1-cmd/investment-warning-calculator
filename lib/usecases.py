@@ -177,7 +177,17 @@ def _is_krx_temporary_limit(exc: Exception) -> bool:
 
 def investment_warning_status_payload(raw_stock_code: str) -> dict:
     code = validate_stock_code(raw_stock_code)
-    return get_investment_warning_status(code)
+    try:
+        return get_investment_warning_status(code)
+    except Exception as e:
+        if _is_krx_temporary_limit(e):
+            return {
+                'status': 'temporary_limit',
+                'stockCode': code,
+                'message': KRX_TEMPORARY_LIMIT_MESSAGE,
+                'fetchedAt': datetime.now(timezone.utc).isoformat(),
+            }
+        raise
 
 
 def caution_search_payload(raw_name: str) -> dict:

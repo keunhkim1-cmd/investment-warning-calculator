@@ -11,6 +11,7 @@ from html import unescape
 import re
 import urllib.parse
 
+from lib.cache import TTLCache
 from lib.http_client import BROWSER_HEADERS, request_bytes, request_text
 from lib.investment_warning_dates import (
     format_kst_date,
@@ -20,6 +21,11 @@ from lib.investment_warning_dates import (
 )
 from lib.investment_warning_errors import InvestmentWarningStatusError
 from lib.timeouts import KRX_KIND_TIMEOUT, NAVER_PRICE_TIMEOUT
+
+# Per-stockCode invwarn-rows cache so the same-day repeat lookup survives a
+# KIND outage via stale-on-error fallback. The orchestrator's _status_cache
+# only helps after at least one successful fetch for the same stockCode+date.
+_invwarn_rows_cache = TTLCache(ttl=10 * 60, name='kind-invwarn-rows', durable=True)
 
 KIND_INVEST_WARNING_URL = 'https://kind.krx.co.kr/investwarn/investattentwarnrisky.do'
 KIND_DISCLOSURE_DETAILS_URL = 'https://kind.krx.co.kr/disclosure/details.do'
@@ -48,27 +54,36 @@ NAVER_HEADERS = {
 def fetch_investment_warning_rows(stock_code: str, now: datetime | date | None = None) -> list[dict]:
     end_date = format_kst_date(now)
     start_date = format_kst_date_years_before(now, KIND_INVEST_WARNING_LOOKBACK_YEARS)
-    body = {
-        'method': 'investattentwarnriskySub',
-        'currentPageSize': '3000',
-        'pageIndex': '1',
-        'orderMode': '3',
-        'orderStat': 'D',
-        'searchCodeType': 'number',
-        'searchCorpName': '',
-        'repIsuSrtCd': f'A{stock_code}',
-        'menuIndex': '2',
-        'forward': 'invstwarnisu_down',
-        'searchFromDate': end_date,
-        'startDate': start_date,
-        'endDate': end_date,
-        'marketType': '',
-    }
-    html = kind_post_text(KIND_INVEST_WARNING_URL, body)
-    rows = parse_kind_investment_warning_rows(html)
-    if not rows and not is_kind_empty_result(html):
-        raise InvestmentWarningStatusError('KIND 투자경고 응답을 해석할 수 없습니다.', 'PARSE')
-    return rows
+
+    def _fetch() -> list[dict]:
+        body = {
+            'method': 'investattentwarnriskySub',
+            'currentPageSize': '3000',
+            'pageIndex': '1',
+            'orderMode': '3',
+            'orderStat': 'D',
+            'searchCodeType': 'number',
+            'searchCorpName': '',
+            'repIsuSrtCd': f'A{stock_code}',
+            'menuIndex': '2',
+            'forward': 'invstwarnisu_down',
+            'searchFromDate': end_date,
+            'startDate': start_date,
+            'endDate': end_date,
+            'marketType': '',
+        }
+        html = kind_post_text(KIND_INVEST_WARNING_URL, body)
+        rows = parse_kind_investment_warning_rows(html)
+        if not rows and not is_kind_empty_result(html):
+            raise InvestmentWarningStatusError('KIND 투자경고 응답을 해석할 수 없습니다.', 'PARSE')
+        return rows
+
+    return _invwarn_rows_cache.get_or_set(
+        f'rows:{stock_code}:{end_date}',
+        _fetch,
+        allow_stale_on_error=True,
+        max_stale=6 * 3600,
+    )
 
 
 def fetch_current_trading_halt_status(stock_code: str) -> dict:

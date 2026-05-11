@@ -206,6 +206,45 @@ Naver directly; if the snapshot is missing, the endpoint returns an empty
 "preparing" forecast with a `forecast-cache` source error until the next
 successful weekday 16:10 KST warm-cache run.
 
+### KIND IP Block (KRX 403) — Follow-ups
+
+KRX KIND (`kind.krx.co.kr`) periodically WAF-blocks Vercel egress IPs and
+returns 403 even when the same URL/headers succeed from a non-Vercel IP.
+This is not solvable in code. What is already in place:
+
+- 403 is treated as non-retryable for the `krx` provider
+  (`lib/http_client.py`); retries within seconds never recover and only
+  double `external_api_retry` alert traffic.
+- `_krx_cache` (warning/caution GETs) and `_status_cache`
+  (investment-warning status orchestrator) both fall back to stale entries
+  for up to 6 hours on error.
+- `_invwarn_rows_cache` does the same per-stockCode for the
+  `fetch_investment_warning_rows` POST.
+- `/api/warn-search` and `/api/market-alerts/investment-warning` translate
+  KRX 403 into a `temporary_limit` status payload (HTTP 200) so the SPA and
+  Telegram bot do not surface 500.
+
+Operational follow-ups when blocks persist beyond the 6-hour stale window:
+
+1. Request a Vercel egress IP whitelist from KRX KIND support. Vercel's
+   outbound IPs are documented per region; `icn1` is the relevant one. This
+   is the cheapest long-term fix.
+2. If a whitelist is not feasible, route KIND-only traffic through a
+   forward proxy on a non-Vercel IP (e.g., a tiny fly.io/render service or
+   a Cloudflare Worker on a non-blocked IP). Keep the proxy scoped to
+   `kind.krx.co.kr` only, with the same `BROWSER_HEADERS` and rate budget
+   as `lib/http_client.py`.
+
+Monitoring:
+
+- `external_api_call` with `provider=krx` and `status=403` indicates the
+  block is active. Cross-reference with `cache_stale_returned` (cache=
+  `krx-kind`, `investment-warning-status`, or `kind-invwarn-rows`) to
+  confirm the stale fallback is absorbing the outage.
+- If `temporary_limit` status appears in `/api/market-alerts/investment-warning`
+  responses, the per-stockCode cache had no entry to fall back to. That is
+  the user-visible signal that an operational fix is overdue.
+
 ### DART Corp Registry Refresh
 
 `/api/warm-cache` refreshes the DART registry from `corpCode.xml` into Upstash

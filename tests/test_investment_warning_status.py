@@ -4,14 +4,17 @@ from datetime import datetime
 
 import pytest
 
+from lib import investment_warning_rows as iwr_module
 from lib import investment_warning_status as iws
 
 
 @pytest.fixture(autouse=True)
 def clear_status_cache():
     iws._status_cache.clear()
+    iwr_module._invwarn_rows_cache.clear()
     yield
     iws._status_cache.clear()
+    iwr_module._invwarn_rows_cache.clear()
 
 
 def investment_warning_download_html(
@@ -583,3 +586,76 @@ def test_arithmetic_skips_year_end_closure():
     assert iws.next_krx_trading_day('2025-12-30') == '2026-01-02'
     assert iws.subtract_krx_trading_days('2026-01-05', 14) == '2025-12-11'
     assert iws.add_krx_trading_days('2025-12-11', 10) == '2025-12-24'
+
+
+def test_investment_warning_status_payload_translates_krx_403(monkeypatch):
+    from lib import usecases
+    from lib.http_client import NonRetryableHTTPError
+
+    def raise_403(stock_code, now=None):
+        raise NonRetryableHTTPError(
+            'krx HTTP 403 while requesting kind.krx.co.kr/...',
+            provider='krx',
+            status=403,
+            url='https://kind.krx.co.kr/investwarn/investattentwarnrisky.do',
+        )
+
+    monkeypatch.setattr(iws, 'fetch_investment_warning_rows', raise_403)
+
+    payload = usecases.investment_warning_status_payload('005930')
+
+    assert payload['status'] == 'temporary_limit'
+    assert payload['stockCode'] == '005930'
+    assert payload['message'] == usecases.KRX_TEMPORARY_LIMIT_MESSAGE
+    assert payload['fetchedAt']
+
+
+def test_investment_warning_status_payload_reraises_non_krx_errors(monkeypatch):
+    from lib import usecases
+    from lib.http_client import NonRetryableHTTPError
+
+    def raise_naver_403(stock_code, now=None):
+        raise NonRetryableHTTPError(
+            'naver HTTP 403',
+            provider='naver',
+            status=403,
+            url='https://api.finance.naver.com/...',
+        )
+
+    monkeypatch.setattr(iws, 'fetch_investment_warning_rows', raise_naver_403)
+
+    with pytest.raises(NonRetryableHTTPError):
+        usecases.investment_warning_status_payload('005930')
+
+
+def test_invwarn_rows_cache_returns_stale_on_403(monkeypatch):
+    """When KIND 403s after a prior success, the cache returns the prior data."""
+    import time as _time
+    from lib.http_client import NonRetryableHTTPError
+
+    call_count = {'n': 0}
+
+    def kind_post(url, body):
+        call_count['n'] += 1
+        if call_count['n'] == 1:
+            return investment_warning_download_html()
+        raise NonRetryableHTTPError(
+            'krx HTTP 403', provider='krx', status=403, url=url,
+        )
+
+    monkeypatch.setattr(iwr_module, 'kind_post_text', kind_post)
+
+    fixed_now = datetime.fromisoformat('2026-05-04T00:00:00+09:00')
+    rows_first = iwr_module.fetch_investment_warning_rows('047040', fixed_now)
+    assert rows_first and rows_first[0]['stockCode'] == '047040'
+
+    # Age the local entry past TTL (10 min) but well inside max_stale (6 h),
+    # so the next call goes to _fetch (which 403s) and falls back to stale.
+    cache = iwr_module._invwarn_rows_cache
+    with cache._lock:
+        key, (value, _ts) = next(iter(cache._store.items()))
+        cache._store[key] = (value, _time.time() - cache._ttl - 1)
+
+    rows_stale = iwr_module.fetch_investment_warning_rows('047040', fixed_now)
+    assert rows_stale == rows_first
+    assert call_count['n'] == 2
